@@ -156,9 +156,10 @@
   </section>
 </main>
 
-<!-- Barcode scanning (ZXing) -->
+<!-- Barcode scanning (Quagga2) -->
 <script type="module">
-  import {
+  import Quagga from "https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js";
+
     BrowserMultiFormatReader,
     BarcodeFormat,
     DecodeHintType
@@ -505,35 +506,68 @@
     lookup(code);
   });
 
-  // ---------- Scanner (iPhone-friendly) ----------
-const hints = new Map();
-hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.CODE_39,
-  BarcodeFormat.ITF,
-  BarcodeFormat.CODABAR,
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.DATA_MATRIX
-]);
-
-hints.set(DecodeHintType.TRY_HARDER, true);
-
-
-const reader = new BrowserMultiFormatReader(hints);
-
+ // ---------- Scanner (Quagga2 - iPhone friendly) ----------
 let scanning = false;
-let stream = null;
-let videoTrack = null;
+let lastDecoded = null;
 let torchOn = false;
 
 const torchBtn = document.getElementById("torchBtn");
 
-// iOS Safari often gives blank camera labels; we keep the dropdown but don’t depend on it.
-async function listCameras() {
+// We will render Quagga's camera stream into the same <video> container area.
+// Quagga needs a DOM element target (not the <video> tag itself).
+// We'll create a target div overlayed in your videoWrap.
+const videoWrap = video.parentElement;
+let quaggaTarget = document.getElementById("quaggaTarget");
+if (!quaggaTarget) {
+  quaggaTarget = document.createElement("div");
+  quaggaTarget.id = "quaggaTarget";
+  quaggaTarget.style.position = "absolute";
+  quaggaTarget.style.inset = "0";
+  quaggaTarget.style.zIndex = "2";
+  videoWrap.appendChild(quaggaTarget);
+}
+// Keep your <video> visible background (optional)
+video.style.position = "absolute";
+video.style.inset = "0";
+video.style.zIndex = "1";
+
+function supportsTorchFromActiveTrack() {
+  try {
+    const track = Quagga.CameraAccess.getActiveTrack?.();
+    const caps = track?.getCapabilities?.();
+    return !!caps?.torch;
+  } catch {
+    return false;
+  }
+}
+
+async function setTorch(on) {
+  try {
+    const track = Quagga.CameraAccess.getActiveTrack?.();
+    if (!track) return toast("No active camera track.");
+    const caps = track.getCapabilities?.();
+    if (!caps?.torch) return toast("Flashlight not supported.");
+
+    await track.applyConstraints({ advanced: [{ torch: on }] });
+    torchOn = on;
+    torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
+  } catch {
+    toast("Could not toggle flashlight.");
+  }
+}
+
+torchBtn.addEventListener("click", async () => {
+  await setTorch(!torchOn);
+});
+
+video.addEventListener("click", () => {
+  // iOS doesn't reliably expose tap-to-focus in web constraints;
+  // but tapping helps users stabilize, and we can show a hint.
+  toast("Hold steady 1–2s. Try moving closer to fill the frame.");
+});
+
+async function listCamerasForDropdown() {
+  // Optional: keep your dropdown populated
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cams = devices.filter(d => d.kind === "videoinput");
@@ -544,135 +578,103 @@ async function listCameras() {
       opt.textContent = d.label || `Camera ${i + 1}`;
       cameraSelect.appendChild(opt);
     });
-  } catch (e) {
-    // Not fatal on iOS; permissions may be needed before labels appear
-  }
-}
-
-function supportsTorch(track) {
-  try {
-    const caps = track.getCapabilities?.();
-    return !!caps?.torch;
-  } catch { return false; }
-}
-
-async function setTorch(on) {
-  if (!videoTrack || !supportsTorch(videoTrack)) {
-    toast("Flashlight not supported on this device/browser.");
-    return;
-  }
-  try {
-    await videoTrack.applyConstraints({ advanced: [{ torch: on }] });
-    torchOn = on;
-    torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
-  } catch (e) {
-    toast("Could not toggle flashlight.");
-  }
-}
-
-// Best-effort focus: on iPhone, true “tap-to-focus” constraints are inconsistent.
-// This tries to enable continuous focus if available.
-async function tryFocus() {
-  if (!videoTrack) return;
-  try {
-    const caps = videoTrack.getCapabilities?.();
-    if (caps?.focusMode?.includes("continuous")) {
-      await videoTrack.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
-      toast("Focus attempted.");
-    } else {
-      // Still give user feedback
-      toast("Tap-to-focus not exposed by this browser, but try holding steady.");
-    }
   } catch {
-    toast("Focus attempt failed.");
+    // ignore
   }
 }
-
-// Tap video to focus
-video.addEventListener("click", () => { tryFocus(); });
 
 cameraSelect.addEventListener("change", async () => {
-  // Restart with selected device if possible
   if (!scanning) return;
   await stopScan();
   await startScan();
 });
 
-torchBtn.addEventListener("click", async () => {
-  await setTorch(!torchOn);
-});
-
 async function startScan() {
   if (scanning) return;
   scanning = true;
-  status.textContent = "Starting camera… (allow permissions)";
+  lastDecoded = null;
+  status.textContent = "Starting scanner… (Quagga2)";
 
-  try {
-    await listCameras();
+  await listCamerasForDropdown();
 
-    // Prefer rear camera. If user chose a camera deviceId, we respect it.
-    const chosenId = cameraSelect.value || null;
+  const chosenId = cameraSelect.value || null;
 
-    const constraints = chosenId
-      ? { video: { deviceId: { exact: chosenId } }, audio: false }
-      : { video: { facingMode: { ideal: "environment" } }, audio: false };
+  Quagga.init(
+    {
+      inputStream: {
+        type: "LiveStream",
+        target: quaggaTarget,
+        constraints: {
+          facingMode: "environment",
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          ...(chosenId ? { deviceId: chosenId } : {})
+        }
+      },
+      locator: {
+        patchSize: "medium",
+        halfSample: true
+      },
+      locate: true,
+      decoder: {
+        // This is the key part for grocery/packaged foods
+        readers: ["upc_reader", "ean_reader", "ean_8_reader"]
+      }
+    },
+    (err) => {
+      if (err) {
+        scanning = false;
+        status.textContent =
+          "Quagga init error: " + (err?.message || String(err)) +
+          "\nCheck: Safari camera permission + HTTPS.";
+        return;
+      }
 
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
+      Quagga.start();
 
-    // Make iOS happy
-    video.setAttribute("playsinline", "true");
-    video.muted = true;
+      // If you want to display the camera feed in your <video> too:
+      try {
+        const stream = Quagga.CameraAccess.getActiveStream?.();
+        if (stream) {
+          video.srcObject = stream;
+          video.play().catch(() => {});
+        }
+      } catch {}
 
-    await video.play();
+      // Show torch button if supported
+      if (supportsTorchFromActiveTrack()) {
+        torchBtn.style.display = "inline-block";
+        torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
+      } else {
+        torchBtn.style.display = "none";
+        torchOn = false;
+      }
 
-    videoTrack = stream.getVideoTracks()[0] || null;
-
-    // Update torch button availability
-    if (videoTrack && supportsTorch(videoTrack)) {
-      torchBtn.style.display = "inline-block";
-      torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
-    } else {
-      torchBtn.style.display = "none";
-      torchOn = false;
+      status.textContent =
+        "Scanning… (Quagga2)\n" +
+        "Tips: move closer, fill the frame, avoid glare, hold steady 1–2s.";
     }
+  );
 
-    status.textContent = "Camera started. Scanning… Aim at barcode.";
+  Quagga.onDetected((data) => {
+    const code = data?.codeResult?.code;
+    if (!code) return;
 
-    // Decode from the video element continuously
-    let attempts = 0;
+    // Prevent rapid duplicate firing
+    if (code === lastDecoded) return;
+    lastDecoded = code;
 
-reader.decodeFromVideoElement(video, (result, err) => {
-  attempts++;
-
-  if (attempts % 30 === 0 && !result) {
-    status.textContent =
-      "Scanning… (no decode yet)\n" +
-      "Tips: move closer, fill the frame, avoid glare.";
-  }
-
-  if (result) {
-    const text = result.getText();
-    barcodeEl.value = text;
-    status.textContent = `Decoded: ${text}\nLooking up…`;
+    barcodeEl.value = code;
+    status.textContent = `Decoded: ${code}\nLooking up…`;
     stopScan();
-    lookup(text);
-  }
-});
-
-
-  } catch (e) {
-    scanning = false;
-    status.textContent =
-      "Camera/scanner error: " + (e?.message || String(e)) +
-      "\nFixes: (1) Safari Settings → Camera = Allow, (2) open the HTTPS GitHub Pages URL (not local file), (3) reload.";
-    // Ensure cleanup
-    await stopScan();
-  }
+    lookup(code);
+  });
 }
 
 async function stopScan() {
-  try { reader.reset(); } catch {}
+  try { Quagga.offDetected(); } catch {}
+  try { Quagga.stop(); } catch {}
+  try { Quagga.CameraAccess.release(); } catch {}
   scanning = false;
 
   // Turn off torch if it was on
@@ -680,11 +682,8 @@ async function stopScan() {
     try { await setTorch(false); } catch {}
   }
 
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-  }
-  stream = null;
-  videoTrack = null;
+  // Clear video
+  try { video.pause(); } catch {}
   video.srcObject = null;
 
   status.textContent = "Scanner stopped.";
