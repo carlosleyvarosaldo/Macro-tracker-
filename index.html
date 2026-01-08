@@ -29,7 +29,9 @@
     .ok { background: #ecfdf5; border-color: #10b98133; }
     .warn { background: #fff7ed; border-color: #f59e0b33; }
     .bad { background: #fef2f2; border-color: #ef444433; }
-    .videoWrap {
+
+    /* Camera area */
+    .videoWrap{
       position: relative;
       width: 100%;
       aspect-ratio: 4 / 3;
@@ -38,10 +40,12 @@
       background: #111827;
       border: 1px solid #111827;
     }
-    video { width: 100%; height: 100%; object-fit: cover; }
-    /* Quagga injects elements into this */
-    #quaggaTarget { position:absolute; inset:0; z-index:2; }
-    #quaggaTarget video, #quaggaTarget canvas { position:absolute; inset:0; width:100%; height:100%; }
+    /* Quagga injects video/canvas into this div */
+    #quaggaTarget{ position:absolute; inset:0; z-index:3; }
+    #quaggaTarget video, #quaggaTarget canvas{
+      position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    }
+
     .status { margin-top: 10px; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 10px; border-radius: 12px; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
@@ -62,13 +66,11 @@
   <section class="card">
     <h2 style="margin:0 0 8px 0; font-size:16px;">Scan & add food</h2>
     <div class="muted">
-      iPhone note: Camera works best on HTTPS (GitHub Pages). Aim at the striped UPC/EAN barcode (not QR).
-      Tap the video area if you need to refocus; flashlight button appears if supported.
+      Works best on HTTPS (GitHub Pages) in Safari. Scan the striped UPC/EAN barcode (not QR).
     </div>
 
     <label>Camera</label>
-    <div class="videoWrap" id="videoWrap">
-      <video id="video" muted playsinline></video>
+    <div class="videoWrap">
       <div id="quaggaTarget"></div>
     </div>
 
@@ -86,7 +88,7 @@
     </div>
 
     <div id="productCard" style="display:none; margin-top:12px;">
-      <div class="pill ok" id="sourcePill">Source: Open Food Facts</div>
+      <div class="pill ok">Source: Open Food Facts</div>
       <div style="margin-top:10px;">
         <div style="font-weight:800;" id="prodName"></div>
         <div class="small" id="prodMeta"></div>
@@ -101,10 +103,7 @@
         <input id="qty" type="number" min="0" step="0.25" value="1" />
         <button id="addBtn">Add to today</button>
       </div>
-      <div class="muted" id="modeHelp" style="margin-top:6px;">
-        Uses nutrition per serving if available; otherwise per 100g.
-      </div>
-
+      <div class="muted" id="modeHelp" style="margin-top:6px;">Uses per serving if available; otherwise per 100g.</div>
       <div style="margin-top:10px;" class="status" id="nutriPreview">—</div>
     </div>
 
@@ -161,14 +160,10 @@
         <tbody id="logBody"></tbody>
       </table>
     </div>
-
-    <div class="muted" style="margin-top:10px;">
-      Goal reminder: fat loss + keep muscle → keep protein high, lift consistently, use a modest calorie deficit.
-    </div>
   </section>
 </main>
 
-<!-- Quagga2 (global build). Must be BEFORE the module script -->
+<!-- Quagga2 global build -->
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 
 <script type="module">
@@ -191,15 +186,13 @@
   function round1(x){ return Math.round((x + Number.EPSILON) * 10) / 10; }
   function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
   function csv(s){ const t = String(s ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; }
-
-  const status = document.getElementById("status");
   function toast(msg) {
     status.textContent = msg;
     setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1400);
   }
 
   // ---------- Elements ----------
-  const video = document.getElementById("video");
+  const status = document.getElementById("status");
   const cameraSelect = document.getElementById("cameraSelect");
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
@@ -416,18 +409,16 @@
     if (!currentFood) return;
     const qty = Number(qtyEl.value || 0);
     const mode = modeEl.value;
-
     updateModeHelp(currentFood);
-    const { macros, detail } = computeForQty(currentFood, qty, mode);
 
+    const { macros, detail } = computeForQty(currentFood, qty, mode);
     nutriPreview.textContent = JSON.stringify({
       item: currentFood.name,
       amount: detail,
       calories_kcal: Math.round(macros.calories),
       protein_g: round1(macros.protein),
       carbs_g: round1(macros.carbs),
-      fat_g: round1(macros.fat),
-      note: currentFood.hasServing ? "Using serving data when available." : "Serving data not available; using per 100g where needed."
+      fat_g: round1(macros.fat)
     }, null, 2);
   }
 
@@ -499,9 +490,7 @@
 
   // ---------- Scanner (Quagga2) ----------
   const Quagga = window.Quagga;
-  if (!Quagga) {
-    status.textContent = "Quagga failed to load. Check the Quagga <script> tag and redeploy.";
-  }
+  if (!Quagga) status.textContent = "Quagga failed to load. Check CDN + redeploy.";
 
   let scanning = false;
   let lastDecoded = null;
@@ -518,6 +507,10 @@
         opt.textContent = d.label || `Camera ${i + 1}`;
         cameraSelect.appendChild(opt);
       });
+
+      // If user already used the rear camera before, prefer it
+      const savedRear = LS.get("rearCamDeviceId", null);
+      if (savedRear) cameraSelect.value = savedRear;
     } catch { /* ignore */ }
   }
 
@@ -544,33 +537,29 @@
     }
   }
 
-  torchBtn.addEventListener("click", async () => {
-    await setTorch(!torchOn);
-  });
+  torchBtn.addEventListener("click", async () => { await setTorch(!torchOn); });
 
-  video.addEventListener("click", () => {
-    toast("Hold steady 1–2s. Move closer, avoid glare.");
-  });
+  function onDetectedHandler(data) {
+    const code = data?.codeResult?.code;
+    if (!code) return;
+    if (code === lastDecoded) return;
+    lastDecoded = code;
+
+    barcodeEl.value = code;
+    status.textContent = `Decoded: ${code}\nLooking up…`;
+
+    // Small delay prevents iOS black screen on restart
+    setTimeout(() => {
+      stopScan();
+      lookup(code);
+    }, 250);
+  }
 
   cameraSelect.addEventListener("change", async () => {
     if (!scanning) return;
     await stopScan();
     await startScan();
   });
-
-  function onDetectedHandler(data) {
-    const code = data?.codeResult?.code;
-    if (!code) return;
-    if (code === lastDecoded) return;
-
-    lastDecoded = code;
-    barcodeEl.value = code;
-    status.textContent = `Decoded: ${code}\nLooking up…`;
-    setTimeout(() => {
-  stopScan();
-  lookup(code);
-}, 250);
-
 
   async function startScan() {
     if (!Quagga) return toast("Quagga not loaded.");
@@ -581,87 +570,50 @@
     status.textContent = "Starting scanner… (Quagga2)";
 
     await listCamerasForDropdown();
-    // Prefer a rear camera deviceId if we can detect it
-let chosenId = cameraSelect.value || null;
 
-// If the dropdown is empty/labels are blank (common on iOS), pick the last known rear cam
-const lastRear = LS.get("rearCamDeviceId", null);
-if (!chosenId && lastRear) chosenId = lastRear;
+    // Prefer saved rear camera deviceId if available
+    let chosenId = cameraSelect.value || null;
+    const savedRear = LS.get("rearCamDeviceId", null);
+    if (savedRear) chosenId = savedRear;
 
-// Try to auto-pick a rear camera based on label once permissions exist
-try {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const cams = devices.filter(d => d.kind === "videoinput");
-  const rear = cams.find(d => /back|rear|environment/i.test(d.label));
-  if (rear?.deviceId) chosenId = rear.deviceId;
-} catch {}
-
-
-    // Clean any previous run
+    // HARD reset before init (prevents black)
     try { Quagga.offDetected(onDetectedHandler); } catch {}
     try { Quagga.stop(); } catch {}
     try { Quagga.CameraAccess.release(); } catch {}
+    const targetEl = document.getElementById("quaggaTarget");
+    if (targetEl) targetEl.innerHTML = "";
 
     Quagga.init({
       inputStream: {
         type: "LiveStream",
-        target: document.getElementById("quaggaTarget"),
+        target: targetEl,
         constraints: {
-  // iOS sometimes ignores "ideal". "exact" is more forceful.
-  facingMode: { exact: "environment" },
-  width: { ideal: 1280, min: 640 },
-  height: { ideal: 720, min: 480 },
-  ...(chosenId ? { deviceId: chosenId } : {})
-}
-
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          ...(chosenId ? { deviceId: chosenId } : {})
+        }
       },
       locator: { patchSize: "medium", halfSample: true },
       locate: true,
-      decoder: {
-        readers: ["upc_reader", "ean_reader", "ean_8_reader"]
-      }
+      decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
     }, (err) => {
       if (err) {
-  // Fallback: try again with "ideal" environment (less strict)
-  try {
-    await new Promise((resolve, reject) => {
-      Quagga.init({
-        inputStream: {
-          type: "LiveStream",
-          target: document.getElementById("quaggaTarget"),
-          constraints: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 },
-            ...(chosenId ? { deviceId: chosenId } : {})
-          }
-        },
-        locator: { patchSize: "medium", halfSample: true },
-        locate: true,
-        decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
-      }, (err2) => err2 ? reject(err2) : resolve());
-    });
-  } catch (e2) {
-    scanning = false;
-    status.textContent =
-      "Quagga init error (rear cam): " + (e2?.message || String(e2)) +
-      "\nFix: allow camera + refresh. If it keeps choosing selfie cam, we’ll pin deviceId.";
-    return;
-  }
-}
-
+        scanning = false;
+        status.textContent =
+          "Quagga init error:\n" + (err?.message || String(err)) +
+          "\n\nFixes:\n- iPhone Settings → Safari → Camera = Allow\n- Open in Safari (not in-app browser)\n- Reload with ?v=NEW";
+        return;
+      }
 
       Quagga.start();
-      // Persist the active camera deviceId so restarts don’t flip to selfie cam
-try {
-  const track = Quagga.CameraAccess.getActiveTrack?.();
-  const settings = track?.getSettings?.();
-  if (settings?.deviceId) LS.set("rearCamDeviceId", settings.deviceId);
-} catch {}
 
-      status.textContent =
-        "Scanning… (Quagga2)\n" +
-        "Tips: fill the frame with the barcode, avoid glare, hold steady 1–2s.";
+      // Save actual active camera deviceId so restarts don’t flip to selfie cam
+      try {
+        const track = Quagga.CameraAccess.getActiveTrack?.();
+        const settings = track?.getSettings?.();
+        if (settings?.deviceId) LS.set("rearCamDeviceId", settings.deviceId);
+      } catch {}
 
       // Torch button if supported
       if (supportsTorch()) {
@@ -671,6 +623,10 @@ try {
         torchBtn.style.display = "none";
         torchOn = false;
       }
+
+      status.textContent =
+        "Scanning… (Quagga2)\n" +
+        "Tips: fill the frame with the barcode, avoid glare, hold steady 1–2s.";
     });
 
     Quagga.onDetected(onDetectedHandler);
@@ -678,6 +634,7 @@ try {
 
   async function stopScan() {
     if (!Quagga) return;
+
     scanning = false;
 
     if (torchOn) {
@@ -688,10 +645,9 @@ try {
     try { Quagga.stop(); } catch {}
     try { Quagga.CameraAccess.release(); } catch {}
 
-    // Clear Quagga target contents (prevents “black box” leftovers on iOS)
-const tgt = document.getElementById("quaggaTarget");
-if (tgt) tgt.innerHTML = "";
-
+    // Clear injected elements to prevent “black box” on iOS restarts
+    const tgt = document.getElementById("quaggaTarget");
+    if (tgt) tgt.innerHTML = "";
 
     status.textContent = "Scanner stopped.";
   }
@@ -704,3 +660,4 @@ if (tgt) tgt.innerHTML = "";
 </script>
 </body>
 </html>
+
