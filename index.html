@@ -512,8 +512,16 @@ hints.set(DecodeHintType.POSSIBLE_FORMATS, [
   BarcodeFormat.EAN_8,
   BarcodeFormat.UPC_A,
   BarcodeFormat.UPC_E,
-  BarcodeFormat.CODE_128
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.CODE_39,
+  BarcodeFormat.ITF,
+  BarcodeFormat.CODABAR,
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.DATA_MATRIX
 ]);
+
+hints.set(DecodeHintType.TRY_HARDER, true);
+
 
 const reader = new BrowserMultiFormatReader(hints);
 
@@ -632,15 +640,26 @@ async function startScan() {
     status.textContent = "Camera started. Scanning… Aim at barcode.";
 
     // Decode from the video element continuously
-    reader.decodeFromVideoElement(video, (result, err) => {
-      if (result) {
-        const text = result.getText();
-        barcodeEl.value = text;
-        status.textContent = `Scanned: ${text}\nLooking up…`;
-        stopScan(); // stop camera + decoder after a successful scan
-        lookup(text);
-      }
-    });
+    let attempts = 0;
+
+reader.decodeFromVideoElement(video, (result, err) => {
+  attempts++;
+
+  if (attempts % 30 === 0 && !result) {
+    status.textContent =
+      "Scanning… (no decode yet)\n" +
+      "Tips: move closer, fill the frame, avoid glare.";
+  }
+
+  if (result) {
+    const text = result.getText();
+    barcodeEl.value = text;
+    status.textContent = `Decoded: ${text}\nLooking up…`;
+    stopScan();
+    lookup(text);
+  }
+});
+
 
   } catch (e) {
     scanning = false;
