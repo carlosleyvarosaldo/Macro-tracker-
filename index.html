@@ -16,7 +16,7 @@
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     label { display: block; font-weight: 650; font-size: 12px; color: #374151; margin: 10px 0 6px; }
-    input, select, button, textarea {
+    input, select, button {
       width: 100%; padding: 10px 11px; border: 1px solid #d1d5db; border-radius: 12px;
       font-size: 14px; background: #fff;
     }
@@ -29,8 +29,19 @@
     .ok { background: #ecfdf5; border-color: #10b98133; }
     .warn { background: #fff7ed; border-color: #f59e0b33; }
     .bad { background: #fef2f2; border-color: #ef444433; }
-    .videoWrap { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: #111827; }
+    .videoWrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #111827;
+      border: 1px solid #111827;
+    }
     video { width: 100%; height: 100%; object-fit: cover; }
+    /* Quagga injects elements into this */
+    #quaggaTarget { position:absolute; inset:0; z-index:2; }
+    #quaggaTarget video, #quaggaTarget canvas { position:absolute; inset:0; width:100%; height:100%; }
     .status { margin-top: 10px; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 10px; border-radius: 12px; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
@@ -50,23 +61,23 @@
   <!-- LEFT: Scan + Lookup + Add -->
   <section class="card">
     <h2 style="margin:0 0 8px 0; font-size:16px;">Scan & add food</h2>
-    <div class="muted">Camera scanning works best when hosted on HTTPS (GitHub Pages is ideal). If scanning fails, you can type the barcode manually.</div>
+    <div class="muted">
+      iPhone note: Camera works best on HTTPS (GitHub Pages). Aim at the striped UPC/EAN barcode (not QR).
+      Tap the video area if you need to refocus; flashlight button appears if supported.
+    </div>
 
     <label>Camera</label>
-    <div class="videoWrap">
+    <div class="videoWrap" id="videoWrap">
       <video id="video" muted playsinline></video>
+      <div id="quaggaTarget"></div>
     </div>
 
     <div class="split" style="margin-top:10px;">
-  <button id="startBtn">Start scanner</button>
-  <button id="stopBtn" class="ghost">Stop</button>
-  <button id="torchBtn" class="ghost" style="max-width:220px;">Flashlight: Off</button>
-  <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
-</div>
-<div class="muted" style="margin-top:8px;">
-  Tip: tap the video area to try to focus. Flashlight only appears on supported devices.
-</div>
-
+      <button id="startBtn">Start scanner</button>
+      <button id="stopBtn" class="ghost">Stop</button>
+      <button id="torchBtn" class="ghost" style="max-width:220px; display:none;">Flashlight: Off</button>
+      <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
+    </div>
 
     <label>Barcode (UPC/EAN)</label>
     <div class="row">
@@ -90,7 +101,9 @@
         <input id="qty" type="number" min="0" step="0.25" value="1" />
         <button id="addBtn">Add to today</button>
       </div>
-      <div class="muted" id="modeHelp" style="margin-top:6px;">Uses nutrition per serving if available; otherwise per 100g.</div>
+      <div class="muted" id="modeHelp" style="margin-top:6px;">
+        Uses nutrition per serving if available; otherwise per 100g.
+      </div>
 
       <div style="margin-top:10px;" class="status" id="nutriPreview">—</div>
     </div>
@@ -150,26 +163,18 @@
     </div>
 
     <div class="muted" style="margin-top:10px;">
-      Tip for your goal (fat loss + keep muscle): keep protein high and use a modest calorie deficit.
-      Default targets here are a solid starting point for cutting from ~185–190 toward ~175 while lifting.
+      Goal reminder: fat loss + keep muscle → keep protein high, lift consistently, use a modest calorie deficit.
     </div>
   </section>
 </main>
 
-<!-- Barcode scanning (Quagga2) -->
+<!-- Quagga2 (global build). Must be BEFORE the module script -->
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+
 <script type="module">
-  import Quagga from "https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js";
-
-    BrowserMultiFormatReader,
-    BarcodeFormat,
-    DecodeHintType
-  } from "https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/+esm";
-
-  // ---------- Storage helpers ----------
+  // ---------- Helpers ----------
   const LS = {
-    get(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
-    },
+    get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
     set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
   };
 
@@ -181,12 +186,24 @@
     return `log_${yyyy}-${mm}-${dd}`;
   };
 
+  const defaultTargets = { calories: 2000, protein: 170, carbs: 200, fat: 60 };
+
+  function round1(x){ return Math.round((x + Number.EPSILON) * 10) / 10; }
+  function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
+  function csv(s){ const t = String(s ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; }
+
+  const status = document.getElementById("status");
+  function toast(msg) {
+    status.textContent = msg;
+    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1400);
+  }
+
   // ---------- Elements ----------
   const video = document.getElementById("video");
   const cameraSelect = document.getElementById("cameraSelect");
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
-  const status = document.getElementById("status");
+  const torchBtn = document.getElementById("torchBtn");
 
   const barcodeEl = document.getElementById("barcode");
   const lookupBtn = document.getElementById("lookupBtn");
@@ -212,7 +229,6 @@
   const logBody = document.getElementById("logBody");
 
   // ---------- Targets ----------
-  const defaultTargets = { calories: 2000, protein: 170, carbs: 200, fat: 60 };
   const targets = LS.get("targets", defaultTargets);
   tCalories.value = targets.calories;
   tProtein.value = targets.protein;
@@ -234,7 +250,6 @@
   // ---------- Log ----------
   function getLog() { return LS.get(todayKey(), []); }
   function setLog(items) { LS.set(todayKey(), items); }
-
   function sumLog(items) {
     return items.reduce((acc, it) => {
       acc.calories += it.calories;
@@ -244,13 +259,11 @@
       return acc;
     }, { calories:0, protein:0, carbs:0, fat:0 });
   }
-
   function classify(remaining) {
     if (remaining >= 0) return "ok";
     if (remaining > -150) return "warn";
     return "bad";
   }
-
   function render() {
     const items = getLog();
     const totals = sumLog(items);
@@ -324,57 +337,16 @@
     URL.revokeObjectURL(url);
   });
 
-  // ---------- Lookup (Open Food Facts) ----------
+  // ---------- Open Food Facts Lookup ----------
   let currentFood = null;
 
-  modeEl.addEventListener("change", updatePreview);
-  qtyEl.addEventListener("input", updatePreview);
-
-  function updateModeHelp(data) {
-    if (!data) return;
-    if (modeEl.value === "serving") {
-      if (data.hasServing) {
-        modeHelp.textContent = `Serving mode: 1 = ${data.servingSizeText || "1 serving"} (uses per-serving values).`;
-      } else {
-        modeHelp.textContent = `Serving mode: per-serving data not available; using per 100g estimate.`;
-      }
-    } else {
-      modeHelp.textContent = `Gram mode: uses per 100g values scaled to grams.`;
-    }
-  }
-
-  function computeForQty(foodData, qty, mode) {
-    // foodData fields:
-    // per100g: { kcal, protein, carbs, fat }
-    // perServing: { kcal, protein, carbs, fat } optional
-    // servingGrams: number optional
-    let macros;
-
-    if (mode === "serving") {
-      if (foodData.hasServing) {
-        macros = scaleMacros(foodData.perServing, qty);
-        return { macros, detail: `${qty} serving(s)` };
-      }
-      // fallback: treat "serving" as 100g unit if serving not available
-      macros = scaleMacros(foodData.per100g, qty);
-      return { macros, detail: `${qty} x 100g (fallback)` };
-    }
-
-    // grams mode:
-    const grams = qty;
-    const factor = grams / 100.0;
-    macros = scaleMacros(foodData.per100g, factor);
-    return { macros, detail: `${grams} g` };
-  }
-
-  function scaleMacros(m, factor) {
-    const safe = (v) => (Number.isFinite(v) ? v : 0);
-    return {
-      calories: safe(m.kcal) * factor,
-      protein: safe(m.protein) * factor,
-      carbs: safe(m.carbs) * factor,
-      fat: safe(m.fat) * factor
-    };
+  function num(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
+  function guessServingGrams(servingText) {
+    if (!servingText) return null;
+    const m = servingText.match(/([\d.]+)\s*g/i);
+    if (!m) return null;
+    const v = Number(m[1]);
+    return Number.isFinite(v) ? v : null;
   }
 
   function parseOFF(product) {
@@ -383,7 +355,6 @@
     const brand = product.brands || "";
     const serving = product.serving_size || "";
 
-    // Prefer kcal if available. OFF can have fields like energy-kcal_100g / _serving, etc.
     const per100g = {
       kcal: num(n["energy-kcal_100g"]),
       protein: num(n["proteins_100g"]),
@@ -401,27 +372,67 @@
     const hasServing = Object.values(perServing).some(v => Number.isFinite(v) && v > 0);
     const servingGrams = guessServingGrams(serving);
 
+    return { name, brand, servingSizeText: serving, per100g, perServing, hasServing, servingGrams, source: "Open Food Facts" };
+  }
+
+  function scaleMacros(m, factor) {
+    const safe = (v) => (Number.isFinite(v) ? v : 0);
     return {
-      name, brand, servingSizeText: serving,
-      per100g, perServing,
-      hasServing, servingGrams,
-      source: "Open Food Facts"
+      calories: safe(m.kcal) * factor,
+      protein: safe(m.protein) * factor,
+      carbs: safe(m.carbs) * factor,
+      fat: safe(m.fat) * factor
     };
   }
 
-  function guessServingGrams(servingText) {
-    // crude parse like "30 g" -> 30
-    if (!servingText) return null;
-    const m = servingText.match(/([\d.]+)\s*g/i);
-    if (!m) return null;
-    const v = Number(m[1]);
-    return Number.isFinite(v) ? v : null;
+  function computeForQty(foodData, qty, mode) {
+    let macros;
+    if (mode === "serving") {
+      if (foodData.hasServing) {
+        macros = scaleMacros(foodData.perServing, qty);
+        return { macros, detail: `${qty} serving(s)` };
+      }
+      macros = scaleMacros(foodData.per100g, qty);
+      return { macros, detail: `${qty} x 100g (fallback)` };
+    }
+    const grams = qty;
+    const factor = grams / 100.0;
+    macros = scaleMacros(foodData.per100g, factor);
+    return { macros, detail: `${grams} g` };
   }
 
-  function num(v) {
-    const x = Number(v);
-    return Number.isFinite(x) ? x : null;
+  function updateModeHelp(data) {
+    if (!data) return;
+    if (modeEl.value === "serving") {
+      modeHelp.textContent = data.hasServing
+        ? `Serving mode: uses per-serving values (${data.servingSizeText || "1 serving"}).`
+        : `Serving mode: per-serving data not available; using per 100g estimate.`;
+    } else {
+      modeHelp.textContent = `Gram mode: uses per 100g values scaled to grams.`;
+    }
   }
+
+  function updatePreview() {
+    if (!currentFood) return;
+    const qty = Number(qtyEl.value || 0);
+    const mode = modeEl.value;
+
+    updateModeHelp(currentFood);
+    const { macros, detail } = computeForQty(currentFood, qty, mode);
+
+    nutriPreview.textContent = JSON.stringify({
+      item: currentFood.name,
+      amount: detail,
+      calories_kcal: Math.round(macros.calories),
+      protein_g: round1(macros.protein),
+      carbs_g: round1(macros.carbs),
+      fat_g: round1(macros.fat),
+      note: currentFood.hasServing ? "Using serving data when available." : "Serving data not available; using per 100g where needed."
+    }, null, 2);
+  }
+
+  modeEl.addEventListener("change", updatePreview);
+  qtyEl.addEventListener("input", updatePreview);
 
   async function lookup(barcode) {
     status.textContent = "Looking up barcode in Open Food Facts…";
@@ -435,8 +446,8 @@
     if (data.status !== 1) {
       status.textContent =
         "Not found in Open Food Facts.\n" +
-        "Try: (1) scan again with better light, (2) type the barcode, or (3) log manually using generic foods in another app.\n" +
-        "If you want, I can add a 2nd database fallback (USDA FoodData Central or Nutritionix).";
+        "Try scanning again (closer + better light) or type the barcode.\n" +
+        "If you want, I can add a second database fallback.";
       return;
     }
 
@@ -453,25 +464,11 @@
     status.textContent = "Found product. Choose serving/grams and tap Add.";
   }
 
-  function updatePreview() {
-    if (!currentFood) return;
-    const qty = Number(qtyEl.value || 0);
-    const mode = modeEl.value;
-
-    updateModeHelp(currentFood);
-
-    const { macros, detail } = computeForQty(currentFood, qty, mode);
-
-    nutriPreview.textContent = JSON.stringify({
-      item: currentFood.name,
-      amount: detail,
-      calories_kcal: Math.round(macros.calories),
-      protein_g: round1(macros.protein),
-      carbs_g: round1(macros.carbs),
-      fat_g: round1(macros.fat),
-      note: currentFood.hasServing ? "Using serving data when available." : "Serving data not available; using per 100g where needed."
-    }, null, 2);
-  }
+  lookupBtn.addEventListener("click", () => {
+    const code = barcodeEl.value.trim();
+    if (!code) return toast("Enter a barcode first.");
+    lookup(code);
+  });
 
   addBtn.addEventListener("click", () => {
     if (!currentFood) return toast("Lookup a product first.");
@@ -500,110 +497,99 @@
     toast("Added.");
   });
 
-  lookupBtn.addEventListener("click", () => {
-    const code = barcodeEl.value.trim();
-    if (!code) return toast("Enter a barcode first.");
-    lookup(code);
+  // ---------- Scanner (Quagga2) ----------
+  const Quagga = window.Quagga;
+  if (!Quagga) {
+    status.textContent = "Quagga failed to load. Check the Quagga <script> tag and redeploy.";
+  }
+
+  let scanning = false;
+  let lastDecoded = null;
+  let torchOn = false;
+
+  async function listCamerasForDropdown() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === "videoinput");
+      cameraSelect.innerHTML = "";
+      cams.forEach((d, i) => {
+        const opt = document.createElement("option");
+        opt.value = d.deviceId;
+        opt.textContent = d.label || `Camera ${i + 1}`;
+        cameraSelect.appendChild(opt);
+      });
+    } catch { /* ignore */ }
+  }
+
+  function supportsTorch() {
+    try {
+      const track = Quagga.CameraAccess.getActiveTrack?.();
+      const caps = track?.getCapabilities?.();
+      return !!caps?.torch;
+    } catch { return false; }
+  }
+
+  async function setTorch(on) {
+    try {
+      const track = Quagga.CameraAccess.getActiveTrack?.();
+      if (!track) return toast("No active camera track.");
+      const caps = track.getCapabilities?.();
+      if (!caps?.torch) return toast("Flashlight not supported.");
+
+      await track.applyConstraints({ advanced: [{ torch: on }] });
+      torchOn = on;
+      torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
+    } catch {
+      toast("Could not toggle flashlight.");
+    }
+  }
+
+  torchBtn.addEventListener("click", async () => {
+    await setTorch(!torchOn);
   });
 
- // ---------- Scanner (Quagga2 - iPhone friendly) ----------
-let scanning = false;
-let lastDecoded = null;
-let torchOn = false;
+  video.addEventListener("click", () => {
+    toast("Hold steady 1–2s. Move closer, avoid glare.");
+  });
 
-const torchBtn = document.getElementById("torchBtn");
+  cameraSelect.addEventListener("change", async () => {
+    if (!scanning) return;
+    await stopScan();
+    await startScan();
+  });
 
-// We will render Quagga's camera stream into the same <video> container area.
-// Quagga needs a DOM element target (not the <video> tag itself).
-// We'll create a target div overlayed in your videoWrap.
-const videoWrap = video.parentElement;
-let quaggaTarget = document.getElementById("quaggaTarget");
-if (!quaggaTarget) {
-  quaggaTarget = document.createElement("div");
-  quaggaTarget.id = "quaggaTarget";
-  quaggaTarget.style.position = "absolute";
-  quaggaTarget.style.inset = "0";
-  quaggaTarget.style.zIndex = "2";
-  videoWrap.appendChild(quaggaTarget);
-}
-// Keep your <video> visible background (optional)
-video.style.position = "absolute";
-video.style.inset = "0";
-video.style.zIndex = "1";
+  function onDetectedHandler(data) {
+    const code = data?.codeResult?.code;
+    if (!code) return;
+    if (code === lastDecoded) return;
 
-function supportsTorchFromActiveTrack() {
-  try {
-    const track = Quagga.CameraAccess.getActiveTrack?.();
-    const caps = track?.getCapabilities?.();
-    return !!caps?.torch;
-  } catch {
-    return false;
+    lastDecoded = code;
+    barcodeEl.value = code;
+    status.textContent = `Decoded: ${code}\nLooking up…`;
+    stopScan();
+    lookup(code);
   }
-}
 
-async function setTorch(on) {
-  try {
-    const track = Quagga.CameraAccess.getActiveTrack?.();
-    if (!track) return toast("No active camera track.");
-    const caps = track.getCapabilities?.();
-    if (!caps?.torch) return toast("Flashlight not supported.");
+  async function startScan() {
+    if (!Quagga) return toast("Quagga not loaded.");
+    if (scanning) return;
 
-    await track.applyConstraints({ advanced: [{ torch: on }] });
-    torchOn = on;
-    torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
-  } catch {
-    toast("Could not toggle flashlight.");
-  }
-}
+    scanning = true;
+    lastDecoded = null;
+    status.textContent = "Starting scanner… (Quagga2)";
 
-torchBtn.addEventListener("click", async () => {
-  await setTorch(!torchOn);
-});
+    await listCamerasForDropdown();
+    const chosenId = cameraSelect.value || null;
 
-video.addEventListener("click", () => {
-  // iOS doesn't reliably expose tap-to-focus in web constraints;
-  // but tapping helps users stabilize, and we can show a hint.
-  toast("Hold steady 1–2s. Try moving closer to fill the frame.");
-});
+    // Clean any previous run
+    try { Quagga.offDetected(onDetectedHandler); } catch {}
+    try { Quagga.stop(); } catch {}
+    try { Quagga.CameraAccess.release(); } catch {}
 
-async function listCamerasForDropdown() {
-  // Optional: keep your dropdown populated
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cams = devices.filter(d => d.kind === "videoinput");
-    cameraSelect.innerHTML = "";
-    cams.forEach((d, i) => {
-      const opt = document.createElement("option");
-      opt.value = d.deviceId;
-      opt.textContent = d.label || `Camera ${i + 1}`;
-      cameraSelect.appendChild(opt);
-    });
-  } catch {
-    // ignore
-  }
-}
-
-cameraSelect.addEventListener("change", async () => {
-  if (!scanning) return;
-  await stopScan();
-  await startScan();
-});
-
-async function startScan() {
-  if (scanning) return;
-  scanning = true;
-  lastDecoded = null;
-  status.textContent = "Starting scanner… (Quagga2)";
-
-  await listCamerasForDropdown();
-
-  const chosenId = cameraSelect.value || null;
-
-  Quagga.init(
-    {
+    Quagga.init({
       inputStream: {
         type: "LiveStream",
-        target: quaggaTarget,
+        target: document.getElementById("quaggaTarget"),
         constraints: {
           facingMode: "environment",
           width: { ideal: 1280, min: 640 },
@@ -611,107 +597,58 @@ async function startScan() {
           ...(chosenId ? { deviceId: chosenId } : {})
         }
       },
-      locator: {
-        patchSize: "medium",
-        halfSample: true
-      },
+      locator: { patchSize: "medium", halfSample: true },
       locate: true,
       decoder: {
-        // This is the key part for grocery/packaged foods
         readers: ["upc_reader", "ean_reader", "ean_8_reader"]
       }
-    },
-    (err) => {
+    }, (err) => {
       if (err) {
         scanning = false;
         status.textContent =
           "Quagga init error: " + (err?.message || String(err)) +
-          "\nCheck: Safari camera permission + HTTPS.";
+          "\nCheck: iPhone Settings → Safari → Camera = Allow, and open via HTTPS.";
         return;
       }
 
       Quagga.start();
+      status.textContent =
+        "Scanning… (Quagga2)\n" +
+        "Tips: fill the frame with the barcode, avoid glare, hold steady 1–2s.";
 
-      // If you want to display the camera feed in your <video> too:
-      try {
-        const stream = Quagga.CameraAccess.getActiveStream?.();
-        if (stream) {
-          video.srcObject = stream;
-          video.play().catch(() => {});
-        }
-      } catch {}
-
-      // Show torch button if supported
-      if (supportsTorchFromActiveTrack()) {
+      // Torch button if supported
+      if (supportsTorch()) {
         torchBtn.style.display = "inline-block";
         torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
       } else {
         torchBtn.style.display = "none";
         torchOn = false;
       }
+    });
 
-      status.textContent =
-        "Scanning… (Quagga2)\n" +
-        "Tips: move closer, fill the frame, avoid glare, hold steady 1–2s.";
+    Quagga.onDetected(onDetectedHandler);
+  }
+
+  async function stopScan() {
+    if (!Quagga) return;
+    scanning = false;
+
+    if (torchOn) {
+      try { await setTorch(false); } catch {}
     }
-  );
 
-  Quagga.onDetected((data) => {
-    const code = data?.codeResult?.code;
-    if (!code) return;
+    try { Quagga.offDetected(onDetectedHandler); } catch {}
+    try { Quagga.stop(); } catch {}
+    try { Quagga.CameraAccess.release(); } catch {}
 
-    // Prevent rapid duplicate firing
-    if (code === lastDecoded) return;
-    lastDecoded = code;
-
-    barcodeEl.value = code;
-    status.textContent = `Decoded: ${code}\nLooking up…`;
-    stopScan();
-    lookup(code);
-  });
-}
-
-async function stopScan() {
-  try { Quagga.offDetected(); } catch {}
-  try { Quagga.stop(); } catch {}
-  try { Quagga.CameraAccess.release(); } catch {}
-  scanning = false;
-
-  // Turn off torch if it was on
-  if (torchOn) {
-    try { await setTorch(false); } catch {}
+    status.textContent = "Scanner stopped.";
   }
 
-  // Clear video
-  try { video.pause(); } catch {}
-  video.srcObject = null;
+  startBtn.addEventListener("click", startScan);
+  stopBtn.addEventListener("click", stopScan);
 
-  status.textContent = "Scanner stopped.";
-}
-
-startBtn.addEventListener("click", startScan);
-stopBtn.addEventListener("click", stopScan);
-
-
-  // ---------- Utilities ----------
-  function toast(msg) {
-    status.textContent = msg;
-    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1200);
-  }
-  function round1(x){ return Math.round((x + Number.EPSILON) * 10) / 10; }
-  function escapeHtml(s){
-    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
-  }
-  function csv(s){
-    const t = String(s ?? "");
-    if (/[",\n]/.test(t)) return `"${t.replace(/"/g,'""')}"`;
-    return t;
-  }
-
-  // Initial
-  await listCameras();
+  // ---------- Initial render ----------
   render();
 </script>
 </body>
 </html>
-
