@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Macro Scan & Log</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f7fb; }
+    header { padding: 14px 16px; background: #111827; color: #fff; }
+    header h1 { font-size: 16px; margin: 0; }
+    main { padding: 16px; max-width: 900px; margin: 0 auto; }
+    .grid { display: grid; gap: 12px; }
+    @media (min-width: 860px){ .grid { grid-template-columns: 1.1fr 0.9fr; } }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.04); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    label { display: block; font-weight: 650; font-size: 12px; color: #374151; margin: 10px 0 6px; }
+    input, select, button, textarea {
+      width: 100%; padding: 10px 11px; border: 1px solid #d1d5db; border-radius: 12px;
+      font-size: 14px; background: #fff;
+    }
+    button { cursor: pointer; border: 0; background: #2563eb; color: #fff; font-weight: 700; }
+    button.secondary { background: #111827; }
+    button.ghost { background: #f3f4f6; color: #111827; border: 1px solid #e5e7eb; }
+    button.danger { background: #dc2626; }
+    .muted { color: #6b7280; font-size: 12px; }
+    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #f3f4f6; border: 1px solid #e5e7eb; font-size: 12px; margin-right: 8px; }
+    .ok { background: #ecfdf5; border-color: #10b98133; }
+    .warn { background: #fff7ed; border-color: #f59e0b33; }
+    .bad { background: #fef2f2; border-color: #ef444433; }
+    .videoWrap { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: #111827; }
+    video { width: 100%; height: 100%; object-fit: cover; }
+    .status { margin-top: 10px; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 10px; border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
+    th { font-size: 12px; color: #374151; }
+    .right { text-align: right; }
+    .small { font-size: 12px; color: #6b7280; }
+    .split { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Macro Scan & Log (Barcode → Online Lookup → Daily Targets)</h1>
+</header>
+
+<main class="grid">
+  <!-- LEFT: Scan + Lookup + Add -->
+  <section class="card">
+    <h2 style="margin:0 0 8px 0; font-size:16px;">Scan & add food</h2>
+    <div class="muted">Camera scanning works best when hosted on HTTPS (GitHub Pages is ideal). If scanning fails, you can type the barcode manually.</div>
+
+    <label>Camera</label>
+    <div class="videoWrap">
+      <video id="video" muted playsinline></video>
+    </div>
+
+    <div class="split" style="margin-top:10px;">
+      <button id="startBtn">Start scanner</button>
+      <button id="stopBtn" class="ghost">Stop</button>
+      <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
+    </div>
+
+    <label>Barcode (UPC/EAN)</label>
+    <div class="row">
+      <input id="barcode" placeholder="Scan fills this, or type it" inputmode="numeric" />
+      <button id="lookupBtn" class="secondary">Lookup</button>
+    </div>
+
+    <div id="productCard" style="display:none; margin-top:12px;">
+      <div class="pill ok" id="sourcePill">Source: Open Food Facts</div>
+      <div style="margin-top:10px;">
+        <div style="font-weight:800;" id="prodName"></div>
+        <div class="small" id="prodMeta"></div>
+      </div>
+
+      <label>Serving input</label>
+      <div class="row3">
+        <select id="mode">
+          <option value="serving">By serving</option>
+          <option value="grams">By grams</option>
+        </select>
+        <input id="qty" type="number" min="0" step="0.25" value="1" />
+        <button id="addBtn">Add to today</button>
+      </div>
+      <div class="muted" id="modeHelp" style="margin-top:6px;">Uses nutrition per serving if available; otherwise per 100g.</div>
+
+      <div style="margin-top:10px;" class="status" id="nutriPreview">—</div>
+    </div>
+
+    <div class="status" id="status">Ready.</div>
+  </section>
+
+  <!-- RIGHT: Targets + Today + Log -->
+  <section class="card">
+    <h2 style="margin:0 0 8px 0; font-size:16px;">Today’s targets</h2>
+
+    <div class="row">
+      <div>
+        <label>Calories target</label>
+        <input id="tCalories" type="number" min="0" step="10" value="2000" />
+      </div>
+      <div>
+        <label>Protein target (g)</label>
+        <input id="tProtein" type="number" min="0" step="5" value="170" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Carbs target (g)</label>
+        <input id="tCarbs" type="number" min="0" step="5" value="200" />
+      </div>
+      <div>
+        <label>Fat target (g)</label>
+        <input id="tFat" type="number" min="0" step="5" value="60" />
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:10px;">
+      <button id="saveTargets" class="ghost">Save targets</button>
+      <button id="exportCsv" class="ghost">Export CSV</button>
+      <button id="clearToday" class="danger">Clear today</button>
+    </div>
+
+    <h3 style="margin:14px 0 6px 0; font-size:14px;">Today totals</h3>
+    <div id="totals" class="status">—</div>
+
+    <h3 style="margin:14px 0 6px 0; font-size:14px;">Today log</h3>
+    <div style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:12px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="right">kcal</th>
+            <th class="right">P</th>
+            <th class="right">C</th>
+            <th class="right">F</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+
+    <div class="muted" style="margin-top:10px;">
+      Tip for your goal (fat loss + keep muscle): keep protein high and use a modest calorie deficit.
+      Default targets here are a solid starting point for cutting from ~185–190 toward ~175 while lifting.
+    </div>
+  </section>
+</main>
+
+<!-- Barcode scanning (ZXing) -->
+<script type="module">
+  import {
+    BrowserMultiFormatReader,
+    BarcodeFormat,
+    DecodeHintType
+  } from "https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/+esm";
+
+  // ---------- Storage helpers ----------
+  const LS = {
+    get(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+    },
+    set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+  };
+
+  const todayKey = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `log_${yyyy}-${mm}-${dd}`;
+  };
+
+  // ---------- Elements ----------
+  const video = document.getElementById("video");
+  const cameraSelect = document.getElementById("cameraSelect");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const status = document.getElementById("status");
+
+  const barcodeEl = document.getElementById("barcode");
+  const lookupBtn = document.getElementById("lookupBtn");
+
+  const productCard = document.getElementById("productCard");
+  const prodName = document.getElementById("prodName");
+  const prodMeta = document.getElementById("prodMeta");
+  const nutriPreview = document.getElementById("nutriPreview");
+
+  const modeEl = document.getElementById("mode");
+  const qtyEl = document.getElementById("qty");
+  const addBtn = document.getElementById("addBtn");
+  const modeHelp = document.getElementById("modeHelp");
+
+  const tCalories = document.getElementById("tCalories");
+  const tProtein = document.getElementById("tProtein");
+  const tCarbs = document.getElementById("tCarbs");
+  const tFat = document.getElementById("tFat");
+  const saveTargets = document.getElementById("saveTargets");
+  const exportCsv = document.getElementById("exportCsv");
+  const clearToday = document.getElementById("clearToday");
+  const totalsEl = document.getElementById("totals");
+  const logBody = document.getElementById("logBody");
+
+  // ---------- Targets ----------
+  const defaultTargets = { calories: 2000, protein: 170, carbs: 200, fat: 60 };
+  const targets = LS.get("targets", defaultTargets);
+  tCalories.value = targets.calories;
+  tProtein.value = targets.protein;
+  tCarbs.value = targets.carbs;
+  tFat.value = targets.fat;
+
+  saveTargets.addEventListener("click", () => {
+    const t = {
+      calories: Number(tCalories.value || 0),
+      protein: Number(tProtein.value || 0),
+      carbs: Number(tCarbs.value || 0),
+      fat: Number(tFat.value || 0)
+    };
+    LS.set("targets", t);
+    render();
+    toast("Targets saved.");
+  });
+
+  // ---------- Log ----------
+  function getLog() { return LS.get(todayKey(), []); }
+  function setLog(items) { LS.set(todayKey(), items); }
+
+  function sumLog(items) {
+    return items.reduce((acc, it) => {
+      acc.calories += it.calories;
+      acc.protein += it.protein;
+      acc.carbs += it.carbs;
+      acc.fat += it.fat;
+      return acc;
+    }, { calories:0, protein:0, carbs:0, fat:0 });
+  }
+
+  function classify(remaining) {
+    if (remaining >= 0) return "ok";
+    if (remaining > -150) return "warn";
+    return "bad";
+  }
+
+  function render() {
+    const items = getLog();
+    const totals = sumLog(items);
+    const t = LS.get("targets", defaultTargets);
+
+    const remCals = t.calories - totals.calories;
+    const remP = t.protein - totals.protein;
+    const remCarbs = t.carbs - totals.carbs;
+    const remFat = t.fat - totals.fat;
+
+    totalsEl.innerHTML = [
+      `<div class="pill ${classify(remCals)}"><b>Calories</b> ${totals.calories.toFixed(0)} / ${t.calories} (rem ${remCals.toFixed(0)})</div>`,
+      `<div class="pill ${classify(remP)}"><b>Protein</b> ${totals.protein.toFixed(1)} / ${t.protein}g (rem ${remP.toFixed(1)}g)</div>`,
+      `<div class="pill ${classify(remCarbs)}"><b>Carbs</b> ${totals.carbs.toFixed(1)} / ${t.carbs}g (rem ${remCarbs.toFixed(1)}g)</div>`,
+      `<div class="pill ${classify(remFat)}"><b>Fat</b> ${totals.fat.toFixed(1)} / ${t.fat}g (rem ${remFat.toFixed(1)}g)</div>`
+    ].join(" ");
+
+    logBody.innerHTML = "";
+    items.forEach((it, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <div style="font-weight:700">${escapeHtml(it.name)}</div>
+          <div class="small">${escapeHtml(it.detail)}</div>
+        </td>
+        <td class="right">${it.calories.toFixed(0)}</td>
+        <td class="right">${it.protein.toFixed(1)}</td>
+        <td class="right">${it.carbs.toFixed(1)}</td>
+        <td class="right">${it.fat.toFixed(1)}</td>
+        <td class="right"><button class="ghost" data-del="${idx}" style="padding:8px 10px; font-size:12px;">Delete</button></td>
+      `;
+      logBody.appendChild(tr);
+    });
+
+    logBody.querySelectorAll("button[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-del"));
+        const next = getLog().filter((_, idx) => idx !== i);
+        setLog(next);
+        render();
+      });
+    });
+  }
+
+  clearToday.addEventListener("click", () => {
+    setLog([]);
+    render();
+    toast("Cleared today.");
+  });
+
+  exportCsv.addEventListener("click", () => {
+    const items = getLog();
+    const header = ["timestamp","name","detail","calories","protein_g","carbs_g","fat_g","barcode","source"].join(",");
+    const rows = items.map(it => ([
+      it.timestamp,
+      csv(it.name),
+      csv(it.detail),
+      it.calories.toFixed(0),
+      it.protein.toFixed(1),
+      it.carbs.toFixed(1),
+      it.fat.toFixed(1),
+      it.barcode || "",
+      it.source || ""
+    ].join(",")));
+    const blob = new Blob([header + "\n" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${todayKey()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------- Lookup (Open Food Facts) ----------
+  let currentFood = null;
+
+  modeEl.addEventListener("change", updatePreview);
+  qtyEl.addEventListener("input", updatePreview);
+
+  function updateModeHelp(data) {
+    if (!data) return;
+    if (modeEl.value === "serving") {
+      if (data.hasServing) {
+        modeHelp.textContent = `Serving mode: 1 = ${data.servingSizeText || "1 serving"} (uses per-serving values).`;
+      } else {
+        modeHelp.textContent = `Serving mode: per-serving data not available; using per 100g estimate.`;
+      }
+    } else {
+      modeHelp.textContent = `Gram mode: uses per 100g values scaled to grams.`;
+    }
+  }
+
+  function computeForQty(foodData, qty, mode) {
+    // foodData fields:
+    // per100g: { kcal, protein, carbs, fat }
+    // perServing: { kcal, protein, carbs, fat } optional
+    // servingGrams: number optional
+    let macros;
+
+    if (mode === "serving") {
+      if (foodData.hasServing) {
+        macros = scaleMacros(foodData.perServing, qty);
+        return { macros, detail: `${qty} serving(s)` };
+      }
+      // fallback: treat "serving" as 100g unit if serving not available
+      macros = scaleMacros(foodData.per100g, qty);
+      return { macros, detail: `${qty} x 100g (fallback)` };
+    }
+
+    // grams mode:
+    const grams = qty;
+    const factor = grams / 100.0;
+    macros = scaleMacros(foodData.per100g, factor);
+    return { macros, detail: `${grams} g` };
+  }
+
+  function scaleMacros(m, factor) {
+    const safe = (v) => (Number.isFinite(v) ? v : 0);
+    return {
+      calories: safe(m.kcal) * factor,
+      protein: safe(m.protein) * factor,
+      carbs: safe(m.carbs) * factor,
+      fat: safe(m.fat) * factor
+    };
+  }
+
+  function parseOFF(product) {
+    const n = product.nutriments || {};
+    const name = product.product_name || product.abbreviated_product_name || "(Unknown product)";
+    const brand = product.brands || "";
+    const serving = product.serving_size || "";
+
+    // Prefer kcal if available. OFF can have fields like energy-kcal_100g / _serving, etc.
+    const per100g = {
+      kcal: num(n["energy-kcal_100g"]),
+      protein: num(n["proteins_100g"]),
+      carbs: num(n["carbohydrates_100g"]),
+      fat: num(n["fat_100g"])
+    };
+
+    const perServing = {
+      kcal: num(n["energy-kcal_serving"]),
+      protein: num(n["proteins_serving"]),
+      carbs: num(n["carbohydrates_serving"]),
+      fat: num(n["fat_serving"])
+    };
+
+    const hasServing = Object.values(perServing).some(v => Number.isFinite(v) && v > 0);
+    const servingGrams = guessServingGrams(serving);
+
+    return {
+      name, brand, servingSizeText: serving,
+      per100g, perServing,
+      hasServing, servingGrams,
+      source: "Open Food Facts"
+    };
+  }
+
+  function guessServingGrams(servingText) {
+    // crude parse like "30 g" -> 30
+    if (!servingText) return null;
+    const m = servingText.match(/([\d.]+)\s*g/i);
+    if (!m) return null;
+    const v = Number(m[1]);
+    return Number.isFinite(v) ? v : null;
+  }
+
+  function num(v) {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  async function lookup(barcode) {
+    status.textContent = "Looking up barcode in Open Food Facts…";
+    productCard.style.display = "none";
+    currentFood = null;
+
+    const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(barcode)}.json`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.status !== 1) {
+      status.textContent =
+        "Not found in Open Food Facts.\n" +
+        "Try: (1) scan again with better light, (2) type the barcode, or (3) log manually using generic foods in another app.\n" +
+        "If you want, I can add a 2nd database fallback (USDA FoodData Central or Nutritionix).";
+      return;
+    }
+
+    const parsed = parseOFF(data.product);
+    currentFood = { barcode, ...parsed };
+
+    prodName.textContent = parsed.name;
+    prodMeta.textContent = [parsed.brand, parsed.servingSizeText].filter(Boolean).join(" • ");
+    productCard.style.display = "block";
+
+    updateModeHelp(parsed);
+    updatePreview();
+
+    status.textContent = "Found product. Choose serving/grams and tap Add.";
+  }
+
+  function updatePreview() {
+    if (!currentFood) return;
+    const qty = Number(qtyEl.value || 0);
+    const mode = modeEl.value;
+
+    updateModeHelp(currentFood);
+
+    const { macros, detail } = computeForQty(currentFood, qty, mode);
+
+    nutriPreview.textContent = JSON.stringify({
+      item: currentFood.name,
+      amount: detail,
+      calories_kcal: Math.round(macros.calories),
+      protein_g: round1(macros.protein),
+      carbs_g: round1(macros.carbs),
+      fat_g: round1(macros.fat),
+      note: currentFood.hasServing ? "Using serving data when available." : "Serving data not available; using per 100g where needed."
+    }, null, 2);
+  }
+
+  addBtn.addEventListener("click", () => {
+    if (!currentFood) return toast("Lookup a product first.");
+    const qty = Number(qtyEl.value || 0);
+    if (!Number.isFinite(qty) || qty <= 0) return toast("Enter a quantity > 0.");
+
+    const mode = modeEl.value;
+    const { macros, detail } = computeForQty(currentFood, qty, mode);
+
+    const entry = {
+      timestamp: new Date().toISOString(),
+      name: currentFood.name,
+      detail,
+      calories: macros.calories,
+      protein: macros.protein,
+      carbs: macros.carbs,
+      fat: macros.fat,
+      barcode: currentFood.barcode,
+      source: currentFood.source
+    };
+
+    const items = getLog();
+    items.unshift(entry);
+    setLog(items);
+    render();
+    toast("Added.");
+  });
+
+  lookupBtn.addEventListener("click", () => {
+    const code = barcodeEl.value.trim();
+    if (!code) return toast("Enter a barcode first.");
+    lookup(code);
+  });
+
+  // ---------- Scanner (ZXing) ----------
+  const hints = new Map();
+  hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+    BarcodeFormat.EAN_13,
+    BarcodeFormat.EAN_8,
+    BarcodeFormat.UPC_A,
+    BarcodeFormat.UPC_E,
+    BarcodeFormat.CODE_128
+  ]);
+
+  const reader = new BrowserMultiFormatReader(hints);
+  let scanning = false;
+  let currentDeviceId = null;
+
+  async function listCameras() {
+    try {
+      const devices = await reader.listVideoInputDevices();
+      cameraSelect.innerHTML = "";
+      devices.forEach((d, i) => {
+        const opt = document.createElement("option");
+        opt.value = d.deviceId;
+        opt.textContent = d.label || `Camera ${i + 1}`;
+        cameraSelect.appendChild(opt);
+      });
+      // Prefer back camera if label hints it
+      const back = devices.find(d => /back|rear|environment/i.test(d.label));
+      if (back) cameraSelect.value = back.deviceId;
+      currentDeviceId = cameraSelect.value || (devices[0]?.deviceId ?? null);
+    } catch (e) {
+      status.textContent = "Camera list error: " + (e?.message || String(e));
+    }
+  }
+
+  cameraSelect.addEventListener("change", () => {
+    currentDeviceId = cameraSelect.value;
+    if (scanning) {
+      stopScan();
+      startScan();
+    }
+  });
+
+  async function startScan() {
+    if (scanning) return;
+    scanning = true;
+    status.textContent = "Starting scanner… (allow camera permissions)";
+    try {
+      await listCameras();
+      if (!currentDeviceId) throw new Error("No camera device found.");
+
+      reader.decodeFromVideoDevice(currentDeviceId, video, (result, err) => {
+        if (result) {
+          const text = result.getText();
+          barcodeEl.value = text;
+          status.textContent = `Scanned: ${text}\nLooking up…`;
+          stopScan();
+          lookup(text);
+        }
+      });
+      status.textContent = "Scanning… Aim barcode inside the frame.";
+    } catch (e) {
+      scanning = false;
+      status.textContent =
+        "Scanner error: " + (e?.message || String(e)) +
+        "\nIf you are opening this as a local file, camera may not work. Host on HTTPS (GitHub Pages).";
+    }
+  }
+
+  function stopScan() {
+    try { reader.reset(); } catch {}
+    scanning = false;
+    status.textContent = "Scanner stopped.";
+  }
+
+  startBtn.addEventListener("click", startScan);
+  stopBtn.addEventListener("click", stopScan);
+
+  // ---------- Utilities ----------
+  function toast(msg) {
+    status.textContent = msg;
+    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1200);
+  }
+  function round1(x){ return Math.round((x + Number.EPSILON) * 10) / 10; }
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+  }
+  function csv(s){
+    const t = String(s ?? "");
+    if (/[",\n]/.test(t)) return `"${t.replace(/"/g,'""')}"`;
+    return t;
+  }
+
+  // Initial
+  await listCameras();
+  render();
+</script>
+</body>
+</html>
