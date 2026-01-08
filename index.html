@@ -566,9 +566,11 @@
     lastDecoded = code;
     barcodeEl.value = code;
     status.textContent = `Decoded: ${code}\nLooking up…`;
-    stopScan();
-    lookup(code);
-  }
+    setTimeout(() => {
+  stopScan();
+  lookup(code);
+}, 250);
+
 
   async function startScan() {
     if (!Quagga) return toast("Quagga not loaded.");
@@ -579,7 +581,21 @@
     status.textContent = "Starting scanner… (Quagga2)";
 
     await listCamerasForDropdown();
-    const chosenId = cameraSelect.value || null;
+    // Prefer a rear camera deviceId if we can detect it
+let chosenId = cameraSelect.value || null;
+
+// If the dropdown is empty/labels are blank (common on iOS), pick the last known rear cam
+const lastRear = LS.get("rearCamDeviceId", null);
+if (!chosenId && lastRear) chosenId = lastRear;
+
+// Try to auto-pick a rear camera based on label once permissions exist
+try {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const cams = devices.filter(d => d.kind === "videoinput");
+  const rear = cams.find(d => /back|rear|environment/i.test(d.label));
+  if (rear?.deviceId) chosenId = rear.deviceId;
+} catch {}
+
 
     // Clean any previous run
     try { Quagga.offDetected(onDetectedHandler); } catch {}
@@ -591,11 +607,13 @@
         type: "LiveStream",
         target: document.getElementById("quaggaTarget"),
         constraints: {
-          facingMode: "environment",
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
-          ...(chosenId ? { deviceId: chosenId } : {})
-        }
+  // iOS sometimes ignores "ideal". "exact" is more forceful.
+  facingMode: { exact: "environment" },
+  width: { ideal: 1280, min: 640 },
+  height: { ideal: 720, min: 480 },
+  ...(chosenId ? { deviceId: chosenId } : {})
+}
+
       },
       locator: { patchSize: "medium", halfSample: true },
       locate: true,
@@ -604,14 +622,43 @@
       }
     }, (err) => {
       if (err) {
-        scanning = false;
-        status.textContent =
-          "Quagga init error: " + (err?.message || String(err)) +
-          "\nCheck: iPhone Settings → Safari → Camera = Allow, and open via HTTPS.";
-        return;
-      }
+  // Fallback: try again with "ideal" environment (less strict)
+  try {
+    await new Promise((resolve, reject) => {
+      Quagga.init({
+        inputStream: {
+          type: "LiveStream",
+          target: document.getElementById("quaggaTarget"),
+          constraints: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            ...(chosenId ? { deviceId: chosenId } : {})
+          }
+        },
+        locator: { patchSize: "medium", halfSample: true },
+        locate: true,
+        decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
+      }, (err2) => err2 ? reject(err2) : resolve());
+    });
+  } catch (e2) {
+    scanning = false;
+    status.textContent =
+      "Quagga init error (rear cam): " + (e2?.message || String(e2)) +
+      "\nFix: allow camera + refresh. If it keeps choosing selfie cam, we’ll pin deviceId.";
+    return;
+  }
+}
+
 
       Quagga.start();
+      // Persist the active camera deviceId so restarts don’t flip to selfie cam
+try {
+  const track = Quagga.CameraAccess.getActiveTrack?.();
+  const settings = track?.getSettings?.();
+  if (settings?.deviceId) LS.set("rearCamDeviceId", settings.deviceId);
+} catch {}
+
       status.textContent =
         "Scanning… (Quagga2)\n" +
         "Tips: fill the frame with the barcode, avoid glare, hold steady 1–2s.";
@@ -640,6 +687,11 @@
     try { Quagga.offDetected(onDetectedHandler); } catch {}
     try { Quagga.stop(); } catch {}
     try { Quagga.CameraAccess.release(); } catch {}
+
+    // Clear Quagga target contents (prevents “black box” leftovers on iOS)
+const tgt = document.getElementById("quaggaTarget");
+if (tgt) tgt.innerHTML = "";
+
 
     status.textContent = "Scanner stopped.";
   }
