@@ -58,10 +58,15 @@
     </div>
 
     <div class="split" style="margin-top:10px;">
-      <button id="startBtn">Start scanner</button>
-      <button id="stopBtn" class="ghost">Stop</button>
-      <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
-    </div>
+  <button id="startBtn">Start scanner</button>
+  <button id="stopBtn" class="ghost">Stop</button>
+  <button id="torchBtn" class="ghost" style="max-width:220px;">Flashlight: Off</button>
+  <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
+</div>
+<div class="muted" style="margin-top:8px;">
+  Tip: tap the video area to try to focus. Flashlight only appears on supported devices.
+</div>
+
 
     <label>Barcode (UPC/EAN)</label>
     <div class="row">
@@ -500,81 +505,175 @@
     lookup(code);
   });
 
-  // ---------- Scanner (ZXing) ----------
-  const hints = new Map();
-  hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-    BarcodeFormat.EAN_13,
-    BarcodeFormat.EAN_8,
-    BarcodeFormat.UPC_A,
-    BarcodeFormat.UPC_E,
-    BarcodeFormat.CODE_128
-  ]);
+  // ---------- Scanner (iPhone-friendly) ----------
+const hints = new Map();
+hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+  BarcodeFormat.CODE_128
+]);
 
-  const reader = new BrowserMultiFormatReader(hints);
-  let scanning = false;
-  let currentDeviceId = null;
+const reader = new BrowserMultiFormatReader(hints);
 
-  async function listCameras() {
-    try {
-      const devices = await reader.listVideoInputDevices();
-      cameraSelect.innerHTML = "";
-      devices.forEach((d, i) => {
-        const opt = document.createElement("option");
-        opt.value = d.deviceId;
-        opt.textContent = d.label || `Camera ${i + 1}`;
-        cameraSelect.appendChild(opt);
-      });
-      // Prefer back camera if label hints it
-      const back = devices.find(d => /back|rear|environment/i.test(d.label));
-      if (back) cameraSelect.value = back.deviceId;
-      currentDeviceId = cameraSelect.value || (devices[0]?.deviceId ?? null);
-    } catch (e) {
-      status.textContent = "Camera list error: " + (e?.message || String(e));
-    }
+let scanning = false;
+let stream = null;
+let videoTrack = null;
+let torchOn = false;
+
+const torchBtn = document.getElementById("torchBtn");
+
+// iOS Safari often gives blank camera labels; we keep the dropdown but don’t depend on it.
+async function listCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d => d.kind === "videoinput");
+    cameraSelect.innerHTML = "";
+    cams.forEach((d, i) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || `Camera ${i + 1}`;
+      cameraSelect.appendChild(opt);
+    });
+  } catch (e) {
+    // Not fatal on iOS; permissions may be needed before labels appear
   }
+}
 
-  cameraSelect.addEventListener("change", () => {
-    currentDeviceId = cameraSelect.value;
-    if (scanning) {
-      stopScan();
-      startScan();
-    }
-  });
+function supportsTorch(track) {
+  try {
+    const caps = track.getCapabilities?.();
+    return !!caps?.torch;
+  } catch { return false; }
+}
 
-  async function startScan() {
-    if (scanning) return;
-    scanning = true;
-    status.textContent = "Starting scanner… (allow camera permissions)";
-    try {
-      await listCameras();
-      if (!currentDeviceId) throw new Error("No camera device found.");
-
-      reader.decodeFromVideoDevice(currentDeviceId, video, (result, err) => {
-        if (result) {
-          const text = result.getText();
-          barcodeEl.value = text;
-          status.textContent = `Scanned: ${text}\nLooking up…`;
-          stopScan();
-          lookup(text);
-        }
-      });
-      status.textContent = "Scanning… Aim barcode inside the frame.";
-    } catch (e) {
-      scanning = false;
-      status.textContent =
-        "Scanner error: " + (e?.message || String(e)) +
-        "\nIf you are opening this as a local file, camera may not work. Host on HTTPS (GitHub Pages).";
-    }
+async function setTorch(on) {
+  if (!videoTrack || !supportsTorch(videoTrack)) {
+    toast("Flashlight not supported on this device/browser.");
+    return;
   }
+  try {
+    await videoTrack.applyConstraints({ advanced: [{ torch: on }] });
+    torchOn = on;
+    torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
+  } catch (e) {
+    toast("Could not toggle flashlight.");
+  }
+}
 
-  function stopScan() {
-    try { reader.reset(); } catch {}
+// Best-effort focus: on iPhone, true “tap-to-focus” constraints are inconsistent.
+// This tries to enable continuous focus if available.
+async function tryFocus() {
+  if (!videoTrack) return;
+  try {
+    const caps = videoTrack.getCapabilities?.();
+    if (caps?.focusMode?.includes("continuous")) {
+      await videoTrack.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
+      toast("Focus attempted.");
+    } else {
+      // Still give user feedback
+      toast("Tap-to-focus not exposed by this browser, but try holding steady.");
+    }
+  } catch {
+    toast("Focus attempt failed.");
+  }
+}
+
+// Tap video to focus
+video.addEventListener("click", () => { tryFocus(); });
+
+cameraSelect.addEventListener("change", async () => {
+  // Restart with selected device if possible
+  if (!scanning) return;
+  await stopScan();
+  await startScan();
+});
+
+torchBtn.addEventListener("click", async () => {
+  await setTorch(!torchOn);
+});
+
+async function startScan() {
+  if (scanning) return;
+  scanning = true;
+  status.textContent = "Starting camera… (allow permissions)";
+
+  try {
+    await listCameras();
+
+    // Prefer rear camera. If user chose a camera deviceId, we respect it.
+    const chosenId = cameraSelect.value || null;
+
+    const constraints = chosenId
+      ? { video: { deviceId: { exact: chosenId } }, audio: false }
+      : { video: { facingMode: { ideal: "environment" } }, audio: false };
+
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+
+    // Make iOS happy
+    video.setAttribute("playsinline", "true");
+    video.muted = true;
+
+    await video.play();
+
+    videoTrack = stream.getVideoTracks()[0] || null;
+
+    // Update torch button availability
+    if (videoTrack && supportsTorch(videoTrack)) {
+      torchBtn.style.display = "inline-block";
+      torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
+    } else {
+      torchBtn.style.display = "none";
+      torchOn = false;
+    }
+
+    status.textContent = "Camera started. Scanning… Aim at barcode.";
+
+    // Decode from the video element continuously
+    reader.decodeFromVideoElement(video, (result, err) => {
+      if (result) {
+        const text = result.getText();
+        barcodeEl.value = text;
+        status.textContent = `Scanned: ${text}\nLooking up…`;
+        stopScan(); // stop camera + decoder after a successful scan
+        lookup(text);
+      }
+    });
+
+  } catch (e) {
     scanning = false;
-    status.textContent = "Scanner stopped.";
+    status.textContent =
+      "Camera/scanner error: " + (e?.message || String(e)) +
+      "\nFixes: (1) Safari Settings → Camera = Allow, (2) open the HTTPS GitHub Pages URL (not local file), (3) reload.";
+    // Ensure cleanup
+    await stopScan();
+  }
+}
+
+async function stopScan() {
+  try { reader.reset(); } catch {}
+  scanning = false;
+
+  // Turn off torch if it was on
+  if (torchOn) {
+    try { await setTorch(false); } catch {}
   }
 
-  startBtn.addEventListener("click", startScan);
-  stopBtn.addEventListener("click", stopScan);
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+  }
+  stream = null;
+  videoTrack = null;
+  video.srcObject = null;
+
+  status.textContent = "Scanner stopped.";
+}
+
+startBtn.addEventListener("click", startScan);
+stopBtn.addEventListener("click", stopScan);
+
 
   // ---------- Utilities ----------
   function toast(msg) {
