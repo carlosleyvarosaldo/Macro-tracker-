@@ -4,69 +4,104 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Macro Scan & Log</title>
+
   <style>
     :root { color-scheme: light; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f7fb; }
-    header { padding: 14px 16px; background: #111827; color: #fff; }
-    header h1 { font-size: 16px; margin: 0; }
-    main { padding: 16px; max-width: 900px; margin: 0 auto; }
-    .grid { display: grid; gap: 12px; }
-    @media (min-width: 860px){ .grid { grid-template-columns: 1.1fr 0.9fr; } }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.04); }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    label { display: block; font-weight: 650; font-size: 12px; color: #374151; margin: 10px 0 6px; }
-    input, select, button {
-      width: 100%; padding: 10px 11px; border: 1px solid #d1d5db; border-radius: 12px;
-      font-size: 14px; background: #fff;
-    }
-    button { cursor: pointer; border: 0; background: #2563eb; color: #fff; font-weight: 700; }
-    button.secondary { background: #111827; }
-    button.ghost { background: #f3f4f6; color: #111827; border: 1px solid #e5e7eb; }
-    button.danger { background: #dc2626; }
-    .muted { color: #6b7280; font-size: 12px; }
-    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #f3f4f6; border: 1px solid #e5e7eb; font-size: 12px; margin-right: 8px; }
-    .ok { background: #ecfdf5; border-color: #10b98133; }
-    .warn { background: #fff7ed; border-color: #f59e0b33; }
-    .bad { background: #fef2f2; border-color: #ef444433; }
 
-    /* Camera area */
-    .videoWrap{
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      border-radius: 14px;
-      overflow: hidden;
-      background: #111827;
-      border: 1px solid #111827;
+    /* San Francisco (Apple) + safe fallbacks */
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      margin:0; background:#f6f7fb;
     }
-    /* Quagga injects video/canvas into this div */
+
+    header{ padding:14px 16px; background:#111827; color:#fff; }
+    header h1{ font-size:16px; margin:0; }
+
+    main{ padding:16px; max-width:980px; margin:0 auto; }
+    .grid{ display:grid; gap:12px; }
+    @media (min-width: 900px){ .grid{ grid-template-columns: 1.1fr 0.9fr; } }
+
+    .card{
+      background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.04);
+    }
+
+    label{ display:block; font-weight:700; font-size:12px; color:#374151; margin:10px 0 6px; }
+    input, select, button{
+      width:100%; padding:10px 11px; border:1px solid #d1d5db; border-radius:12px;
+      font-size:14px; background:#fff;
+    }
+    button{ cursor:pointer; border:0; background:#2563eb; color:#fff; font-weight:800; }
+    button.secondary{ background:#111827; }
+    button.ghost{ background:#f3f4f6; color:#111827; border:1px solid #e5e7eb; font-weight:750; }
+    button.danger{ background:#dc2626; }
+
+    .muted{ color:#6b7280; font-size:12px; line-height:1.35; }
+    .split{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+
+    .status{
+      margin-top:10px; white-space:pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px; background:#f3f4f6; border:1px solid #e5e7eb; padding:10px; border-radius:12px;
+    }
+
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ text-align:left; padding:10px 8px; border-bottom:1px solid #e5e7eb; font-size:13px; vertical-align:top; }
+    th{ font-size:12px; color:#374151; }
+    .right{ text-align:right; }
+    .small{ font-size:12px; color:#6b7280; }
+
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      background:#f3f4f6; border:1px solid #e5e7eb; font-size:12px; margin-right:8px;
+    }
+    .ok{ background:#ecfdf5; border-color:#10b98133; }
+    .warn{ background:#fff7ed; border-color:#f59e0b33; }
+    .bad{ background:#fef2f2; border-color:#ef444433; }
+
+    /* Camera */
+    .videoWrap{
+      position:relative;
+      width:100%;
+      aspect-ratio: 4 / 3;
+      border-radius:14px;
+      overflow:hidden;
+      background:#111827;
+      border:1px solid #111827;
+    }
     #quaggaTarget{ position:absolute; inset:0; z-index:3; }
     #quaggaTarget video, #quaggaTarget canvas{
       position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
     }
 
-    .status { margin-top: 10px; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 10px; border-radius: 12px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
-    th { font-size: 12px; color: #374151; }
-    .right { text-align: right; }
-    .small { font-size: 12px; color: #6b7280; }
-    .split { display: flex; gap: 10px; flex-wrap: wrap; }
+    .fileBtn{
+      display:inline-block; padding:10px 11px; border-radius:12px;
+      border:1px solid #e5e7eb; background:#f3f4f6; cursor:pointer; font-weight:800;
+      color:#111827;
+    }
+    .fileBtn input{ display:none; }
+
+    .divider{ height:1px; background:#e5e7eb; margin:12px 0; }
+
+    details{ border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; background:#fff; }
+    details > summary{ cursor:pointer; font-weight:900; color:#111827; }
+    .note{ font-size:12px; color:#6b7280; margin-top:6px; }
   </style>
 </head>
 
 <body>
 <header>
-  <h1>Macro Scan & Log (Barcode → Online Lookup → Daily Targets)</h1>
+  <h1>Macro Scan & Log (Barcode → Lookup → Verified Macros → Daily Log)</h1>
 </header>
 
 <main class="grid">
-  <!-- LEFT: Scan + Lookup + Add -->
+  <!-- LEFT: Scanner + Lookup -->
   <section class="card">
     <h2 style="margin:0 0 8px 0; font-size:16px;">Scan & add food</h2>
     <div class="muted">
-      Works best on HTTPS (GitHub Pages) in Safari. Scan the striped UPC/EAN barcode (not QR).
+      Best results on iPhone: open in <b>Safari</b> via <b>HTTPS</b> (GitHub Pages). Fill the frame with the barcode, avoid glare, hold steady 1–2s.
     </div>
 
     <label>Camera</label>
@@ -75,9 +110,15 @@
     </div>
 
     <div class="split" style="margin-top:10px;">
-      <button id="startBtn">Start scanner</button>
-      <button id="stopBtn" class="ghost">Stop</button>
+      <button id="startBtn" style="max-width:220px;">Start scanner</button>
+      <button id="stopBtn" class="ghost" style="max-width:140px;">Stop</button>
       <button id="torchBtn" class="ghost" style="max-width:220px; display:none;">Flashlight: Off</button>
+
+      <label class="fileBtn" style="max-width:240px;">
+        Upload barcode photo
+        <input id="barcodePhoto" type="file" accept="image/*" />
+      </label>
+
       <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
     </div>
 
@@ -88,9 +129,13 @@
     </div>
 
     <div id="productCard" style="display:none; margin-top:12px;">
-      <div class="pill ok">Source: Open Food Facts</div>
+      <div class="split" style="gap:8px;">
+        <span class="pill ok" id="sourcePill">Source: —</span>
+        <span class="pill" id="coveragePill" style="display:none;">Coverage: —</span>
+      </div>
+
       <div style="margin-top:10px;">
-        <div style="font-weight:800;" id="prodName"></div>
+        <div style="font-weight:900;" id="prodName"></div>
         <div class="small" id="prodMeta"></div>
       </div>
 
@@ -103,14 +148,70 @@
         <input id="qty" type="number" min="0" step="0.25" value="1" />
         <button id="addBtn">Add to today</button>
       </div>
-      <div class="muted" id="modeHelp" style="margin-top:6px;">Uses per serving if available; otherwise per 100g.</div>
-      <div style="margin-top:10px;" class="status" id="nutriPreview">—</div>
+      <div class="muted" id="modeHelp" style="margin-top:6px;">—</div>
+      <div class="status" id="nutriPreview">—</div>
+
+      <div class="divider"></div>
+
+      <!-- Accuracy / Verification -->
+      <details id="verifyPanel">
+        <summary>Accuracy: verify / edit macros for this barcode</summary>
+        <div class="note">
+          If the database is missing/incorrect, enter the macros from the nutrition label. Your saved values will be used next time you scan this barcode on this device.
+        </div>
+
+        <label>Serving size text (optional)</label>
+        <input id="editServingText" placeholder="e.g., 1 bar (40g)" />
+
+        <div class="row" style="margin-top:6px;">
+          <div>
+            <label>Serving grams (optional)</label>
+            <input id="editServingGrams" type="number" min="0" step="0.1" placeholder="e.g., 40" />
+          </div>
+          <div>
+            <label>Which numbers are you entering?</label>
+            <select id="editBasis">
+              <option value="serving">Per serving</option>
+              <option value="100g">Per 100g</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:6px;">
+          <div>
+            <label>Calories (kcal)</label>
+            <input id="editKcal" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label>Protein (g)</label>
+            <input id="editProtein" type="number" min="0" step="0.1" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:6px;">
+          <div>
+            <label>Carbs (g)</label>
+            <input id="editCarbs" type="number" min="0" step="0.1" />
+          </div>
+          <div>
+            <label>Fat (g)</label>
+            <input id="editFat" type="number" min="0" step="0.1" />
+          </div>
+        </div>
+
+        <div class="split" style="margin-top:10px;">
+          <button id="saveOverride" class="ghost" style="max-width:220px;">Save as verified</button>
+          <button id="clearOverride" class="danger" style="max-width:220px;">Remove verified data</button>
+        </div>
+
+        <div class="status" id="verifyStatus" style="margin-top:10px;">—</div>
+      </details>
     </div>
 
     <div class="status" id="status">Ready.</div>
   </section>
 
-  <!-- RIGHT: Targets + Today + Log -->
+  <!-- RIGHT: Targets + Log -->
   <section class="card">
     <h2 style="margin:0 0 8px 0; font-size:16px;">Today’s targets</h2>
 
@@ -136,16 +237,16 @@
     </div>
 
     <div class="split" style="margin-top:10px;">
-      <button id="saveTargets" class="ghost">Save targets</button>
-      <button id="exportCsv" class="ghost">Export CSV</button>
-      <button id="clearToday" class="danger">Clear today</button>
+      <button id="saveTargets" class="ghost" style="max-width:160px;">Save targets</button>
+      <button id="exportCsv" class="ghost" style="max-width:160px;">Export CSV</button>
+      <button id="clearToday" class="danger" style="max-width:160px;">Clear today</button>
     </div>
 
     <h3 style="margin:14px 0 6px 0; font-size:14px;">Today totals</h3>
     <div id="totals" class="status">—</div>
 
     <h3 style="margin:14px 0 6px 0; font-size:14px;">Today log</h3>
-    <div style="max-height:360px; overflow:auto; border:1px solid #e5e7eb; border-radius:12px;">
+    <div style="max-height:380px; overflow:auto; border:1px solid #e5e7eb; border-radius:12px;">
       <table>
         <thead>
           <tr>
@@ -160,6 +261,10 @@
         <tbody id="logBody"></tbody>
       </table>
     </div>
+
+    <div class="muted" style="margin-top:10px;">
+      Accuracy tip: for “accurate every time,” use the <b>verify / edit</b> panel once per barcode (from the label). After that, your log will always use your verified macros.
+    </div>
   </section>
 </main>
 
@@ -167,11 +272,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 
 <script type="module">
-  // ---------- Helpers ----------
+  // ---------------------------
+  // Storage helpers
+  // ---------------------------
   const LS = {
     get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
-    set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+    set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+    del(key) { localStorage.removeItem(key); }
   };
+
+  const OVERRIDE_KEY = "barcode_overrides_v1"; // { [barcode]: { servingText, servingGrams, perServing, per100g, updatedAtISO } }
+
+  function getOverrides(){ return LS.get(OVERRIDE_KEY, {}); }
+  function setOverrides(map){ LS.set(OVERRIDE_KEY, map); }
 
   const todayKey = () => {
     const d = new Date();
@@ -183,16 +296,20 @@
 
   const defaultTargets = { calories: 2000, protein: 170, carbs: 200, fat: 60 };
 
+  // ---------------------------
+  // Small utils
+  // ---------------------------
   function round1(x){ return Math.round((x + Number.EPSILON) * 10) / 10; }
   function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
   function csv(s){ const t = String(s ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; }
-  function toast(msg) {
-    status.textContent = msg;
-    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1400);
-  }
+  function num(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
+  function safe(v){ return Number.isFinite(v) ? v : 0; }
 
-  // ---------- Elements ----------
+  // ---------------------------
+  // Elements
+  // ---------------------------
   const status = document.getElementById("status");
+
   const cameraSelect = document.getElementById("cameraSelect");
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
@@ -200,8 +317,11 @@
 
   const barcodeEl = document.getElementById("barcode");
   const lookupBtn = document.getElementById("lookupBtn");
+  const photoInput = document.getElementById("barcodePhoto");
 
   const productCard = document.getElementById("productCard");
+  const sourcePill = document.getElementById("sourcePill");
+  const coveragePill = document.getElementById("coveragePill");
   const prodName = document.getElementById("prodName");
   const prodMeta = document.getElementById("prodMeta");
   const nutriPreview = document.getElementById("nutriPreview");
@@ -211,17 +331,38 @@
   const addBtn = document.getElementById("addBtn");
   const modeHelp = document.getElementById("modeHelp");
 
+  // Verify panel
+  const verifyPanel = document.getElementById("verifyPanel");
+  const editServingText = document.getElementById("editServingText");
+  const editServingGrams = document.getElementById("editServingGrams");
+  const editBasis = document.getElementById("editBasis");
+  const editKcal = document.getElementById("editKcal");
+  const editProtein = document.getElementById("editProtein");
+  const editCarbs = document.getElementById("editCarbs");
+  const editFat = document.getElementById("editFat");
+  const saveOverride = document.getElementById("saveOverride");
+  const clearOverride = document.getElementById("clearOverride");
+  const verifyStatus = document.getElementById("verifyStatus");
+
+  // Targets + log
   const tCalories = document.getElementById("tCalories");
   const tProtein = document.getElementById("tProtein");
   const tCarbs = document.getElementById("tCarbs");
   const tFat = document.getElementById("tFat");
   const saveTargets = document.getElementById("saveTargets");
-  const exportCsv = document.getElementById("exportCsv");
+  const exportCsvBtn = document.getElementById("exportCsv");
   const clearToday = document.getElementById("clearToday");
   const totalsEl = document.getElementById("totals");
   const logBody = document.getElementById("logBody");
 
-  // ---------- Targets ----------
+  function toast(msg) {
+    status.textContent = msg;
+    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1600);
+  }
+
+  // ---------------------------
+  // Targets
+  // ---------------------------
   const targets = LS.get("targets", defaultTargets);
   tCalories.value = targets.calories;
   tProtein.value = targets.protein;
@@ -240,7 +381,9 @@
     toast("Targets saved.");
   });
 
-  // ---------- Log ----------
+  // ---------------------------
+  // Log
+  // ---------------------------
   function getLog() { return LS.get(todayKey(), []); }
   function setLog(items) { LS.set(todayKey(), items); }
   function sumLog(items) {
@@ -279,8 +422,9 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>
-          <div style="font-weight:700">${escapeHtml(it.name)}</div>
+          <div style="font-weight:900">${escapeHtml(it.name)}</div>
           <div class="small">${escapeHtml(it.detail)}</div>
+          <div class="small">${escapeHtml(it.source || "")}${it.barcode ? " • " + escapeHtml(it.barcode) : ""}</div>
         </td>
         <td class="right">${it.calories.toFixed(0)}</td>
         <td class="right">${it.protein.toFixed(1)}</td>
@@ -307,7 +451,7 @@
     toast("Cleared today.");
   });
 
-  exportCsv.addEventListener("click", () => {
+  exportCsvBtn.addEventListener("click", () => {
     const items = getLog();
     const header = ["timestamp","name","detail","calories","protein_g","carbs_g","fat_g","barcode","source"].join(",");
     const rows = items.map(it => ([
@@ -330,10 +474,11 @@
     URL.revokeObjectURL(url);
   });
 
-  // ---------- Open Food Facts Lookup ----------
-  let currentFood = null;
+  // ---------------------------
+  // Food data model
+  // ---------------------------
+  let currentFood = null; // { barcode, name, brand, servingSizeText, servingGrams, per100g, perServing, source, accuracyNote }
 
-  function num(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
   function guessServingGrams(servingText) {
     if (!servingText) return null;
     const m = servingText.match(/([\d.]+)\s*g/i);
@@ -363,35 +508,66 @@
     };
 
     const hasServing = Object.values(perServing).some(v => Number.isFinite(v) && v > 0);
+    const has100g = Object.values(per100g).some(v => Number.isFinite(v) && v > 0);
+
     const servingGrams = guessServingGrams(serving);
 
-    return { name, brand, servingSizeText: serving, per100g, perServing, hasServing, servingGrams, source: "Open Food Facts" };
+    return {
+      name,
+      brand,
+      servingSizeText: serving,
+      servingGrams,
+      per100g,
+      perServing,
+      hasServing,
+      has100g,
+      source: "Open Food Facts"
+    };
   }
 
-  function scaleMacros(m, factor) {
-    const safe = (v) => (Number.isFinite(v) ? v : 0);
+  function applyOverride(barcode, baseFood) {
+    const overrides = getOverrides();
+    const ov = overrides[barcode];
+    if (!ov) return baseFood;
+
+    const merged = { ...baseFood };
+    merged.servingSizeText = ov.servingText ?? merged.servingSizeText;
+    merged.servingGrams = Number.isFinite(ov.servingGrams) ? ov.servingGrams : merged.servingGrams;
+
+    if (ov.perServing) merged.perServing = { ...merged.perServing, ...ov.perServing };
+    if (ov.per100g) merged.per100g = { ...merged.per100g, ...ov.per100g };
+
+    // recompute flags
+    merged.hasServing = Object.values(merged.perServing).some(v => Number.isFinite(v) && v > 0);
+    merged.has100g = Object.values(merged.per100g).some(v => Number.isFinite(v) && v > 0);
+
+    merged.source = "Verified (You)";
+    merged.accuracyNote = `Verified on ${new Date(ov.updatedAtISO).toLocaleString()}`;
+    return merged;
+  }
+
+  function scaleMacros(macros, factor) {
     return {
-      calories: safe(m.kcal) * factor,
-      protein: safe(m.protein) * factor,
-      carbs: safe(m.carbs) * factor,
-      fat: safe(m.fat) * factor
+      calories: safe(macros.kcal) * factor,
+      protein: safe(macros.protein) * factor,
+      carbs: safe(macros.carbs) * factor,
+      fat: safe(macros.fat) * factor
     };
   }
 
   function computeForQty(foodData, qty, mode) {
-    let macros;
     if (mode === "serving") {
       if (foodData.hasServing) {
-        macros = scaleMacros(foodData.perServing, qty);
-        return { macros, detail: `${qty} serving(s)` };
+        return { macros: scaleMacros(foodData.perServing, qty), detail: `${qty} serving(s)` };
       }
-      macros = scaleMacros(foodData.per100g, qty);
-      return { macros, detail: `${qty} x 100g (fallback)` };
+      // fallback if we only have per100g
+      return { macros: scaleMacros(foodData.per100g, qty), detail: `${qty} × 100g (fallback)` };
     }
+
+    // grams mode: use per100g scaled
     const grams = qty;
     const factor = grams / 100.0;
-    macros = scaleMacros(foodData.per100g, factor);
-    return { macros, detail: `${grams} g` };
+    return { macros: scaleMacros(foodData.per100g, factor), detail: `${grams} g` };
   }
 
   function updateModeHelp(data) {
@@ -414,45 +590,92 @@
     const { macros, detail } = computeForQty(currentFood, qty, mode);
     nutriPreview.textContent = JSON.stringify({
       item: currentFood.name,
+      barcode: currentFood.barcode,
       amount: detail,
       calories_kcal: Math.round(macros.calories),
       protein_g: round1(macros.protein),
       carbs_g: round1(macros.carbs),
-      fat_g: round1(macros.fat)
+      fat_g: round1(macros.fat),
+      source: currentFood.source,
+      note: currentFood.accuracyNote || ""
     }, null, 2);
   }
 
   modeEl.addEventListener("change", updatePreview);
   qtyEl.addEventListener("input", updatePreview);
 
+  // ---------------------------
+  // Lookup (Open Food Facts + Verified override)
+  // ---------------------------
   async function lookup(barcode) {
-    status.textContent = "Looking up barcode in Open Food Facts…";
+    status.textContent = "Looking up barcode…";
     productCard.style.display = "none";
     currentFood = null;
 
+    // If user has a verified override, we still fetch OFF for name/brand,
+    // but the macros will be replaced by the verified values.
     const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(barcode)}.json`;
-    const res = await fetch(url);
-    const data = await res.json();
 
-    if (data.status !== 1) {
-      status.textContent =
-        "Not found in Open Food Facts.\n" +
-        "Try scanning again (closer + better light) or type the barcode.\n" +
-        "If you want, I can add a second database fallback.";
-      return;
+    let parsed = null;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.status === 1) {
+        parsed = parseOFF(data.product);
+      }
+    } catch {
+      // ignore fetch errors; we can still use verified data if present
     }
 
-    const parsed = parseOFF(data.product);
-    currentFood = { barcode, ...parsed };
+    // Build base
+    const base = parsed ?? {
+      name: "(Unknown product)",
+      brand: "",
+      servingSizeText: "",
+      servingGrams: null,
+      per100g: { kcal:null, protein:null, carbs:null, fat:null },
+      perServing: { kcal:null, protein:null, carbs:null, fat:null },
+      hasServing: false,
+      has100g: false,
+      source: parsed ? "Open Food Facts" : "No database result"
+    };
 
-    prodName.textContent = parsed.name;
-    prodMeta.textContent = [parsed.brand, parsed.servingSizeText].filter(Boolean).join(" • ");
+    // Apply verified override if exists
+    const finalFood = applyOverride(barcode, base);
+    finalFood.barcode = barcode;
+
+    currentFood = finalFood;
+
+    // UI
+    prodName.textContent = finalFood.name;
+    prodMeta.textContent = [finalFood.brand, finalFood.servingSizeText].filter(Boolean).join(" • ");
+
+    sourcePill.textContent = `Source: ${finalFood.source}`;
+
+    // Coverage pill (helps you spot missing macros)
+    const hasAll100g = ["kcal","protein","carbs","fat"].every(k => Number.isFinite(finalFood.per100g?.[k]) && finalFood.per100g[k] >= 0);
+    const hasAllServing = ["kcal","protein","carbs","fat"].every(k => Number.isFinite(finalFood.perServing?.[k]) && finalFood.perServing[k] >= 0);
+
+    coveragePill.style.display = "inline-block";
+    coveragePill.textContent = `Coverage: ${hasAllServing ? "Per serving ✓" : "Per serving —"} • ${hasAll100g ? "Per 100g ✓" : "Per 100g —"}`;
+
     productCard.style.display = "block";
-
-    updateModeHelp(parsed);
+    updateModeHelp(finalFood);
     updatePreview();
 
-    status.textContent = "Found product. Choose serving/grams and tap Add.";
+    // Fill verify panel inputs based on override (if any)
+    hydrateVerifyPanel(finalFood);
+
+    if (finalFood.source === "Verified (You)") {
+      status.textContent = `Using verified macros for ${barcode}.`;
+    } else if (parsed) {
+      status.textContent = "Found product. (Tip: verify if you want guaranteed accuracy.)";
+    } else {
+      status.textContent = "Not found in database. Use the verify/edit panel to enter label macros.";
+      verifyPanel.open = true;
+    }
   }
 
   lookupBtn.addEventListener("click", () => {
@@ -461,6 +684,9 @@
     lookup(code);
   });
 
+  // ---------------------------
+  // Add to today
+  // ---------------------------
   addBtn.addEventListener("click", () => {
     if (!currentFood) return toast("Lookup a product first.");
     const qty = Number(qtyEl.value || 0);
@@ -468,6 +694,14 @@
 
     const mode = modeEl.value;
     const { macros, detail } = computeForQty(currentFood, qty, mode);
+
+    // If macros are all zero because nothing exists, warn
+    const nonZero = macros.calories || macros.protein || macros.carbs || macros.fat;
+    if (!nonZero) {
+      toast("No macro data available yet. Use verify/edit to enter label macros.");
+      verifyPanel.open = true;
+      return;
+    }
 
     const entry = {
       timestamp: new Date().toISOString(),
@@ -488,7 +722,164 @@
     toast("Added.");
   });
 
-  // ---------- Scanner (Quagga2) ----------
+  // ---------------------------
+  // Verify/edit macros (local overrides)
+  // ---------------------------
+  function hydrateVerifyPanel(food) {
+    const overrides = getOverrides();
+    const ov = overrides[food.barcode];
+
+    // Show current source + hint
+    const lines = [];
+    lines.push(`Current source: ${food.source}`);
+    if (food.accuracyNote) lines.push(food.accuracyNote);
+
+    // Show current stored values (best available)
+    lines.push("");
+    lines.push("Current macro values (for reference):");
+    lines.push(`Per serving: kcal=${food.perServing?.kcal ?? "—"}, P=${food.perServing?.protein ?? "—"}, C=${food.perServing?.carbs ?? "—"}, F=${food.perServing?.fat ?? "—"}`);
+    lines.push(`Per 100g:    kcal=${food.per100g?.kcal ?? "—"}, P=${food.per100g?.protein ?? "—"}, C=${food.per100g?.carbs ?? "—"}, F=${food.per100g?.fat ?? "—"}`);
+
+    verifyStatus.textContent = lines.join("\n");
+
+    // Fill fields: if override exists, prefer it; else blank (user fills from label)
+    editServingText.value = ov?.servingText ?? (food.servingSizeText || "");
+    editServingGrams.value = Number.isFinite(ov?.servingGrams) ? ov.servingGrams : (Number.isFinite(food.servingGrams) ? food.servingGrams : "");
+
+    // Basis default: per serving if we have serving text, otherwise per 100g
+    editBasis.value = (food.servingSizeText || food.hasServing) ? "serving" : "100g";
+
+    // Clear macro inputs (user enters from label)
+    editKcal.value = "";
+    editProtein.value = "";
+    editCarbs.value = "";
+    editFat.value = "";
+  }
+
+  saveOverride.addEventListener("click", () => {
+    if (!currentFood?.barcode) return toast("Lookup a product first.");
+
+    const basis = editBasis.value;
+    const kcal = num(editKcal.value);
+    const p = num(editProtein.value);
+    const c = num(editCarbs.value);
+    const f = num(editFat.value);
+
+    // Require all 4 for "accurate every macro"
+    if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
+      toast("Please enter Calories, Protein, Carbs, and Fat (all 4).");
+      return;
+    }
+
+    const overrides = getOverrides();
+    const existing = overrides[currentFood.barcode] || {};
+
+    const servingText = (editServingText.value || "").trim();
+    const servingGrams = num(editServingGrams.value);
+
+    const next = {
+      servingText: servingText || existing.servingText || "",
+      servingGrams: Number.isFinite(servingGrams) ? servingGrams : (Number.isFinite(existing.servingGrams) ? existing.servingGrams : null),
+      perServing: existing.perServing || null,
+      per100g: existing.per100g || null,
+      updatedAtISO: new Date().toISOString()
+    };
+
+    if (basis === "serving") {
+      next.perServing = { kcal, protein:p, carbs:c, fat:f };
+    } else {
+      next.per100g = { kcal, protein:p, carbs:c, fat:f };
+    }
+
+    // If they entered per serving AND also provided serving grams,
+    // we can auto-compute per100g for better grams-mode accuracy (and vice versa).
+    if (basis === "serving" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
+      const factor = 100.0 / next.servingGrams;
+      next.per100g = {
+        kcal: round1(kcal * factor),
+        protein: round1(p * factor),
+        carbs: round1(c * factor),
+        fat: round1(f * factor)
+      };
+    }
+    if (basis === "100g" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
+      const factor = next.servingGrams / 100.0;
+      next.perServing = {
+        kcal: round1(kcal * factor),
+        protein: round1(p * factor),
+        carbs: round1(c * factor),
+        fat: round1(f * factor)
+      };
+    }
+
+    overrides[currentFood.barcode] = next;
+    setOverrides(overrides);
+
+    toast("Saved verified macros.");
+    // Re-run lookup to apply the verified override to UI immediately
+    lookup(currentFood.barcode);
+  });
+
+  clearOverride.addEventListener("click", () => {
+    if (!currentFood?.barcode) return toast("Lookup a product first.");
+
+    const overrides = getOverrides();
+    if (overrides[currentFood.barcode]) {
+      delete overrides[currentFood.barcode];
+      setOverrides(overrides);
+      toast("Removed verified data.");
+      lookup(currentFood.barcode);
+    } else {
+      toast("No verified data to remove.");
+    }
+  });
+
+  // ---------------------------
+  // Photo upload barcode decode (Quagga.decodeSingle)
+  // ---------------------------
+  photoInput.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const Quagga = window.Quagga;
+    if (!Quagga) {
+      toast("Scanner library not loaded.");
+      e.target.value = "";
+      return;
+    }
+
+    status.textContent = "Decoding barcode from photo…";
+
+    const url = URL.createObjectURL(file);
+
+    Quagga.decodeSingle({
+      src: url,
+      numOfWorkers: 0,
+      locate: true,
+      decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
+    }, (result) => {
+      URL.revokeObjectURL(url);
+
+      const code = result?.codeResult?.code;
+      if (!code) {
+        status.textContent =
+          "Couldn’t decode that photo.\nTips: crop tighter to barcode, brighter light, avoid blur/glare.";
+        e.target.value = "";
+        return;
+      }
+
+      barcodeEl.value = code;
+      status.textContent = `Decoded from photo: ${code}\nLooking up…`;
+      lookup(code);
+
+      // allow re-upload of same file
+      e.target.value = "";
+    });
+  });
+
+  // ---------------------------
+  // Scanner (Quagga2) with iPhone-friendly restart + rear-camera persistence
+  // ---------------------------
   const Quagga = window.Quagga;
   if (!Quagga) status.textContent = "Quagga failed to load. Check CDN + redeploy.";
 
@@ -508,7 +899,6 @@
         cameraSelect.appendChild(opt);
       });
 
-      // If user already used the rear camera before, prefer it
       const savedRear = LS.get("rearCamDeviceId", null);
       if (savedRear) cameraSelect.value = savedRear;
     } catch { /* ignore */ }
@@ -548,7 +938,7 @@
     barcodeEl.value = code;
     status.textContent = `Decoded: ${code}\nLooking up…`;
 
-    // Small delay prevents iOS black screen on restart
+    // Delay helps avoid iOS black screen on quick restart
     setTimeout(() => {
       stopScan();
       lookup(code);
@@ -576,10 +966,11 @@
     const savedRear = LS.get("rearCamDeviceId", null);
     if (savedRear) chosenId = savedRear;
 
-    // HARD reset before init (prevents black)
+    // Hard reset before init (prevents black)
     try { Quagga.offDetected(onDetectedHandler); } catch {}
     try { Quagga.stop(); } catch {}
     try { Quagga.CameraAccess.release(); } catch {}
+
     const targetEl = document.getElementById("quaggaTarget");
     if (targetEl) targetEl.innerHTML = "";
 
@@ -601,21 +992,20 @@
       if (err) {
         scanning = false;
         status.textContent =
-          "Quagga init error:\n" + (err?.message || String(err)) +
-          "\n\nFixes:\n- iPhone Settings → Safari → Camera = Allow\n- Open in Safari (not in-app browser)\n- Reload with ?v=NEW";
+          "Scanner error:\n" + (err?.message || String(err)) +
+          "\n\nFixes:\n- iPhone Settings → Safari → Camera = Allow\n- Open in Safari (not Instagram/Google app browser)\n- Reload with ?v=NEW to bust cache";
         return;
       }
 
       Quagga.start();
 
-      // Save actual active camera deviceId so restarts don’t flip to selfie cam
+      // Save active deviceId to prevent rear→front flip on restart
       try {
         const track = Quagga.CameraAccess.getActiveTrack?.();
         const settings = track?.getSettings?.();
         if (settings?.deviceId) LS.set("rearCamDeviceId", settings.deviceId);
       } catch {}
 
-      // Torch button if supported
       if (supportsTorch()) {
         torchBtn.style.display = "inline-block";
         torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
@@ -655,7 +1045,9 @@
   startBtn.addEventListener("click", startScan);
   stopBtn.addEventListener("click", stopScan);
 
-  // ---------- Initial render ----------
+  // ---------------------------
+  // Initial render
+  // ---------------------------
   render();
 </script>
 </body>
