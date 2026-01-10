@@ -8,7 +8,6 @@
   <style>
     :root { color-scheme: light; }
 
-    /* San Francisco (Apple) + safe fallbacks */
     body{
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
       margin:0; background:#f6f7fb; color:#111827;
@@ -27,10 +26,9 @@
       padding:14px;
       max-width:1100px;
       margin:0 auto;
-      padding-bottom: 96px; /* space for tabbar */
+      padding-bottom: 130px; /* room for tab bar */
     }
 
-    /* Cards */
     .card{
       background:#fff;
       border:1px solid #e5e7eb;
@@ -71,6 +69,7 @@
     button.secondary{ background:#111827; }
     button.ghost{ background:#f3f4f6; color:#111827; border:1px solid #e5e7eb; font-weight:850; }
     button.danger{ background:#dc2626; }
+    button.good{ background:#16a34a; }
 
     .muted{ color:#6b7280; font-size:12px; line-height:1.35; }
     .split{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
@@ -86,7 +85,6 @@
       padding:10px; border-radius:14px;
     }
 
-    /* Tables */
     table{ width:100%; border-collapse:collapse; }
     th, td{
       text-align:left; padding:10px 8px; border-bottom:1px solid #e5e7eb;
@@ -96,7 +94,6 @@
     .right{ text-align:right; }
     .small{ font-size:12px; color:#6b7280; }
 
-    /* Pills */
     .pill{
       display:inline-block; padding:6px 10px; border-radius:999px;
       background:#f3f4f6; border:1px solid #e5e7eb; font-size:12px; margin-right:8px;
@@ -105,7 +102,6 @@
     .warn{ background:#fff7ed; border-color:#f59e0b33; }
     .bad{ background:#fef2f2; border-color:#ef444433; }
 
-    /* Camera */
     .videoWrap{
       position:relative;
       width:100%;
@@ -150,7 +146,7 @@
       max-width:1100px;
       margin:0 auto;
       display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(6, 1fr);
       gap:6px;
       padding:10px 10px 12px;
     }
@@ -159,9 +155,11 @@
       border:1px solid #e5e7eb;
       color:#111827;
       border-radius:14px;
-      padding:10px 10px;
+      padding:10px 8px;
       font-weight:950;
       min-height:44px;
+      font-size:13px;
+      line-height:1.1;
     }
     .tabBtn.active{
       background:#111827;
@@ -217,7 +215,6 @@
       transition: width .25s ease;
     }
 
-    /* Compact scrollers */
     .scrollBox{
       overflow:auto;
       border:1px solid #e5e7eb;
@@ -225,12 +222,22 @@
       background:#fff;
     }
 
-    /* Helper */
-    .max220{ max-width:220px; }
-    .max160{ max-width:160px; }
+    .noteBox{
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:12px;
+      color:#374151;
+      line-height:1.35;
+    }
+
     .max140{ max-width:140px; }
+    .max160{ max-width:160px; }
+    .max180{ max-width:180px; }
+    .max220{ max-width:220px; }
     .max280{ max-width:280px; }
-    .max300{ max-width:300px; }
+    .max320{ max-width:320px; }
   </style>
 </head>
 
@@ -240,16 +247,15 @@
 </header>
 
 <main>
-  <!-- TAB 1: FOODS -->
+  <!-- TAB: FOODS -->
   <section id="tabFoods" class="tabPane active">
     <div class="card">
-      <h2>Foods</h2>
+      <h2>Foods (Barcode + Link)</h2>
       <div class="muted">
         iPhone tip: open in <b>Safari</b> via <b>HTTPS</b> (GitHub Pages). Fill the frame with barcode, avoid glare, hold steady 1–2s.
-        <br/>Label OCR: take a bright, close photo of the Nutrition Facts panel (minimal glare).
       </div>
 
-      <label>Camera</label>
+      <label>Camera (barcode)</label>
       <div class="videoWrap">
         <div id="quaggaTarget"></div>
       </div>
@@ -259,14 +265,9 @@
         <button id="stopBtn" class="ghost max140">Stop</button>
         <button id="torchBtn" class="ghost max220" style="display:none;">Flashlight: Off</button>
 
-        <label class="fileBtn max300">
+        <label class="fileBtn max320">
           Upload barcode photo
           <input id="barcodePhoto" type="file" accept="image/*" />
-        </label>
-
-        <label class="fileBtn max300">
-          Upload nutrition label (OCR)
-          <input id="labelPhoto" type="file" accept="image/*" />
         </label>
 
         <select id="cameraSelect" class="max280" aria-label="Camera selection"></select>
@@ -277,7 +278,7 @@
           <label>Barcode (UPC/EAN)</label>
           <div class="row">
             <input id="barcode" placeholder="Scan fills this, or type it" inputmode="numeric" />
-            <button id="lookupBtn" class="secondary">Lookup</button>
+            <button id="lookupBtn" class="secondary" type="button">Lookup</button>
           </div>
           <div class="muted" style="margin-top:6px;">If found, you can add by serving or grams.</div>
         </div>
@@ -285,11 +286,11 @@
         <div>
           <label>Add from link</label>
           <div class="row">
-            <input id="linkInput" placeholder="Paste a product link (OFF link works best)" />
-            <button id="linkLookupBtn" class="secondary">Detect & lookup</button>
+            <input id="linkInput" placeholder="Paste a product link (barcode digits in link works best)" />
+            <button id="linkLookupBtn" class="secondary" type="button">Detect & lookup</button>
           </div>
           <div class="muted" style="margin-top:6px;">
-            Works best with Open Food Facts links or links containing a barcode number. Otherwise use OCR / Verify.
+            If we can’t extract digits from the link, copy/paste the barcode number manually.
           </div>
         </div>
       </div>
@@ -312,7 +313,7 @@
             <option value="grams">By grams</option>
           </select>
           <input id="qty" type="number" min="0" step="0.25" value="1" />
-          <button id="addBtn">Add to today</button>
+          <button id="addBtn" type="button">Add to today</button>
         </div>
         <div class="muted" id="modeHelp" style="margin-top:6px;">—</div>
         <div class="status" id="nutriPreview">—</div>
@@ -320,14 +321,10 @@
         <div class="divider"></div>
 
         <details id="verifyPanel">
-          <summary>Accuracy: verify / edit macros (barcode OR custom food)</summary>
+          <summary>Accuracy: verify / edit macros for this barcode</summary>
           <div class="muted" style="margin-top:6px;">
-            For “accurate every macro,” enter the nutrition label once (or use OCR) and save.
-            If there’s no barcode, this saves as a <b>Custom food</b> on this device.
+            Enter the nutrition label once and save. Your verified values will be used next time you scan this barcode on this device.
           </div>
-
-          <label>Food name</label>
-          <input id="editFoodName" placeholder="e.g., Homemade protein oats" />
 
           <label>Serving size text (optional)</label>
           <input id="editServingText" placeholder="e.g., 1 bar (40g)" />
@@ -369,8 +366,8 @@
           </div>
 
           <div class="split" style="margin-top:10px;">
-            <button id="saveOverride" class="ghost max220">Save verified</button>
-            <button id="clearOverride" class="danger max220">Remove verified</button>
+            <button id="saveOverride" class="ghost max220" type="button">Save as verified</button>
+            <button id="clearOverride" class="danger max220" type="button">Remove verified data</button>
           </div>
 
           <div class="status" id="verifyStatus" style="margin-top:10px;">—</div>
@@ -381,7 +378,70 @@
     </div>
   </section>
 
-  <!-- TAB 2: TODAY -->
+  <!-- TAB: MEALS (typed builder) -->
+  <section id="tabMeals" class="tabPane">
+    <div class="card">
+      <h2>Meal Builder (Type foods)</h2>
+      <div class="muted">
+        Type foods like <b>chicken</b> or <b>quinoa</b>. We use general macros per 100g (editable).
+        If it’s off, edit macros and save your version.
+      </div>
+
+      <h3>Add ingredient</h3>
+      <div class="row">
+        <input id="mealFoodQuery" placeholder="Type a food (e.g., chicken breast cooked, quinoa cooked)" />
+        <button id="mealSearchBtn" class="secondary" type="button">Search</button>
+      </div>
+
+      <div id="mealSearchResults" class="status" style="margin-top:10px;">Search results will appear here.</div>
+
+      <div class="divider"></div>
+
+      <h3>Current meal</h3>
+      <div class="split" style="margin-top:10px;">
+        <input id="mealName" placeholder="Meal name (optional) e.g., Lunch bowl" class="max320" />
+        <button id="mealAddToToday" class="good max220" type="button">Add meal to Today</button>
+        <button id="mealClear" class="danger max180" type="button">Clear meal</button>
+      </div>
+
+      <div class="status" id="mealTotals" style="margin-top:10px;">—</div>
+
+      <div class="scrollBox" style="max-height:420px; margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Ingredient</th>
+              <th class="right">g</th>
+              <th class="right">kcal</th>
+              <th class="right">P</th>
+              <th class="right">C</th>
+              <th class="right">F</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="mealBody"></tbody>
+        </table>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Tip: Tap <b>Edit macros</b> on an ingredient to adjust its per-100g values and save it as your custom version.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Your custom typed foods</h2>
+      <div class="muted">These are your saved “general macros” overrides for typed foods (this device only).</div>
+
+      <div class="row" style="margin-top:10px;">
+        <input id="customTypedSearch" placeholder="Search your custom foods…" />
+        <button id="customTypedSearchBtn" class="ghost" type="button">Search</button>
+      </div>
+
+      <div id="customTypedResults" class="status" style="margin-top:10px;">—</div>
+    </div>
+  </section>
+
+  <!-- TAB: TODAY -->
   <section id="tabToday" class="tabPane">
     <div class="card">
       <h2>Today</h2>
@@ -409,9 +469,9 @@
       </div>
 
       <div class="split" style="margin-top:10px;">
-        <button id="saveTargets" class="ghost max160">Save</button>
-        <button id="exportCsv" class="ghost max160">Export CSV</button>
-        <button id="clearToday" class="danger max160">Clear day</button>
+        <button id="saveTargets" class="ghost max160" type="button">Save</button>
+        <button id="exportCsv" class="ghost max160" type="button">Export CSV</button>
+        <button id="clearToday" class="danger max160" type="button">Clear day</button>
       </div>
 
       <h3>Totals</h3>
@@ -489,18 +549,18 @@
       </div>
 
       <div class="muted" style="margin-top:10px;">
-        Tip: if a product is missing macros, go to <b>Foods</b> → <b>OCR / Verify</b> → <b>Save</b>.
+        Tip: Build a meal in the <b>Meals</b> tab and add it to Today in one tap.
       </div>
     </div>
   </section>
 
-  <!-- TAB 3: WORKOUTS -->
+  <!-- TAB: WORKOUTS -->
   <section id="tabWorkouts" class="tabPane">
     <div class="card">
       <h2>Workouts</h2>
 
       <div class="muted">
-        Log your workout + calories burned. It subtracts from your <b>net calories</b> on the Today tab.
+        Log workout + calories burned. It subtracts from <b>net calories</b> in Today.
       </div>
 
       <h3>Add workout</h3>
@@ -526,8 +586,8 @@
       </div>
 
       <div class="row" style="margin-top:10px;">
-        <input id="workoutNotes" placeholder="Notes (optional): e.g., Push day, 45 min, PRs..." />
-        <button id="addWorkout" class="secondary">Add workout</button>
+        <input id="workoutNotes" placeholder="Notes (optional): e.g., Push day, 45 min..." />
+        <button id="addWorkout" class="secondary" type="button">Add workout</button>
       </div>
 
       <h3>Workout log</h3>
@@ -545,21 +605,176 @@
       </div>
     </div>
   </section>
+
+  <!-- TAB: SLEEP -->
+  <section id="tabSleep" class="tabPane">
+    <div class="card">
+      <h2>Sleep</h2>
+      <div class="muted">
+        Manual sleep log (web apps can’t read Apple Health sleep).
+      </div>
+
+      <h3>Log sleep</h3>
+      <div class="row">
+        <div>
+          <label>Date</label>
+          <input id="sleepDate" type="date" />
+        </div>
+        <div>
+          <label>Quality (1–5)</label>
+          <select id="sleepQuality">
+            <option value="5">5 (great)</option>
+            <option value="4">4</option>
+            <option value="3" selected>3</option>
+            <option value="2">2</option>
+            <option value="1">1 (poor)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Bedtime</label>
+          <input id="sleepBed" type="time" />
+        </div>
+        <div>
+          <label>Wake time</label>
+          <input id="sleepWake" type="time" />
+        </div>
+      </div>
+
+      <label>Notes (optional)</label>
+      <input id="sleepNotes" placeholder="e.g., woke up 2x, caffeine late, sore..." />
+
+      <div class="split" style="margin-top:10px;">
+        <button id="saveSleep" class="secondary max180" type="button">Save sleep</button>
+        <button id="clearSleepDay" class="danger max180" type="button">Delete date</button>
+      </div>
+
+      <h3>Last 7 days</h3>
+      <div class="kpiRow">
+        <div class="kpi" id="sleepAvgHours">Avg hours: —</div>
+        <div class="kpi" id="sleepAvgQuality">Avg quality: —</div>
+        <div class="kpi" id="sleepNights">Nights logged: —</div>
+      </div>
+
+      <div class="scrollBox" style="max-height:360px; margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th class="right">Hours</th>
+              <th class="right">Quality</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="sleepBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB: PLAN -->
+  <section id="tabPlan" class="tabPane">
+    <div class="card">
+      <h2>Plan (Deficit + Muscle retention)</h2>
+      <div class="muted">
+        Uses a standard TDEE estimate (Mifflin-St Jeor). Tap “Apply targets” to set your Today targets.
+      </div>
+
+      <h3>Deficit calculator</h3>
+      <div class="row">
+        <div>
+          <label>Gender</label>
+          <select id="pGender">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+          </select>
+        </div>
+        <div>
+          <label>Age</label>
+          <input id="pAge" type="number" min="10" step="1" value="23" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Height</label>
+          <div class="row">
+            <input id="pHeightFt" type="number" min="3" step="1" placeholder="ft" value="5" />
+            <input id="pHeightIn" type="number" min="0" step="1" placeholder="in" value="3" />
+          </div>
+        </div>
+        <div>
+          <label>Current weight (lb)</label>
+          <input id="pWeight" type="number" min="70" step="1" value="185" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Goal weight (lb)</label>
+          <input id="pGoalWeight" type="number" min="70" step="1" value="175" />
+        </div>
+        <div>
+          <label>Activity level</label>
+          <select id="pActivity">
+            <option value="1.2">Sedentary (little exercise)</option>
+            <option value="1.375">Light (1–3 days/week)</option>
+            <option value="1.55" selected>Moderate (3–5 days/week)</option>
+            <option value="1.725">Very active (6–7 days/week)</option>
+            <option value="1.9">Athlete (2x/day)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Fat loss speed</label>
+          <select id="pSpeed">
+            <option value="slow">Slow (≈0.5 lb/week)</option>
+            <option value="moderate" selected>Moderate (≈1.0 lb/week)</option>
+            <option value="aggressive">Aggressive (≈1.5 lb/week)</option>
+          </select>
+        </div>
+        <div>
+          <label>Muscle retention priority</label>
+          <select id="pRetention">
+            <option value="high" selected>High (maximize retention)</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="split" style="margin-top:10px;">
+        <button id="calcPlan" class="secondary max180" type="button">Calculate</button>
+        <button id="applyPlan" class="good max220" type="button">Apply targets to Today</button>
+      </div>
+
+      <div class="status" id="planOut">—</div>
+      <div class="noteBox" style="margin-top:10px;">
+        Muscle retention rule used here: higher retention → higher protein + slightly smaller deficit.
+        This is a planner, not medical advice.
+      </div>
+    </div>
+  </section>
 </main>
 
 <!-- Bottom Tab Bar -->
 <nav class="tabbar" role="navigation" aria-label="Tabs">
   <div class="tabbarInner">
-    <button class="tabBtn active" id="btnFoods" data-tab="foods">Foods</button>
-    <button class="tabBtn" id="btnToday" data-tab="today">Today</button>
-    <button class="tabBtn" id="btnWorkouts" data-tab="workouts">Workouts</button>
+    <button class="tabBtn active" id="btnFoods" data-tab="foods" type="button">Foods</button>
+    <button class="tabBtn" id="btnMeals" data-tab="meals" type="button">Meals</button>
+    <button class="tabBtn" id="btnToday" data-tab="today" type="button">Today</button>
+    <button class="tabBtn" id="btnWorkouts" data-tab="workouts" type="button">Workouts</button>
+    <button class="tabBtn" id="btnSleep" data-tab="sleep" type="button">Sleep</button>
+    <button class="tabBtn" id="btnPlan" data-tab="plan" type="button">Plan</button>
   </div>
 </nav>
 
 <!-- Quagga2 global build -->
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-<!-- Tesseract OCR -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <script type="module">
   // ---------------------------
@@ -574,10 +789,6 @@
   function getOverrides(){ return LS.get(OVERRIDE_KEY, {}); }
   function setOverrides(map){ LS.set(OVERRIDE_KEY, map); }
 
-  const CUSTOM_FOODS_KEY = "custom_foods_v1"; // array of custom foods saved by user
-  function getCustomFoods(){ return LS.get(CUSTOM_FOODS_KEY, []); }
-  function setCustomFoods(arr){ LS.set(CUSTOM_FOODS_KEY, arr); }
-
   const todayKey = (prefix) => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -588,8 +799,21 @@
 
   const FOOD_KEY = () => todayKey("foods");
   const WORKOUT_KEY = () => todayKey("workouts");
-
   const defaultTargets = { calories: 2000, protein: 170, carbs: 200, fat: 60 };
+
+  // Meals
+  const MEAL_KEY = "current_meal_v1"; // { name, items:[{id,name,grams,per100g:{kcal,protein,carbs,fat}, source}] }
+  const CUSTOM_TYPED_FOODS_KEY = "custom_typed_foods_v1"; // { [id]: {name, per100g... , updatedAtISO} }
+
+  function getMeal(){ return LS.get(MEAL_KEY, { name:"", items:[] }); }
+  function setMeal(m){ LS.set(MEAL_KEY, m); }
+  function getTypedCustoms(){ return LS.get(CUSTOM_TYPED_FOODS_KEY, {}); }
+  function setTypedCustoms(m){ LS.set(CUSTOM_TYPED_FOODS_KEY, m); }
+
+  // Sleep
+  const SLEEP_KEY = "sleep_log_v1"; // { "YYYY-MM-DD": {bed,wake,hours,quality,notes} }
+  function getSleepMap(){ return LS.get(SLEEP_KEY, {}); }
+  function setSleepMap(m){ LS.set(SLEEP_KEY, m); }
 
   // ---------------------------
   // Utils
@@ -600,11 +824,11 @@
   function num(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
   function safe(v){ return Number.isFinite(v) ? v : 0; }
 
-  // Extract a barcode-looking sequence from a string/link
-  function extractBarcodeFromText(text){
-    const s = String(text || "");
-    const m = s.match(/(\d{8}|\d{12}|\d{13}|\d{14})/);
-    return m ? m[1] : null;
+  function isoDateLocal(d=new Date()){
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   function toast(msg) {
@@ -612,30 +836,50 @@
     setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1600);
   }
 
+  function extractBarcodeFromText(text){
+    const s = String(text || "");
+    const m = s.match(/(\d{8}|\d{12}|\d{13}|\d{14})/);
+    return m ? m[1] : null;
+  }
+
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
   // ---------------------------
+  // Elements
+  // ---------------------------
+  const status = document.getElementById("status");
+
   // Tabs
-  // ---------------------------
   const tabFoods = document.getElementById("tabFoods");
+  const tabMeals = document.getElementById("tabMeals");
   const tabToday = document.getElementById("tabToday");
   const tabWorkouts = document.getElementById("tabWorkouts");
+  const tabSleep = document.getElementById("tabSleep");
+  const tabPlan = document.getElementById("tabPlan");
 
   const btnFoods = document.getElementById("btnFoods");
+  const btnMeals = document.getElementById("btnMeals");
   const btnToday = document.getElementById("btnToday");
   const btnWorkouts = document.getElementById("btnWorkouts");
+  const btnSleep = document.getElementById("btnSleep");
+  const btnPlan = document.getElementById("btnPlan");
 
   function setActiveTab(name){
-    // stop scanner if leaving foods
-    if (name !== "foods") {
-      try { stopScan(); } catch {}
-    }
+    if (name !== "foods") { try { stopScan(); } catch {} }
 
     tabFoods.classList.toggle("active", name === "foods");
+    tabMeals.classList.toggle("active", name === "meals");
     tabToday.classList.toggle("active", name === "today");
     tabWorkouts.classList.toggle("active", name === "workouts");
+    tabSleep.classList.toggle("active", name === "sleep");
+    tabPlan.classList.toggle("active", name === "plan");
 
     btnFoods.classList.toggle("active", name === "foods");
+    btnMeals.classList.toggle("active", name === "meals");
     btnToday.classList.toggle("active", name === "today");
     btnWorkouts.classList.toggle("active", name === "workouts");
+    btnSleep.classList.toggle("active", name === "sleep");
+    btnPlan.classList.toggle("active", name === "plan");
 
     LS.set("activeTab", name);
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -645,15 +889,10 @@
     b.addEventListener("click", () => setActiveTab(b.dataset.tab));
   });
 
-  // restore tab
+  // Restore tab
   setActiveTab(LS.get("activeTab", "foods"));
 
-  // ---------------------------
-  // Elements
-  // ---------------------------
-  const status = document.getElementById("status");
-
-  // Foods input
+  // Foods
   const cameraSelect = document.getElementById("cameraSelect");
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
@@ -662,7 +901,6 @@
   const barcodeEl = document.getElementById("barcode");
   const lookupBtn = document.getElementById("lookupBtn");
   const photoInput = document.getElementById("barcodePhoto");
-  const labelPhoto = document.getElementById("labelPhoto");
 
   const linkInput = document.getElementById("linkInput");
   const linkLookupBtn = document.getElementById("linkLookupBtn");
@@ -681,7 +919,6 @@
 
   // Verify panel
   const verifyPanel = document.getElementById("verifyPanel");
-  const editFoodName = document.getElementById("editFoodName");
   const editServingText = document.getElementById("editServingText");
   const editServingGrams = document.getElementById("editServingGrams");
   const editBasis = document.getElementById("editBasis");
@@ -693,7 +930,21 @@
   const clearOverride = document.getElementById("clearOverride");
   const verifyStatus = document.getElementById("verifyStatus");
 
-  // Today panel
+  // Meals
+  const mealFoodQuery = document.getElementById("mealFoodQuery");
+  const mealSearchBtn = document.getElementById("mealSearchBtn");
+  const mealSearchResults = document.getElementById("mealSearchResults");
+  const mealName = document.getElementById("mealName");
+  const mealAddToToday = document.getElementById("mealAddToToday");
+  const mealClear = document.getElementById("mealClear");
+  const mealTotals = document.getElementById("mealTotals");
+  const mealBody = document.getElementById("mealBody");
+
+  const customTypedSearch = document.getElementById("customTypedSearch");
+  const customTypedSearchBtn = document.getElementById("customTypedSearchBtn");
+  const customTypedResults = document.getElementById("customTypedResults");
+
+  // Today
   const tCalories = document.getElementById("tCalories");
   const tProtein = document.getElementById("tProtein");
   const tCarbs = document.getElementById("tCarbs");
@@ -703,7 +954,6 @@
   const clearToday = document.getElementById("clearToday");
   const logBody = document.getElementById("logBody");
 
-  // Totals UI
   const kpiFood = document.getElementById("kpiFood");
   const kpiBurn = document.getElementById("kpiBurn");
   const kpiNet  = document.getElementById("kpiNet");
@@ -728,7 +978,7 @@
   const bC   = document.getElementById("bC");
   const bF   = document.getElementById("bF");
 
-  // Workouts panel
+  // Workouts
   const workoutType = document.getElementById("workoutType");
   const muscleGroup = document.getElementById("muscleGroup");
   const workoutCals = document.getElementById("workoutCals");
@@ -736,8 +986,35 @@
   const addWorkout = document.getElementById("addWorkout");
   const workoutBody = document.getElementById("workoutBody");
 
+  // Sleep
+  const sleepDate = document.getElementById("sleepDate");
+  const sleepQuality = document.getElementById("sleepQuality");
+  const sleepBed = document.getElementById("sleepBed");
+  const sleepWake = document.getElementById("sleepWake");
+  const sleepNotes = document.getElementById("sleepNotes");
+  const saveSleep = document.getElementById("saveSleep");
+  const clearSleepDay = document.getElementById("clearSleepDay");
+  const sleepBody = document.getElementById("sleepBody");
+  const sleepAvgHours = document.getElementById("sleepAvgHours");
+  const sleepAvgQuality = document.getElementById("sleepAvgQuality");
+  const sleepNights = document.getElementById("sleepNights");
+
+  // Plan
+  const pGender = document.getElementById("pGender");
+  const pAge = document.getElementById("pAge");
+  const pHeightFt = document.getElementById("pHeightFt");
+  const pHeightIn = document.getElementById("pHeightIn");
+  const pWeight = document.getElementById("pWeight");
+  const pGoalWeight = document.getElementById("pGoalWeight");
+  const pActivity = document.getElementById("pActivity");
+  const pSpeed = document.getElementById("pSpeed");
+  const pRetention = document.getElementById("pRetention");
+  const calcPlan = document.getElementById("calcPlan");
+  const applyPlan = document.getElementById("applyPlan");
+  const planOut = document.getElementById("planOut");
+
   // ---------------------------
-  // Targets
+  // Targets init
   // ---------------------------
   const targets = LS.get("targets", defaultTargets);
   tCalories.value = targets.calories;
@@ -780,6 +1057,9 @@
     return items.reduce((acc, it) => acc + (Number(it.burned)||0), 0);
   }
 
+  // ---------------------------
+  // Render Today + tables
+  // ---------------------------
   function render() {
     const foods = getFoods();
     const wos = getWorkouts();
@@ -787,15 +1067,12 @@
     const burned = sumWorkouts(wos);
     const t = LS.get("targets", defaultTargets);
 
-    // Net calories: food - exercise
     const netCals = totals.calories - burned;
 
-    // KPI chips
     kpiFood.textContent = `Food: ${totals.calories.toFixed(0)} kcal`;
     kpiBurn.textContent = `Burn: ${burned.toFixed(0)} kcal`;
     kpiNet.textContent  = `Net: ${netCals.toFixed(0)} kcal`;
 
-    // Macro numbers
     mCal.textContent = `${netCals.toFixed(0)}`;
     mP.textContent   = `${totals.protein.toFixed(0)}g`;
     mC.textContent   = `${totals.carbs.toFixed(0)}g`;
@@ -816,14 +1093,13 @@
     mCRem.textContent   = `${remC >= 0 ? "Remaining" : "Over"} ${Math.abs(remC).toFixed(0)}g`;
     mFRem.textContent   = `${remF >= 0 ? "Remaining" : "Over"} ${Math.abs(remF).toFixed(0)}g`;
 
-    // Progress bars (cap at 120%)
     const pct = (val, target) => target > 0 ? Math.min(120, Math.max(0, (val/target)*100)) : 0;
     bCal.style.width = pct(netCals, t.calories).toFixed(1) + "%";
     bP.style.width   = pct(totals.protein, t.protein).toFixed(1) + "%";
     bC.style.width   = pct(totals.carbs, t.carbs).toFixed(1) + "%";
     bF.style.width   = pct(totals.fat, t.fat).toFixed(1) + "%";
 
-    // Foods table (Today tab)
+    // Foods table
     logBody.innerHTML = "";
     foods.forEach((it, idx) => {
       const tr = document.createElement("tr");
@@ -837,7 +1113,7 @@
         <td class="right">${it.protein.toFixed(1)}</td>
         <td class="right">${it.carbs.toFixed(1)}</td>
         <td class="right">${it.fat.toFixed(1)}</td>
-        <td class="right"><button class="ghost" data-del-food="${idx}" style="padding:8px 10px; font-size:12px;">Delete</button></td>
+        <td class="right"><button class="ghost" data-del-food="${idx}" style="padding:8px 10px; font-size:12px;" type="button">Delete</button></td>
       `;
       logBody.appendChild(tr);
     });
@@ -851,7 +1127,7 @@
       });
     });
 
-    // Workouts table (Workouts tab)
+    // Workouts table
     workoutBody.innerHTML = "";
     wos.forEach((it, idx) => {
       const tr = document.createElement("tr");
@@ -861,7 +1137,7 @@
           <div class="small">${escapeHtml(it.notes || "")}</div>
         </td>
         <td class="right">${Number(it.burned||0).toFixed(0)}</td>
-        <td class="right"><button class="ghost" data-del-wo="${idx}" style="padding:8px 10px; font-size:12px;">Delete</button></td>
+        <td class="right"><button class="ghost" data-del-wo="${idx}" style="padding:8px 10px; font-size:12px;" type="button">Delete</button></td>
       `;
       workoutBody.appendChild(tr);
     });
@@ -874,6 +1150,10 @@
         render();
       });
     });
+
+    renderSleep();
+    renderMeal();
+    renderCustomTypedList();
   }
 
   clearToday.addEventListener("click", () => {
@@ -892,8 +1172,6 @@
     const netCals = totals.calories - burned;
 
     const lines = [];
-
-    // SUMMARY section (great for Sheets/Excel)
     lines.push("SECTION,metric,value");
     lines.push(`SUMMARY,Date,${new Date().toISOString().slice(0,10)}`);
     lines.push(`SUMMARY,Food Calories (kcal),${totals.calories.toFixed(0)}`);
@@ -905,7 +1183,6 @@
     lines.push(`SUMMARY,Targets (kcal/P/C/F),${t.calories}/${t.protein}/${t.carbs}/${t.fat}`);
     lines.push("");
 
-    // Detailed rows
     lines.push("SECTION,timestamp,name/type,detail/muscle,calories,protein_g,carbs_g,fat_g,burned,barcode,source,notes");
 
     foods.forEach(it => {
@@ -952,7 +1229,7 @@
   });
 
   // ---------------------------
-  // Food data model + OFF parsing
+  // Barcode lookup (Open Food Facts)
   // ---------------------------
   let currentFood = null;
 
@@ -1058,7 +1335,7 @@
 
     nutriPreview.textContent = JSON.stringify({
       item: currentFood.name,
-      barcode: currentFood.barcode || "",
+      barcode: currentFood.barcode,
       amount: detail,
       calories_kcal: Math.round(macros.calories),
       protein_g: round1(macros.protein),
@@ -1104,6 +1381,7 @@
 
     prodName.textContent = finalFood.name;
     prodMeta.textContent = [finalFood.brand, finalFood.servingSizeText].filter(Boolean).join(" • ");
+
     sourcePill.textContent = `Source: ${finalFood.source}`;
 
     const hasAll100g = ["kcal","protein","carbs","fat"].every(k => Number.isFinite(finalFood.per100g?.[k]) && finalFood.per100g[k] >= 0);
@@ -1122,7 +1400,7 @@
     } else if (parsed) {
       status.textContent = "Found product. (Tip: verify if you want guaranteed accuracy.)";
     } else {
-      status.textContent = "Not found in database. Use OCR / Verify/Edit to enter macros.";
+      status.textContent = "Not found in database. Use Verify/Edit to enter label macros.";
       verifyPanel.open = true;
     }
   }
@@ -1147,13 +1425,12 @@
 
     status.textContent =
       "Couldn’t extract a barcode from that link.\n\n" +
-      "Many websites block front-end scraping.\n" +
-      "Fix: copy the barcode digits into the barcode box, OR use OCR / Verify/Edit.";
+      "Fix: copy the barcode digits into the barcode box, OR use Verify/Edit.";
     verifyPanel.open = true;
   });
 
   addBtn.addEventListener("click", () => {
-    if (!currentFood) return toast("Lookup a product OR use OCR first.");
+    if (!currentFood) return toast("Lookup a product first.");
     const qty = Number(qtyEl.value || 0);
     if (!Number.isFinite(qty) || qty <= 0) return toast("Enter a quantity > 0.");
 
@@ -1161,7 +1438,7 @@
 
     const nonZero = macros.calories || macros.protein || macros.carbs || macros.fat;
     if (!nonZero) {
-      toast("No macro data yet. Use OCR / Verify/Edit to enter macros.");
+      toast("No macro data yet. Use Verify/Edit to enter label macros.");
       verifyPanel.open = true;
       return;
     }
@@ -1174,7 +1451,7 @@
       protein: macros.protein,
       carbs: macros.carbs,
       fat: macros.fat,
-      barcode: currentFood.barcode || "",
+      barcode: currentFood.barcode,
       source: currentFood.source
     };
 
@@ -1183,13 +1460,13 @@
     setFoods(foods);
     render();
     toast("Added food.");
-    // quick hop to Today
     setActiveTab("today");
   });
 
+  // Verify/edit
   function hydrateVerifyPanel(food) {
     const overrides = getOverrides();
-    const ov = food.barcode ? overrides[food.barcode] : null;
+    const ov = overrides[food.barcode];
 
     const lines = [];
     lines.push(`Current source: ${food.source}`);
@@ -1201,7 +1478,6 @@
     lines.push(`Per 100g:    kcal=${food.per100g?.kcal ?? "—"}, P=${food.per100g?.protein ?? "—"}, C=${food.per100g?.carbs ?? "—"}, F=${food.per100g?.fat ?? "—"}`);
     verifyStatus.textContent = lines.join("\n");
 
-    editFoodName.value = food.name || "";
     editServingText.value = ov?.servingText ?? (food.servingSizeText || "");
     editServingGrams.value = Number.isFinite(ov?.servingGrams) ? ov.servingGrams : (Number.isFinite(food.servingGrams) ? food.servingGrams : "");
     editBasis.value = (food.servingSizeText || food.hasServing) ? "serving" : "100g";
@@ -1213,6 +1489,8 @@
   }
 
   saveOverride.addEventListener("click", () => {
+    if (!currentFood?.barcode) return toast("Lookup a product first.");
+
     const basis = editBasis.value;
     const kcal = num(editKcal.value);
     const p = num(editProtein.value);
@@ -1223,132 +1501,51 @@
       return toast("Enter Calories, Protein, Carbs, and Fat (all 4).");
     }
 
+    const overrides = getOverrides();
+    const existing = overrides[currentFood.barcode] || {};
+
     const servingText = (editServingText.value || "").trim();
     const servingGrams = num(editServingGrams.value);
-    const name = (editFoodName.value || "").trim() || currentFood?.name || "Custom food";
 
-    // BARCODE PATH
-    if (currentFood?.barcode) {
-      const overrides = getOverrides();
-      const existing = overrides[currentFood.barcode] || {};
-
-      const next = {
-        servingText: servingText || existing.servingText || "",
-        servingGrams: Number.isFinite(servingGrams) ? servingGrams : (Number.isFinite(existing.servingGrams) ? existing.servingGrams : null),
-        perServing: existing.perServing || null,
-        per100g: existing.per100g || null,
-        updatedAtISO: new Date().toISOString()
-      };
-
-      if (basis === "serving") next.perServing = { kcal, protein:p, carbs:c, fat:f };
-      else next.per100g = { kcal, protein:p, carbs:c, fat:f };
-
-      if (basis === "serving" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
-        const factor = 100.0 / next.servingGrams;
-        next.per100g = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
-      }
-      if (basis === "100g" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
-        const factor = next.servingGrams / 100.0;
-        next.perServing = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
-      }
-
-      overrides[currentFood.barcode] = next;
-      setOverrides(overrides);
-
-      toast("Saved verified macros for barcode.");
-      lookup(currentFood.barcode);
-      return;
-    }
-
-    // CUSTOM FOOD PATH (no barcode)
-    const customFoods = getCustomFoods();
-    const id = (crypto?.randomUUID?.() || String(Date.now()));
-
-    const template = {
-      id,
-      name,
-      servingText: servingText || "1 serving",
-      servingGrams: Number.isFinite(servingGrams) ? servingGrams : null,
-      basis,
-      perServing: basis === "serving" ? { kcal, protein:p, carbs:c, fat:f } : null,
-      per100g: basis === "100g" ? { kcal, protein:p, carbs:c, fat:f } : null,
+    const next = {
+      servingText: servingText || existing.servingText || "",
+      servingGrams: Number.isFinite(servingGrams) ? servingGrams : (Number.isFinite(existing.servingGrams) ? existing.servingGrams : null),
+      perServing: existing.perServing || null,
+      per100g: existing.per100g || null,
       updatedAtISO: new Date().toISOString()
     };
-    customFoods.unshift(template);
-    setCustomFoods(customFoods);
 
-    currentFood = {
-      barcode: "",
-      name: template.name,
-      brand: "",
-      servingSizeText: template.servingText,
-      servingGrams: template.servingGrams,
-      perServing: template.perServing || { kcal:null, protein:null, carbs:null, fat:null },
-      per100g: template.per100g || { kcal:null, protein:null, carbs:null, fat:null },
-      hasServing: !!template.perServing,
-      has100g: !!template.per100g,
-      source: "Custom (You)",
-      accuracyNote: "Saved from label/manual entry"
-    };
+    if (basis === "serving") next.perServing = { kcal, protein:p, carbs:c, fat:f };
+    else next.per100g = { kcal, protein:p, carbs:c, fat:f };
 
-    prodName.textContent = currentFood.name;
-    prodMeta.textContent = currentFood.servingSizeText || "";
-    sourcePill.textContent = "Source: Custom (You)";
-    coveragePill.style.display = "inline-block";
-    coveragePill.textContent = "Coverage: Custom ✓";
-    productCard.style.display = "block";
+    // Auto-compute the other basis if serving grams provided
+    if (basis === "serving" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
+      const factor = 100.0 / next.servingGrams;
+      next.per100g = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
+    }
+    if (basis === "100g" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
+      const factor = next.servingGrams / 100.0;
+      next.perServing = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
+    }
 
-    verifyPanel.open = false;
-    updateModeHelp(currentFood);
-    updatePreview();
+    overrides[currentFood.barcode] = next;
+    setOverrides(overrides);
 
-    toast("Saved custom food. Now tap Add to today.");
+    toast("Saved verified macros.");
+    lookup(currentFood.barcode);
   });
 
   clearOverride.addEventListener("click", () => {
-    if (currentFood?.barcode) {
-      const overrides = getOverrides();
-      if (overrides[currentFood.barcode]) {
-        delete overrides[currentFood.barcode];
-        setOverrides(overrides);
-        toast("Removed verified data.");
-        lookup(currentFood.barcode);
-      } else {
-        toast("No verified data to remove.");
-      }
-      return;
+    if (!currentFood?.barcode) return toast("Lookup a product first.");
+    const overrides = getOverrides();
+    if (overrides[currentFood.barcode]) {
+      delete overrides[currentFood.barcode];
+      setOverrides(overrides);
+      toast("Removed verified data.");
+      lookup(currentFood.barcode);
+    } else {
+      toast("No verified data to remove.");
     }
-    toast("Custom foods: to remove, clear browser storage for this site.");
-  });
-
-  // ---------------------------
-  // Workouts
-  // ---------------------------
-  addWorkout.addEventListener("click", () => {
-    const type = workoutType.value;
-    const muscle = muscleGroup.value;
-    const burned = Number(workoutCals.value || 0);
-    const notes = workoutNotes.value.trim();
-
-    if (!Number.isFinite(burned) || burned < 0) return toast("Enter calories burned (0 or more).");
-
-    const entry = {
-      timestamp: new Date().toISOString(),
-      type,
-      muscle,
-      burned,
-      notes
-    };
-
-    const wos = getWorkouts();
-    wos.unshift(entry);
-    setWorkouts(wos);
-
-    workoutCals.value = "";
-    workoutNotes.value = "";
-    render();
-    toast("Added workout.");
-    setActiveTab("today");
   });
 
   // ---------------------------
@@ -1388,125 +1585,6 @@
       lookup(code);
       e.target.value = "";
     });
-  });
-
-  // ---------------------------
-  // Nutrition label OCR
-  // ---------------------------
-  function normalizeOcrText(t) {
-    return String(t || "")
-      .replace(/\u00A0/g, " ")
-      .replace(/[|]/g, "I")
-      .replace(/[—–]/g, "-")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
-  }
-  function pickNumberNear(text, keyword) {
-    const re = new RegExp(`${keyword}\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)`, "i");
-    const m = text.match(re);
-    return m ? Number(m[1]) : null;
-  }
-  function pickMacro(text, keyword) {
-    const re = new RegExp(`${keyword}\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)\\s*g?`, "i");
-    const m = text.match(re);
-    return m ? Number(m[1]) : null;
-  }
-  function parseNutritionFromOcr(rawText) {
-    const t = normalizeOcrText(rawText);
-
-    let calories =
-      pickNumberNear(t, "calories") ??
-      pickNumberNear(t, "energy") ??
-      null;
-
-    const protein = pickMacro(t, "protein");
-    const carbs =
-      pickMacro(t, "total carbohydrate") ??
-      pickMacro(t, "total carbs") ??
-      pickMacro(t, "carbohydrate") ??
-      pickMacro(t, "carbs");
-    const fat =
-      pickMacro(t, "total fat") ??
-      pickMacro(t, "fat");
-
-    let servingText = null;
-    let servingGrams = null;
-
-    const servingLine = t.match(/serving size\s*[:\-]?\s*(.{0,80})/i);
-    if (servingLine?.[1]) {
-      const snippet = servingLine[1].trim();
-      if (snippet) servingText = snippet;
-      const g = snippet.match(/(\d+(?:\.\d+)?)\s*g\b/i);
-      if (g) servingGrams = Number(g[1]);
-    }
-
-    if (Number.isFinite(calories) && calories > 4000) calories = null;
-    return { calories, protein, carbs, fat, servingText, servingGrams, ocrText: rawText };
-  }
-
-  async function ocrLabelFile(file) {
-    const { data } = await Tesseract.recognize(file, "eng", { logger: () => {} });
-    return data.text || "";
-  }
-
-  labelPhoto.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    status.textContent = "Reading nutrition label (OCR)…";
-
-    try {
-      const text = await ocrLabelFile(file);
-      const parsed = parseNutritionFromOcr(text);
-
-      productCard.style.display = "block";
-      verifyPanel.open = true;
-
-      currentFood = {
-        barcode: "",
-        name: "Custom label item",
-        brand: "",
-        servingSizeText: "",
-        servingGrams: null,
-        perServing: { kcal:null, protein:null, carbs:null, fat:null },
-        per100g: { kcal:null, protein:null, carbs:null, fat:null },
-        hasServing: false,
-        has100g: false,
-        source: "Label OCR (confirm)",
-        accuracyNote: ""
-      };
-
-      prodName.textContent = "Label OCR item (confirm values)";
-      prodMeta.textContent = "Filled from nutrition label photo";
-      sourcePill.textContent = "Source: Label OCR (confirm)";
-      coveragePill.style.display = "inline-block";
-      coveragePill.textContent = "Coverage: OCR → verify";
-
-      editFoodName.value = "Custom label item";
-      editBasis.value = "serving";
-
-      if (parsed.servingText) editServingText.value = parsed.servingText;
-      if (Number.isFinite(parsed.servingGrams)) editServingGrams.value = parsed.servingGrams;
-
-      if (Number.isFinite(parsed.calories)) editKcal.value = parsed.calories;
-      if (Number.isFinite(parsed.protein)) editProtein.value = parsed.protein;
-      if (Number.isFinite(parsed.carbs)) editCarbs.value = parsed.carbs;
-      if (Number.isFinite(parsed.fat)) editFat.value = parsed.fat;
-
-      verifyStatus.textContent =
-        "OCR complete.\n" +
-        "Please confirm values above (OCR can misread glare/angles).\n\n" +
-        "Raw OCR (debug):\n" + text.slice(0, 700);
-
-      status.textContent = "OCR complete. Confirm values → Save verified → Add to today.";
-    } catch (err) {
-      status.textContent =
-        "OCR failed: " + (err?.message || String(err)) +
-        "\nTip: brighter + closer + avoid blur/glare.";
-    }
-
-    e.target.value = "";
   });
 
   // ---------------------------
@@ -1588,7 +1666,7 @@
 
     scanning = true;
     lastDecoded = null;
-    status.textContent = "Starting scanner…";
+    status.textContent = "Starting scanner… (Quagga2)";
 
     await listCamerasForDropdown();
 
@@ -1643,7 +1721,7 @@
         torchOn = false;
       }
 
-      status.textContent = "Scanning…\nTips: fill the frame, avoid glare, hold steady 1–2s.";
+      status.textContent = "Scanning… (Quagga2)\nTips: fill the frame, avoid glare, hold steady 1–2s.";
     });
 
     Quagga.onDetected(onDetectedHandler);
@@ -1672,7 +1750,7 @@
   stopBtn.addEventListener("click", stopScan);
 
   // ---------------------------
-  // Workout add
+  // Workouts
   // ---------------------------
   addWorkout.addEventListener("click", () => {
     const type = workoutType.value;
@@ -1702,7 +1780,549 @@
   });
 
   // ---------------------------
-  // Init
+  // Sleep
+  // ---------------------------
+  sleepDate.value = isoDateLocal();
+
+  function computeSleepHours(bed, wake) {
+    if (!bed || !wake) return null;
+    const [bh,bm] = bed.split(":").map(Number);
+    const [wh,wm] = wake.split(":").map(Number);
+    if (![bh,bm,wh,wm].every(Number.isFinite)) return null;
+
+    let b = bh*60 + bm;
+    let w = wh*60 + wm;
+
+    // if wake earlier, assume next day
+    if (w <= b) w += 24*60;
+    const mins = w - b;
+    return round1(mins / 60);
+  }
+
+  saveSleep.addEventListener("click", () => {
+    const d = sleepDate.value || isoDateLocal();
+    const bed = sleepBed.value || "";
+    const wake = sleepWake.value || "";
+    const quality = Number(sleepQuality.value || 3);
+    const notes = sleepNotes.value.trim();
+
+    const hours = computeSleepHours(bed, wake);
+    const map = getSleepMap();
+    map[d] = { bed, wake, hours, quality, notes };
+    setSleepMap(map);
+
+    renderSleep();
+    toast("Saved sleep.");
+  });
+
+  clearSleepDay.addEventListener("click", () => {
+    const d = sleepDate.value || isoDateLocal();
+    const map = getSleepMap();
+    if (map[d]) {
+      delete map[d];
+      setSleepMap(map);
+      renderSleep();
+      toast("Deleted that date.");
+    } else {
+      toast("No sleep entry for that date.");
+    }
+  });
+
+  function renderSleep(){
+    const map = getSleepMap();
+
+    // last 7 dates incl today
+    const dates = [];
+    const now = new Date();
+    for (let i=0;i<7;i++){
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      dates.push(isoDateLocal(d));
+    }
+
+    let sumH = 0, sumQ = 0, n = 0;
+    sleepBody.innerHTML = "";
+
+    dates.forEach(dateStr => {
+      const e = map[dateStr];
+      if (!e) return;
+
+      n += 1;
+      sumQ += Number(e.quality||0);
+      if (Number.isFinite(e.hours)) sumH += Number(e.hours||0);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><div style="font-weight:950">${escapeHtml(dateStr)}</div><div class="small">${escapeHtml(e.bed||"")} → ${escapeHtml(e.wake||"")}</div></td>
+        <td class="right">${Number.isFinite(e.hours) ? e.hours.toFixed(1) : "—"}</td>
+        <td class="right">${Number(e.quality||0).toFixed(0)}</td>
+        <td>${escapeHtml(e.notes||"")}</td>
+      `;
+      sleepBody.appendChild(tr);
+    });
+
+    sleepNights.textContent = `Nights logged: ${n}`;
+    sleepAvgQuality.textContent = `Avg quality: ${n ? round1(sumQ/n).toFixed(1) : "—"}`;
+    sleepAvgHours.textContent = `Avg hours: ${n ? round1(sumH/n).toFixed(1) : "—"}`;
+  }
+
+  // ---------------------------
+  // Plan calculator
+  // ---------------------------
+  let lastPlan = null;
+
+  function lbsToKg(lb){ return lb * 0.45359237; }
+  function inchesToCm(inches){ return inches * 2.54; }
+
+  function mifflinBMR({gender, kg, cm, age}){
+    // Mifflin-St Jeor
+    // men: 10*kg + 6.25*cm - 5*age + 5
+    // women: 10*kg + 6.25*cm - 5*age - 161
+    const base = 10*kg + 6.25*cm - 5*age;
+    return gender === "male" ? (base + 5) : (base - 161);
+  }
+
+  function computePlan(){
+    const gender = pGender.value;
+    const age = Number(pAge.value || 0);
+    const ft = Number(pHeightFt.value || 0);
+    const inch = Number(pHeightIn.value || 0);
+    const weightLb = Number(pWeight.value || 0);
+    const goalLb = Number(pGoalWeight.value || 0);
+    const activity = Number(pActivity.value || 1.2);
+    const speed = pSpeed.value; // slow, moderate, aggressive
+    const retention = pRetention.value; // high, medium, low
+
+    const heightIn = ft*12 + inch;
+    const cm = inchesToCm(heightIn);
+    const kg = lbsToKg(weightLb);
+
+    const bmr = mifflinBMR({gender, kg, cm, age});
+    const tdee = bmr * activity;
+
+    // deficit targets by speed
+    let deficit = (speed === "slow") ? 250 : (speed === "aggressive" ? 750 : 500);
+
+    // retention adjusts deficit slightly
+    if (retention === "high") deficit = Math.min(deficit, 500);
+    if (retention === "low") deficit = Math.max(deficit, 500);
+
+    const calTarget = Math.max(1200, Math.round(tdee - deficit));
+
+    // Protein by retention (g/lb target bodyweight-ish)
+    // high: 0.9–1.0 g/lb, medium: 0.75–0.9, low: 0.65–0.75
+    const baseLb = Math.max(goalLb, weightLb);
+    let pPerLb = (retention === "high") ? 0.95 : (retention === "medium" ? 0.82 : 0.70);
+    const protein = Math.round(baseLb * pPerLb);
+
+    // Fat minimum (0.3 g/lb), slightly higher if low retention
+    let fat = Math.round(weightLb * (retention === "low" ? 0.35 : 0.30));
+    fat = clamp(fat, 40, 95);
+
+    // Carbs = remaining calories
+    const pCals = protein * 4;
+    const fCals = fat * 9;
+    const remaining = Math.max(0, calTarget - (pCals + fCals));
+    const carbs = Math.round(remaining / 4);
+
+    // Time estimate to goal
+    const lossPerWeek = speed === "slow" ? 0.5 : (speed === "aggressive" ? 1.5 : 1.0);
+    const lbsToLose = Math.max(0, weightLb - goalLb);
+    const weeks = lossPerWeek > 0 ? Math.ceil(lbsToLose / lossPerWeek) : null;
+
+    lastPlan = { calTarget, protein, carbs, fat, tdee: Math.round(tdee), deficit: Math.round(tdee - calTarget), weeks, lbsToLose };
+    planOut.textContent = JSON.stringify({
+      estimated_TDEE_kcal: Math.round(tdee),
+      chosen_deficit_kcal: Math.round(tdee - calTarget),
+      daily_targets: { calories: calTarget, protein_g: protein, carbs_g: carbs, fat_g: fat },
+      goal: { current_lb: weightLb, goal_lb: goalLb, lbs_to_lose: lbsToLose, est_weeks: weeks }
+    }, null, 2);
+  }
+
+  calcPlan.addEventListener("click", () => {
+    computePlan();
+    toast("Plan calculated.");
+  });
+
+  applyPlan.addEventListener("click", () => {
+    if (!lastPlan) computePlan();
+    if (!lastPlan) return toast("Calculate first.");
+
+    tCalories.value = lastPlan.calTarget;
+    tProtein.value = lastPlan.protein;
+    tCarbs.value = lastPlan.carbs;
+    tFat.value = lastPlan.fat;
+
+    LS.set("targets", { calories:lastPlan.calTarget, protein:lastPlan.protein, carbs:lastPlan.carbs, fat:lastPlan.fat });
+    render();
+    toast("Applied targets to Today.");
+    setActiveTab("today");
+  });
+
+  // ---------------------------
+  // Meal Builder (typed foods)
+  // ---------------------------
+  const BASE_FOODS = [
+    // Proteins (cooked unless noted)
+    { id:"chicken_breast_cooked", name:"Chicken breast (cooked)", per100g:{kcal:165, protein:31.0, carbs:0.0, fat:3.6} },
+    { id:"chicken_thigh_cooked", name:"Chicken thigh (cooked)", per100g:{kcal:209, protein:26.0, carbs:0.0, fat:11.0} },
+    { id:"ground_turkey_93_cooked", name:"Ground turkey 93% (cooked)", per100g:{kcal:176, protein:23.0, carbs:0.0, fat:9.0} },
+    { id:"salmon_cooked", name:"Salmon (cooked)", per100g:{kcal:206, protein:22.0, carbs:0.0, fat:12.0} },
+    { id:"egg_whole", name:"Egg (whole, raw)", per100g:{kcal:143, protein:12.6, carbs:0.7, fat:9.5} },
+    { id:"egg_whites", name:"Egg whites", per100g:{kcal:52, protein:10.9, carbs:0.7, fat:0.2} },
+    { id:"greek_yogurt_nonfat", name:"Greek yogurt (nonfat)", per100g:{kcal:59, protein:10.3, carbs:3.6, fat:0.4} },
+    { id:"tofu_firm", name:"Tofu (firm)", per100g:{kcal:144, protein:17.0, carbs:3.0, fat:8.7} },
+
+    // Carbs
+    { id:"quinoa_cooked", name:"Quinoa (cooked)", per100g:{kcal:120, protein:4.4, carbs:21.3, fat:1.9} },
+    { id:"rice_white_cooked", name:"Rice (white, cooked)", per100g:{kcal:130, protein:2.4, carbs:28.2, fat:0.3} },
+    { id:"oats_dry", name:"Oats (dry)", per100g:{kcal:389, protein:16.9, carbs:66.3, fat:6.9} },
+    { id:"potato_baked", name:"Potato (baked)", per100g:{kcal:93, protein:2.5, carbs:21.0, fat:0.1} },
+    { id:"tortilla_flour", name:"Flour tortilla", per100g:{kcal:313, protein:8.0, carbs:52.0, fat:8.0} },
+    { id:"black_beans_cooked", name:"Black beans (cooked)", per100g:{kcal:132, protein:8.9, carbs:23.7, fat:0.5} },
+
+    // Fats / extras
+    { id:"avocado", name:"Avocado", per100g:{kcal:160, protein:2.0, carbs:8.5, fat:14.7} },
+    { id:"olive_oil", name:"Olive oil", per100g:{kcal:884, protein:0.0, carbs:0.0, fat:100.0} },
+    { id:"peanut_butter", name:"Peanut butter", per100g:{kcal:588, protein:25.0, carbs:20.0, fat:50.0} },
+    { id:"cheddar", name:"Cheddar cheese", per100g:{kcal:403, protein:25.0, carbs:1.3, fat:33.0} },
+
+    // Veggies
+    { id:"broccoli", name:"Broccoli", per100g:{kcal:34, protein:2.8, carbs:6.6, fat:0.4} },
+    { id:"spinach", name:"Spinach", per100g:{kcal:23, protein:2.9, carbs:3.6, fat:0.4} },
+    { id:"bell_pepper", name:"Bell pepper", per100g:{kcal:31, protein:1.0, carbs:6.0, fat:0.3} }
+  ];
+
+  function normalizeKey(s){
+    return String(s||"").trim().toLowerCase()
+      .replace(/[^a-z0-9]+/g,"_")
+      .replace(/^_+|_+$/g,"")
+      .slice(0,60) || "custom_food";
+  }
+
+  function getFoodLibrary(){
+    const customs = getTypedCustoms();
+    const customArr = Object.entries(customs).map(([id, v]) => ({
+      id,
+      name: v.name,
+      per100g: v.per100g,
+      source: "Custom (You)"
+    }));
+    const baseArr = BASE_FOODS.map(x => ({...x, source:"General"}));
+    return [...customArr, ...baseArr];
+  }
+
+  function searchFoods(query){
+    const q = String(query||"").toLowerCase().trim();
+    if (!q) return [];
+    const lib = getFoodLibrary();
+    // simple scoring: contains
+    return lib
+      .map(item => {
+        const name = item.name.toLowerCase();
+        const score =
+          name === q ? 100 :
+          name.startsWith(q) ? 60 :
+          name.includes(q) ? 40 :
+          0;
+        return { item, score };
+      })
+      .filter(x => x.score > 0)
+      .sort((a,b) => b.score - a.score)
+      .slice(0, 10)
+      .map(x => x.item);
+  }
+
+  function computeMacrosForGrams(per100g, grams){
+    const factor = grams / 100.0;
+    return {
+      calories: safe(per100g.kcal) * factor,
+      protein: safe(per100g.protein) * factor,
+      carbs: safe(per100g.carbs) * factor,
+      fat: safe(per100g.fat) * factor
+    };
+  }
+
+  function mealSum(items){
+    return items.reduce((acc, it) => {
+      const m = computeMacrosForGrams(it.per100g, it.grams);
+      acc.calories += m.calories;
+      acc.protein += m.protein;
+      acc.carbs += m.carbs;
+      acc.fat += m.fat;
+      return acc;
+    }, { calories:0, protein:0, carbs:0, fat:0 });
+  }
+
+  function renderMeal(){
+    const meal = getMeal();
+    mealName.value = meal.name || "";
+
+    const totals = mealSum(meal.items);
+    mealTotals.textContent = JSON.stringify({
+      meal_name: meal.name || "",
+      totals: {
+        calories_kcal: Math.round(totals.calories),
+        protein_g: round1(totals.protein),
+        carbs_g: round1(totals.carbs),
+        fat_g: round1(totals.fat)
+      }
+    }, null, 2);
+
+    mealBody.innerHTML = "";
+    meal.items.forEach((it, idx) => {
+      const m = computeMacrosForGrams(it.per100g, it.grams);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <div style="font-weight:950">${escapeHtml(it.name)}</div>
+          <div class="small">${escapeHtml(it.source || "")} • per 100g: ${it.per100g.kcal} kcal, P ${it.per100g.protein}g, C ${it.per100g.carbs}g, F ${it.per100g.fat}g</div>
+        </td>
+        <td class="right">
+          <input data-grams="${idx}" type="number" min="0" step="1" value="${Math.round(it.grams)}" style="min-height:36px; padding:8px 10px; font-size:13px;" />
+        </td>
+        <td class="right">${Math.round(m.calories)}</td>
+        <td class="right">${round1(m.protein)}</td>
+        <td class="right">${round1(m.carbs)}</td>
+        <td class="right">${round1(m.fat)}</td>
+        <td class="right">
+          <button class="ghost" data-edit="${idx}" style="padding:8px 10px; font-size:12px; margin-bottom:6px;" type="button">Edit macros</button>
+          <button class="danger" data-del="${idx}" style="padding:8px 10px; font-size:12px;" type="button">Delete</button>
+        </td>
+      `;
+      mealBody.appendChild(tr);
+    });
+
+    mealBody.querySelectorAll("input[data-grams]").forEach(inp => {
+      inp.addEventListener("input", () => {
+        const i = Number(inp.getAttribute("data-grams"));
+        const g = Number(inp.value || 0);
+        const meal = getMeal();
+        if (!meal.items[i]) return;
+        meal.items[i].grams = Math.max(0, g);
+        meal.name = mealName.value.trim();
+        setMeal(meal);
+        renderMeal();
+      });
+    });
+
+    mealBody.querySelectorAll("button[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-del"));
+        const meal = getMeal();
+        meal.items = meal.items.filter((_, idx) => idx !== i);
+        meal.name = mealName.value.trim();
+        setMeal(meal);
+        renderMeal();
+      });
+    });
+
+    mealBody.querySelectorAll("button[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-edit"));
+        const meal = getMeal();
+        const it = meal.items[i];
+        if (!it) return;
+
+        // simple edit via prompt (works well on iOS)
+        const newK = prompt(`Edit kcal per 100g for "${it.name}"`, String(it.per100g.kcal));
+        if (newK === null) return;
+        const newP = prompt(`Edit protein (g) per 100g for "${it.name}"`, String(it.per100g.protein));
+        if (newP === null) return;
+        const newC = prompt(`Edit carbs (g) per 100g for "${it.name}"`, String(it.per100g.carbs));
+        if (newC === null) return;
+        const newF = prompt(`Edit fat (g) per 100g for "${it.name}"`, String(it.per100g.fat));
+        if (newF === null) return;
+
+        const kcal = Number(newK), p = Number(newP), c = Number(newC), f = Number(newF);
+        if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
+          toast("Invalid macro values. Must be 0+ numbers.");
+          return;
+        }
+
+        it.per100g = { kcal, protein: p, carbs: c, fat: f };
+
+        // save as custom typed food under its id
+        const customs = getTypedCustoms();
+        customs[it.id] = {
+          name: it.name,
+          per100g: it.per100g,
+          updatedAtISO: new Date().toISOString()
+        };
+        setTypedCustoms(customs);
+
+        // mark source
+        it.source = "Custom (You)";
+
+        meal.name = mealName.value.trim();
+        setMeal(meal);
+        renderMeal();
+        renderCustomTypedList();
+        toast("Saved your custom macros for this food.");
+      });
+    });
+  }
+
+  function renderCustomTypedList(){
+    const q = String(customTypedSearch.value || "").toLowerCase().trim();
+    const customs = getTypedCustoms();
+    const arr = Object.entries(customs).map(([id, v]) => ({ id, ...v }));
+
+    const filtered = q
+      ? arr.filter(x => (x.name||"").toLowerCase().includes(q) || x.id.includes(q))
+      : arr;
+
+    if (!filtered.length) {
+      customTypedResults.textContent = "No custom typed foods yet.";
+      return;
+    }
+
+    customTypedResults.textContent = filtered
+      .slice(0, 50)
+      .map(x => {
+        const p = x.per100g;
+        return `${x.name}  (per 100g: ${p.kcal} kcal, P ${p.protein}g, C ${p.carbs}g, F ${p.fat}g)`;
+      })
+      .join("\n");
+  }
+
+  mealSearchBtn.addEventListener("click", () => {
+    const q = mealFoodQuery.value.trim();
+    if (!q) { mealSearchResults.textContent = "Type something like 'chicken' or 'quinoa'."; return; }
+    const results = searchFoods(q);
+
+    if (!results.length) {
+      // allow create a new food quickly
+      const newId = "custom_" + normalizeKey(q);
+      mealSearchResults.innerHTML =
+        `No matches found.\n\n` +
+        `You can add it as a new custom food:\n` +
+        `• Name: ${escapeHtml(q)}\n` +
+        `Then you’ll be prompted to enter per-100g macros.`;
+      const should = confirm(`No matches found.\n\nCreate new custom food "${q}" now?`);
+      if (!should) return;
+
+      const kcal = Number(prompt(`Calories per 100g for "${q}"`, "100") || "");
+      const p = Number(prompt(`Protein (g) per 100g for "${q}"`, "10") || "");
+      const c = Number(prompt(`Carbs (g) per 100g for "${q}"`, "10") || "");
+      const f = Number(prompt(`Fat (g) per 100g for "${q}"`, "5") || "");
+      if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
+        toast("Invalid macros. Cancelled.");
+        return;
+      }
+      const customs = getTypedCustoms();
+      customs[newId] = { name: q, per100g:{kcal, protein:p, carbs:c, fat:f}, updatedAtISO: new Date().toISOString() };
+      setTypedCustoms(customs);
+      renderCustomTypedList();
+
+      // add to meal with default grams
+      const meal = getMeal();
+      meal.items.unshift({ id:newId, name:q, grams:150, per100g:{kcal, protein:p, carbs:c, fat:f}, source:"Custom (You)" });
+      meal.name = mealName.value.trim();
+      setMeal(meal);
+      renderMeal();
+      toast("Added custom food to meal.");
+      return;
+    }
+
+    // Show result list with add buttons
+    mealSearchResults.innerHTML = results.map((r, idx) => {
+      const p = r.per100g;
+      return `
+        <div style="margin-bottom:10px;">
+          <div style="font-weight:950">${escapeHtml(r.name)}</div>
+          <div class="small">${escapeHtml(r.source || "")} • per 100g: ${p.kcal} kcal, P ${p.protein}g, C ${p.carbs}g, F ${p.fat}g</div>
+          <div class="split" style="margin-top:6px;">
+            <input data-add-grams="${idx}" type="number" min="0" step="1" value="150" style="max-width:160px; min-height:36px; padding:8px 10px; font-size:13px;" />
+            <button class="good" data-add="${idx}" style="max-width:180px; padding:10px 12px;" type="button">Add ingredient</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    mealSearchResults.querySelectorAll("button[data-add]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-add"));
+        const r = results[i];
+        const gramsInput = mealSearchResults.querySelector(`input[data-add-grams="${i}"]`);
+        const grams = Number(gramsInput?.value || 0);
+        const g = Number.isFinite(grams) ? Math.max(0, grams) : 0;
+
+        const meal = getMeal();
+        meal.items.unshift({
+          id: r.id,
+          name: r.name,
+          grams: g || 150,
+          per100g: r.per100g,
+          source: r.source
+        });
+        meal.name = mealName.value.trim();
+        setMeal(meal);
+        renderMeal();
+        toast("Added ingredient.");
+      });
+    });
+  });
+
+  mealName.addEventListener("input", () => {
+    const meal = getMeal();
+    meal.name = mealName.value.trim();
+    setMeal(meal);
+  });
+
+  mealClear.addEventListener("click", () => {
+    setMeal({ name:"", items:[] });
+    mealFoodQuery.value = "";
+    mealSearchResults.textContent = "Search results will appear here.";
+    renderMeal();
+    toast("Cleared meal.");
+  });
+
+  mealAddToToday.addEventListener("click", () => {
+    const meal = getMeal();
+    if (!meal.items.length) { toast("Meal is empty."); return; }
+
+    const totals = mealSum(meal.items);
+    const name = (meal.name || "Meal").trim();
+    const detail = `${meal.items.length} items`;
+
+    const entry = {
+      timestamp: new Date().toISOString(),
+      name,
+      detail,
+      calories: totals.calories,
+      protein: totals.protein,
+      carbs: totals.carbs,
+      fat: totals.fat,
+      barcode: "",
+      source: "Meal Builder"
+    };
+
+    const foods = getFoods();
+    foods.unshift(entry);
+    setFoods(foods);
+    render();
+    toast("Added meal to Today.");
+    setActiveTab("today");
+  });
+
+  customTypedSearchBtn.addEventListener("click", renderCustomTypedList);
+  customTypedSearch.addEventListener("input", () => {
+    // live filter
+    renderCustomTypedList();
+  });
+
+  // ---------------------------
+  // Today: clear + export handled above
+  // ---------------------------
+
+  // ---------------------------
+  // Plan initial calc (optional)
+  // ---------------------------
+  // (Do nothing until user taps calculate.)
+
+  // ---------------------------
+  // Initial render
   // ---------------------------
   render();
 </script>
