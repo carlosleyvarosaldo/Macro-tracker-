@@ -104,7 +104,7 @@
 
 <body>
 <header>
-  <h1>Macro Scan & Log (Scan • Link • Verified Macros • Workouts)</h1>
+  <h1>Macro Scan & Log (Scan • Label OCR • Link • Verified • Workouts)</h1>
 </header>
 
 <main class="grid">
@@ -113,6 +113,7 @@
     <h2>Foods</h2>
     <div class="muted">
       Best on iPhone: open in <b>Safari</b> via <b>HTTPS</b> (GitHub Pages). Fill the frame with barcode, avoid glare, hold steady 1–2s.
+      <br/>For labels: take a bright, close photo of the Nutrition Facts panel (minimal glare).
     </div>
 
     <label>Camera</label>
@@ -128,6 +129,11 @@
       <label class="fileBtn" style="max-width:260px;">
         Upload barcode photo
         <input id="barcodePhoto" type="file" accept="image/*" />
+      </label>
+
+      <label class="fileBtn" style="max-width:290px;">
+        Upload nutrition label photo (OCR)
+        <input id="labelPhoto" type="file" accept="image/*" />
       </label>
 
       <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
@@ -151,7 +157,7 @@
         </div>
         <div class="muted" style="margin-top:6px;">
           Works best with Open Food Facts links, or any link that contains a barcode number.
-          If we can’t extract a barcode due to website restrictions, use the Verify/Edit panel below.
+          If we can’t extract a barcode due to website restrictions, use Label OCR or Verify/Edit below.
         </div>
       </div>
     </div>
@@ -183,10 +189,14 @@
 
       <!-- Accuracy / Verification -->
       <details id="verifyPanel">
-        <summary>Accuracy: verify / edit macros for this barcode</summary>
+        <summary>Accuracy: verify / edit macros (barcode OR custom food)</summary>
         <div class="muted" style="margin-top:6px;">
-          For “accurate every macro,” enter the nutrition label once and save. Your verified values will be used next time you scan this barcode on this device.
+          For “accurate every macro,” enter the nutrition label once (or use OCR) and save.
+          If there’s no barcode, this saves as a <b>Custom food</b> on this device.
         </div>
+
+        <label>Food name</label>
+        <input id="editFoodName" placeholder="e.g., Homemade protein oats" />
 
         <label>Serving size text (optional)</label>
         <input id="editServingText" placeholder="e.g., 1 bar (40g)" />
@@ -228,8 +238,8 @@
         </div>
 
         <div class="split" style="margin-top:10px;">
-          <button id="saveOverride" class="ghost" style="max-width:220px;">Save as verified</button>
-          <button id="clearOverride" class="danger" style="max-width:220px;">Remove verified data</button>
+          <button id="saveOverride" class="ghost" style="max-width:220px;">Save verified</button>
+          <button id="clearOverride" class="danger" style="max-width:220px;">Remove verified</button>
         </div>
 
         <div class="status" id="verifyStatus" style="margin-top:10px;">—</div>
@@ -332,13 +342,15 @@
     </div>
 
     <div class="muted" style="margin-top:10px;">
-      “MyFitnessPal-style” accuracy: use <b>Verify/Edit</b> once per barcode (from the label). After that, it’s accurate every scan on this device.
+      Tip: if barcode lookup is missing macros, use <b>Label OCR</b> → <b>Save verified</b>.
     </div>
   </section>
 </main>
 
 <!-- Quagga2 global build -->
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+<!-- Tesseract OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <script type="module">
   // ---------------------------
@@ -352,6 +364,10 @@
   const OVERRIDE_KEY = "barcode_overrides_v1"; // { [barcode]: {...} }
   function getOverrides(){ return LS.get(OVERRIDE_KEY, {}); }
   function setOverrides(map){ LS.set(OVERRIDE_KEY, map); }
+
+  const CUSTOM_FOODS_KEY = "custom_foods_v1"; // array of custom foods saved by user
+  function getCustomFoods(){ return LS.get(CUSTOM_FOODS_KEY, []); }
+  function setCustomFoods(arr){ LS.set(CUSTOM_FOODS_KEY, arr); }
 
   const todayKey = (prefix) => {
     const d = new Date();
@@ -378,14 +394,13 @@
   // Extract a barcode-looking sequence from a string/link
   function extractBarcodeFromText(text){
     const s = String(text || "");
-    // Common UPC/EAN lengths: 8, 12, 13, 14
     const m = s.match(/(\d{8}|\d{12}|\d{13}|\d{14})/);
     return m ? m[1] : null;
-    }
+  }
 
-  function toast(statusEl, msg) {
-    statusEl.textContent = msg;
-    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = "Ready."; }, 1600);
+  function toast(msg) {
+    status.textContent = msg;
+    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1600);
   }
 
   // ---------------------------
@@ -402,6 +417,7 @@
   const barcodeEl = document.getElementById("barcode");
   const lookupBtn = document.getElementById("lookupBtn");
   const photoInput = document.getElementById("barcodePhoto");
+  const labelPhoto = document.getElementById("labelPhoto");
 
   const linkInput = document.getElementById("linkInput");
   const linkLookupBtn = document.getElementById("linkLookupBtn");
@@ -420,6 +436,7 @@
 
   // Verify panel
   const verifyPanel = document.getElementById("verifyPanel");
+  const editFoodName = document.getElementById("editFoodName");
   const editServingText = document.getElementById("editServingText");
   const editServingGrams = document.getElementById("editServingGrams");
   const editBasis = document.getElementById("editBasis");
@@ -468,7 +485,7 @@
     };
     LS.set("targets", t);
     render();
-    toast(status, "Targets saved.");
+    toast("Targets saved.");
   });
 
   // ---------------------------
@@ -508,7 +525,6 @@
 
     const t = LS.get("targets", defaultTargets);
 
-    // Net calories: food - exercise
     const netCals = totals.calories - burned;
     const remNet = t.calories - netCals;
 
@@ -582,7 +598,7 @@
     setFoods([]);
     setWorkouts([]);
     render();
-    toast(status, "Cleared today.");
+    toast("Cleared today.");
   });
 
   exportCsvBtn.addEventListener("click", () => {
@@ -808,21 +824,21 @@
     } else if (parsed) {
       status.textContent = "Found product. (Tip: verify if you want guaranteed accuracy.)";
     } else {
-      status.textContent = "Not found in database. Use Verify/Edit to enter label macros.";
+      status.textContent = "Not found in database. Use Label OCR or Verify/Edit to enter macros.";
       verifyPanel.open = true;
     }
   }
 
   lookupBtn.addEventListener("click", () => {
     const code = barcodeEl.value.trim();
-    if (!code) return toast(status, "Enter a barcode first.");
+    if (!code) return toast("Enter a barcode first.");
     lookup(code);
   });
 
   // Link → barcode → lookup
   linkLookupBtn.addEventListener("click", () => {
     const link = linkInput.value.trim();
-    if (!link) return toast(status, "Paste a link first.");
+    if (!link) return toast("Paste a link first.");
 
     const barcode = extractBarcodeFromText(link);
     if (barcode) {
@@ -832,26 +848,24 @@
       return;
     }
 
-    // Special: OpenFoodFacts links often include product/{barcode} or ?code=
-    // If no digits detected, tell user the limitation + verify option
     status.textContent =
       "Couldn’t extract a barcode from that link.\n\n" +
       "Because this is a GitHub Pages (front-end only) app, most websites block reading nutrition facts automatically.\n" +
-      "Fix: copy the barcode number (digits) from the page into the barcode box, OR use Verify/Edit to enter label macros.";
+      "Fix: copy the barcode number into the barcode box, OR use Label OCR / Verify/Edit.";
     verifyPanel.open = true;
   });
 
   // Add to today
   addBtn.addEventListener("click", () => {
-    if (!currentFood) return toast(status, "Lookup a product first.");
+    if (!currentFood) return toast("Lookup a product OR use Label OCR first.");
     const qty = Number(qtyEl.value || 0);
-    if (!Number.isFinite(qty) || qty <= 0) return toast(status, "Enter a quantity > 0.");
+    if (!Number.isFinite(qty) || qty <= 0) return toast("Enter a quantity > 0.");
 
     const { macros, detail } = computeForQty(currentFood, qty, modeEl.value);
 
     const nonZero = macros.calories || macros.protein || macros.carbs || macros.fat;
     if (!nonZero) {
-      toast(status, "No macro data yet. Use Verify/Edit to enter label macros.");
+      toast("No macro data yet. Use Label OCR or Verify/Edit to enter macros.");
       verifyPanel.open = true;
       return;
     }
@@ -864,7 +878,7 @@
       protein: macros.protein,
       carbs: macros.carbs,
       fat: macros.fat,
-      barcode: currentFood.barcode,
+      barcode: currentFood.barcode || "",
       source: currentFood.source
     };
 
@@ -872,13 +886,13 @@
     foods.unshift(entry);
     setFoods(foods);
     render();
-    toast(status, "Added food.");
+    toast("Added food.");
   });
 
   // Verify/edit
   function hydrateVerifyPanel(food) {
     const overrides = getOverrides();
-    const ov = overrides[food.barcode];
+    const ov = food.barcode ? overrides[food.barcode] : null;
 
     const lines = [];
     lines.push(`Current source: ${food.source}`);
@@ -890,6 +904,7 @@
     lines.push(`Per 100g:    kcal=${food.per100g?.kcal ?? "—"}, P=${food.per100g?.protein ?? "—"}, C=${food.per100g?.carbs ?? "—"}, F=${food.per100g?.fat ?? "—"}`);
     verifyStatus.textContent = lines.join("\n");
 
+    editFoodName.value = food.name || "";
     editServingText.value = ov?.servingText ?? (food.servingSizeText || "");
     editServingGrams.value = Number.isFinite(ov?.servingGrams) ? ov.servingGrams : (Number.isFinite(food.servingGrams) ? food.servingGrams : "");
     editBasis.value = (food.servingSizeText || food.hasServing) ? "serving" : "100g";
@@ -901,8 +916,6 @@
   }
 
   saveOverride.addEventListener("click", () => {
-    if (!currentFood?.barcode) return toast(status, "Lookup a product first.");
-
     const basis = editBasis.value;
     const kcal = num(editKcal.value);
     const p = num(editProtein.value);
@@ -910,54 +923,107 @@
     const f = num(editFat.value);
 
     if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
-      return toast(status, "Enter Calories, Protein, Carbs, and Fat (all 4).");
+      return toast("Enter Calories, Protein, Carbs, and Fat (all 4).");
     }
-
-    const overrides = getOverrides();
-    const existing = overrides[currentFood.barcode] || {};
 
     const servingText = (editServingText.value || "").trim();
     const servingGrams = num(editServingGrams.value);
+    const name = (editFoodName.value || "").trim() || currentFood?.name || "Custom food";
 
-    const next = {
-      servingText: servingText || existing.servingText || "",
-      servingGrams: Number.isFinite(servingGrams) ? servingGrams : (Number.isFinite(existing.servingGrams) ? existing.servingGrams : null),
-      perServing: existing.perServing || null,
-      per100g: existing.per100g || null,
+    // BARCODE PATH (verified override)
+    if (currentFood?.barcode) {
+      const overrides = getOverrides();
+      const existing = overrides[currentFood.barcode] || {};
+
+      const next = {
+        servingText: servingText || existing.servingText || "",
+        servingGrams: Number.isFinite(servingGrams) ? servingGrams : (Number.isFinite(existing.servingGrams) ? existing.servingGrams : null),
+        perServing: existing.perServing || null,
+        per100g: existing.per100g || null,
+        updatedAtISO: new Date().toISOString()
+      };
+
+      if (basis === "serving") next.perServing = { kcal, protein:p, carbs:c, fat:f };
+      else next.per100g = { kcal, protein:p, carbs:c, fat:f };
+
+      if (basis === "serving" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
+        const factor = 100.0 / next.servingGrams;
+        next.per100g = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
+      }
+      if (basis === "100g" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
+        const factor = next.servingGrams / 100.0;
+        next.perServing = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
+      }
+
+      overrides[currentFood.barcode] = next;
+      setOverrides(overrides);
+
+      toast("Saved verified macros for barcode.");
+      lookup(currentFood.barcode);
+      return;
+    }
+
+    // CUSTOM FOOD PATH (no barcode)
+    const customFoods = getCustomFoods();
+    const id = (crypto?.randomUUID?.() || String(Date.now()));
+
+    const template = {
+      id,
+      name,
+      servingText: servingText || "1 serving",
+      servingGrams: Number.isFinite(servingGrams) ? servingGrams : null,
+      basis,
+      perServing: basis === "serving" ? { kcal, protein:p, carbs:c, fat:f } : null,
+      per100g: basis === "100g" ? { kcal, protein:p, carbs:c, fat:f } : null,
       updatedAtISO: new Date().toISOString()
     };
+    customFoods.unshift(template);
+    setCustomFoods(customFoods);
 
-    if (basis === "serving") next.perServing = { kcal, protein:p, carbs:c, fat:f };
-    else next.per100g = { kcal, protein:p, carbs:c, fat:f };
+    // Make currentFood usable immediately
+    currentFood = {
+      barcode: "",
+      name: template.name,
+      brand: "",
+      servingSizeText: template.servingText,
+      servingGrams: template.servingGrams,
+      perServing: template.perServing || { kcal:null, protein:null, carbs:null, fat:null },
+      per100g: template.per100g || { kcal:null, protein:null, carbs:null, fat:null },
+      hasServing: !!template.perServing,
+      has100g: !!template.per100g,
+      source: "Custom (You)",
+      accuracyNote: "Saved from label/manual entry"
+    };
 
-    // Auto-compute the other basis if serving grams provided
-    if (basis === "serving" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
-      const factor = 100.0 / next.servingGrams;
-      next.per100g = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
-    }
-    if (basis === "100g" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
-      const factor = next.servingGrams / 100.0;
-      next.perServing = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
-    }
+    prodName.textContent = currentFood.name;
+    prodMeta.textContent = currentFood.servingSizeText || "";
+    sourcePill.textContent = "Source: Custom (You)";
+    coveragePill.style.display = "inline-block";
+    coveragePill.textContent = "Coverage: Custom ✓";
 
-    overrides[currentFood.barcode] = next;
-    setOverrides(overrides);
+    productCard.style.display = "block";
+    verifyPanel.open = false;
+    updateModeHelp(currentFood);
+    updatePreview();
 
-    toast(status, "Saved verified macros.");
-    lookup(currentFood.barcode);
+    toast("Saved custom food. Now tap Add to today.");
   });
 
   clearOverride.addEventListener("click", () => {
-    if (!currentFood?.barcode) return toast(status, "Lookup a product first.");
-    const overrides = getOverrides();
-    if (overrides[currentFood.barcode]) {
-      delete overrides[currentFood.barcode];
-      setOverrides(overrides);
-      toast(status, "Removed verified data.");
-      lookup(currentFood.barcode);
-    } else {
-      toast(status, "No verified data to remove.");
+    // If barcode → clear override
+    if (currentFood?.barcode) {
+      const overrides = getOverrides();
+      if (overrides[currentFood.barcode]) {
+        delete overrides[currentFood.barcode];
+        setOverrides(overrides);
+        toast("Removed verified data.");
+        lookup(currentFood.barcode);
+      } else {
+        toast("No verified data to remove.");
+      }
+      return;
     }
+    toast("For custom foods (no barcode), remove by clearing localStorage or just stop using it.");
   });
 
   // ---------------------------
@@ -969,7 +1035,7 @@
     const burned = Number(workoutCals.value || 0);
     const notes = workoutNotes.value.trim();
 
-    if (!Number.isFinite(burned) || burned < 0) return toast(status, "Enter calories burned (0 or more).");
+    if (!Number.isFinite(burned) || burned < 0) return toast("Enter calories burned (0 or more).");
 
     const entry = {
       timestamp: new Date().toISOString(),
@@ -986,7 +1052,7 @@
     workoutCals.value = "";
     workoutNotes.value = "";
     render();
-    toast(status, "Added workout.");
+    toast("Added workout.");
   });
 
   // ---------------------------
@@ -998,7 +1064,7 @@
 
     const Quagga = window.Quagga;
     if (!Quagga) {
-      toast(status, "Scanner library not loaded.");
+      toast("Scanner library not loaded.");
       e.target.value = "";
       return;
     }
@@ -1026,6 +1092,137 @@
       lookup(code);
       e.target.value = "";
     });
+  });
+
+  // ---------------------------
+  // Nutrition label OCR
+  // ---------------------------
+  function normalizeOcrText(t) {
+    return String(t || "")
+      .replace(/\u00A0/g, " ")
+      .replace(/[|]/g, "I")
+      .replace(/[—–]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  function pickNumberNear(text, keyword) {
+    const re = new RegExp(`${keyword}\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)`, "i");
+    const m = text.match(re);
+    return m ? Number(m[1]) : null;
+  }
+
+  function pickMacro(text, keyword) {
+    const re = new RegExp(`${keyword}\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)\\s*g?`, "i");
+    const m = text.match(re);
+    return m ? Number(m[1]) : null;
+  }
+
+  function parseNutritionFromOcr(rawText) {
+    const t = normalizeOcrText(rawText);
+
+    let calories =
+      pickNumberNear(t, "calories") ??
+      pickNumberNear(t, "energy") ??
+      null;
+
+    const protein = pickMacro(t, "protein");
+    const carbs =
+      pickMacro(t, "total carbohydrate") ??
+      pickMacro(t, "total carbs") ??
+      pickMacro(t, "carbohydrate") ??
+      pickMacro(t, "carbs");
+    const fat =
+      pickMacro(t, "total fat") ??
+      pickMacro(t, "fat");
+
+    let servingText = null;
+    let servingGrams = null;
+
+    const servingLine = t.match(/serving size\s*[:\-]?\s*(.{0,80})/i);
+    if (servingLine?.[1]) {
+      const snippet = servingLine[1].trim();
+      if (snippet) servingText = snippet;
+      const g = snippet.match(/(\d+(?:\.\d+)?)\s*g\b/i);
+      if (g) servingGrams = Number(g[1]);
+    }
+
+    // Basic sanity
+    if (Number.isFinite(calories) && calories > 4000) calories = null;
+
+    return { calories, protein, carbs, fat, servingText, servingGrams, ocrText: rawText };
+  }
+
+  async function ocrLabelFile(file) {
+    const { data } = await Tesseract.recognize(file, "eng", { logger: () => {} });
+    return data.text || "";
+  }
+
+  labelPhoto.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    status.textContent = "Reading nutrition label (OCR)…";
+
+    try {
+      const text = await ocrLabelFile(file);
+      const parsed = parseNutritionFromOcr(text);
+
+      // Ensure UI is visible
+      productCard.style.display = "block";
+      verifyPanel.open = true;
+
+      // Create a temporary currentFood if none exists
+      if (!currentFood) {
+        currentFood = {
+          barcode: "",
+          name: "Custom label item",
+          brand: "",
+          servingSizeText: "",
+          servingGrams: null,
+          perServing: { kcal:null, protein:null, carbs:null, fat:null },
+          per100g: { kcal:null, protein:null, carbs:null, fat:null },
+          hasServing: false,
+          has100g: false,
+          source: "Label OCR (confirm)",
+          accuracyNote: ""
+        };
+      }
+
+      // Populate display
+      prodName.textContent = "Label OCR item (confirm values)";
+      prodMeta.textContent = "Filled from nutrition label photo";
+      sourcePill.textContent = "Source: Label OCR (confirm)";
+      coveragePill.style.display = "inline-block";
+      coveragePill.textContent = "Coverage: OCR → verify";
+
+      // Fill verify form
+      editFoodName.value = currentFood?.name && currentFood.name !== "(Unknown product)" ? currentFood.name : "Custom label item";
+      editBasis.value = "serving";
+
+      if (parsed.servingText) editServingText.value = parsed.servingText;
+      if (Number.isFinite(parsed.servingGrams)) editServingGrams.value = parsed.servingGrams;
+
+      if (Number.isFinite(parsed.calories)) editKcal.value = parsed.calories;
+      if (Number.isFinite(parsed.protein)) editProtein.value = parsed.protein;
+      if (Number.isFinite(parsed.carbs)) editCarbs.value = parsed.carbs;
+      if (Number.isFinite(parsed.fat)) editFat.value = parsed.fat;
+
+      verifyStatus.textContent =
+        "OCR complete.\n" +
+        "Please confirm the values above (OCR can misread glare/angles).\n\n" +
+        "Tip: If something is missing, just type it in, then tap “Save verified”.\n\n" +
+        "Raw OCR (for debugging):\n" + text.slice(0, 800);
+
+      status.textContent = "OCR complete. Confirm values → Save verified → Add to today.";
+    } catch (err) {
+      status.textContent =
+        "OCR failed: " + (err?.message || String(err)) +
+        "\nTip: brighter + closer + avoid blur/glare.";
+    }
+
+    e.target.value = "";
   });
 
   // ---------------------------
@@ -1066,15 +1263,15 @@
   async function setTorch(on) {
     try {
       const track = Quagga.CameraAccess.getActiveTrack?.();
-      if (!track) return toast(status, "No active camera track.");
+      if (!track) return toast("No active camera track.");
       const caps = track.getCapabilities?.();
-      if (!caps?.torch) return toast(status, "Flashlight not supported.");
+      if (!caps?.torch) return toast("Flashlight not supported.");
 
       await track.applyConstraints({ advanced: [{ torch: on }] });
       torchOn = on;
       torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
     } catch {
-      toast(status, "Could not toggle flashlight.");
+      toast("Could not toggle flashlight.");
     }
   }
 
@@ -1102,7 +1299,7 @@
   });
 
   async function startScan() {
-    if (!Quagga) return toast(status, "Quagga not loaded.");
+    if (!Quagga) return toast("Quagga not loaded.");
     if (scanning) return;
 
     scanning = true;
@@ -1135,7 +1332,7 @@
       },
       locator: { patchSize: "medium", halfSample: true },
       locate: true,
-      decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
+      decoder: { readers: ["upc_reader", "ean_reader", "ean_reader", "ean_8_reader"] }
     }, (err) => {
       if (err) {
         scanning = false;
@@ -1147,7 +1344,6 @@
 
       Quagga.start();
 
-      // Save active deviceId so iPhone stops flipping to front camera
       try {
         const track = Quagga.CameraAccess.getActiveTrack?.();
         const settings = track?.getSettings?.();
