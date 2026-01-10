@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Macro Scan & Log</title>
 
   <style>
@@ -11,32 +11,63 @@
     /* San Francisco (Apple) + safe fallbacks */
     body{
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
-      margin:0; background:#f6f7fb;
+      margin:0; background:#f6f7fb; color:#111827;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    header{ padding:14px 16px; background:#111827; color:#fff; }
+    header{
+      padding:14px 16px;
+      background:#111827;
+      color:#fff;
+      position:sticky; top:0; z-index:50;
+    }
     header h1{ font-size:16px; margin:0; }
 
-    main{ padding:16px; max-width:1100px; margin:0 auto; }
-    .grid{ display:grid; gap:12px; }
-    @media (min-width: 980px){ .grid{ grid-template-columns: 1.15fr 0.85fr; } }
-
-    .card{
-      background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.04);
+    main{
+      padding:14px;
+      max-width:1100px;
+      margin:0 auto;
+      padding-bottom: 96px; /* space for tabbar */
     }
 
-    h2{ margin:0 0 8px 0; font-size:16px; }
-    h3{ margin:14px 0 6px 0; font-size:14px; }
+    /* Cards */
+    .card{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:16px;
+      padding:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.04);
+      margin-bottom:12px;
+    }
 
-    label{ display:block; font-weight:800; font-size:12px; color:#374151; margin:10px 0 6px; }
+    h2{ margin:0 0 8px 0; font-size:17px; }
+    h3{ margin:14px 0 6px 0; font-size:14px; color:#111827; opacity:.9; }
+
+    label{
+      display:block; font-weight:850; font-size:12px;
+      color:#374151; margin:10px 0 6px;
+    }
+
     input, select, button, textarea{
-      width:100%; padding:10px 11px; border:1px solid #d1d5db; border-radius:12px;
-      font-size:14px; background:#fff;
+      width:100%;
+      padding:11px 12px;
+      border:1px solid #d1d5db;
+      border-radius:14px;
+      font-size:14px;
+      background:#fff;
       box-sizing: border-box;
+      min-height:44px; /* iOS tap target */
     }
     textarea{ min-height: 84px; resize: vertical; }
-    button{ cursor:pointer; border:0; background:#2563eb; color:#fff; font-weight:900; }
+
+    button{
+      cursor:pointer;
+      border:0;
+      background:#2563eb;
+      color:#fff;
+      font-weight:900;
+    }
+    button:active{ transform: translateY(1px); }
     button.secondary{ background:#111827; }
     button.ghost{ background:#f3f4f6; color:#111827; border:1px solid #e5e7eb; font-weight:850; }
     button.danger{ background:#dc2626; }
@@ -45,20 +76,27 @@
     .split{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
     .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
-    .row4{ display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; }
+    .twoCards{ display:grid; gap:12px; }
+    @media (min-width: 980px){ .twoCards{ grid-template-columns: 1fr 1fr; } }
 
     .status{
       margin-top:10px; white-space:pre-wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:12px; background:#f3f4f6; border:1px solid #e5e7eb; padding:10px; border-radius:12px;
+      font-size:12px; background:#f3f4f6; border:1px solid #e5e7eb;
+      padding:10px; border-radius:14px;
     }
 
+    /* Tables */
     table{ width:100%; border-collapse:collapse; }
-    th, td{ text-align:left; padding:10px 8px; border-bottom:1px solid #e5e7eb; font-size:13px; vertical-align:top; }
+    th, td{
+      text-align:left; padding:10px 8px; border-bottom:1px solid #e5e7eb;
+      font-size:13px; vertical-align:top;
+    }
     th{ font-size:12px; color:#374151; }
     .right{ text-align:right; }
     .small{ font-size:12px; color:#6b7280; }
 
+    /* Pills */
     .pill{
       display:inline-block; padding:6px 10px; border-radius:999px;
       background:#f3f4f6; border:1px solid #e5e7eb; font-size:12px; margin-right:8px;
@@ -72,7 +110,7 @@
       position:relative;
       width:100%;
       aspect-ratio: 4 / 3;
-      border-radius:14px;
+      border-radius:16px;
       overflow:hidden;
       background:#111827;
       border:1px solid #111827;
@@ -83,269 +121,440 @@
     }
 
     .fileBtn{
-      display:inline-block; padding:10px 11px; border-radius:12px;
-      border:1px solid #e5e7eb; background:#f3f4f6; cursor:pointer; font-weight:900;
-      color:#111827;
-      user-select:none;
+      display:inline-block; padding:11px 12px; border-radius:14px;
+      border:1px solid #e5e7eb; background:#f3f4f6;
+      cursor:pointer; font-weight:900; color:#111827; user-select:none;
+      min-height:44px;
     }
     .fileBtn input{ display:none; }
 
     .divider{ height:1px; background:#e5e7eb; margin:12px 0; }
 
-    details{ border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; background:#fff; }
+    details{ border:1px solid #e5e7eb; border-radius:14px; padding:10px 12px; background:#fff; }
     details > summary{ cursor:pointer; font-weight:950; color:#111827; }
 
-    .twoCards{ display:grid; gap:12px; }
-    @media (min-width: 980px){
-      .twoCards{ grid-template-columns: 1fr 1fr; }
+    /* Tabs */
+    .tabPane{ display:none; }
+    .tabPane.active{ display:block; }
+
+    .tabbar{
+      position:fixed;
+      left:0; right:0; bottom:0;
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(255,255,255,.9);
+      backdrop-filter: saturate(180%) blur(14px);
+      border-top:1px solid #e5e7eb;
+      z-index:100;
     }
+    .tabbarInner{
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:6px;
+      padding:10px 10px 12px;
+    }
+    .tabBtn{
+      background:transparent;
+      border:1px solid #e5e7eb;
+      color:#111827;
+      border-radius:14px;
+      padding:10px 10px;
+      font-weight:950;
+      min-height:44px;
+    }
+    .tabBtn.active{
+      background:#111827;
+      border-color:#111827;
+      color:#fff;
+    }
+
+    /* Macro dashboard */
+    .kpiRow{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+      margin-top:10px;
+    }
+    .kpi{
+      padding:8px 10px;
+      border:1px solid #e5e7eb;
+      background:#f9fafb;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      color:#111827;
+    }
+    .macroGrid{
+      display:grid; gap:10px;
+      grid-template-columns: 1fr 1fr;
+      margin-top:10px;
+    }
+    .macroCard{
+      border:1px solid #e5e7eb;
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .macroTop{
+      display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
+    }
+    .macroLabel{ font-size:12px; font-weight:900; color:#374151; }
+    .macroValue{ font-size:18px; font-weight:950; color:#111827; line-height:1; }
+    .macroSub{ font-size:12px; color:#6b7280; margin-top:2px; }
+
+    .bar{
+      margin-top:10px;
+      height:10px;
+      background:#f3f4f6;
+      border-radius:999px;
+      overflow:hidden;
+      border:1px solid #e5e7eb;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background:#2563eb;
+      border-radius:999px;
+      transition: width .25s ease;
+    }
+
+    /* Compact scrollers */
+    .scrollBox{
+      overflow:auto;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      background:#fff;
+    }
+
+    /* Helper */
+    .max220{ max-width:220px; }
+    .max160{ max-width:160px; }
+    .max140{ max-width:140px; }
+    .max280{ max-width:280px; }
+    .max300{ max-width:300px; }
   </style>
 </head>
 
 <body>
 <header>
-  <h1>Macro Scan & Log (Scan • Label OCR • Link • Verified • Workouts)</h1>
+  <h1>Macro Scan & Log</h1>
 </header>
 
-<main class="grid">
-  <!-- LEFT: Food input -->
-  <section class="card">
-    <h2>Foods</h2>
-    <div class="muted">
-      Best on iPhone: open in <b>Safari</b> via <b>HTTPS</b> (GitHub Pages). Fill the frame with barcode, avoid glare, hold steady 1–2s.
-      <br/>For labels: take a bright, close photo of the Nutrition Facts panel (minimal glare).
-    </div>
-
-    <label>Camera</label>
-    <div class="videoWrap">
-      <div id="quaggaTarget"></div>
-    </div>
-
-    <div class="split" style="margin-top:10px;">
-      <button id="startBtn" style="max-width:220px;">Start scanner</button>
-      <button id="stopBtn" class="ghost" style="max-width:140px;">Stop</button>
-      <button id="torchBtn" class="ghost" style="max-width:220px; display:none;">Flashlight: Off</button>
-
-      <label class="fileBtn" style="max-width:260px;">
-        Upload barcode photo
-        <input id="barcodePhoto" type="file" accept="image/*" />
-      </label>
-
-      <label class="fileBtn" style="max-width:290px;">
-        Upload nutrition label photo (OCR)
-        <input id="labelPhoto" type="file" accept="image/*" />
-      </label>
-
-      <select id="cameraSelect" aria-label="Camera selection" style="max-width:280px;"></select>
-    </div>
-
-    <div class="twoCards" style="margin-top:12px;">
-      <div>
-        <label>Barcode (UPC/EAN)</label>
-        <div class="row">
-          <input id="barcode" placeholder="Scan fills this, or type it" inputmode="numeric" />
-          <button id="lookupBtn" class="secondary">Lookup</button>
-        </div>
-        <div class="muted" style="margin-top:6px;">If found, you can add by serving or grams.</div>
+<main>
+  <!-- TAB 1: FOODS -->
+  <section id="tabFoods" class="tabPane active">
+    <div class="card">
+      <h2>Foods</h2>
+      <div class="muted">
+        iPhone tip: open in <b>Safari</b> via <b>HTTPS</b> (GitHub Pages). Fill the frame with barcode, avoid glare, hold steady 1–2s.
+        <br/>Label OCR: take a bright, close photo of the Nutrition Facts panel (minimal glare).
       </div>
 
-      <div>
-        <label>Add from link</label>
-        <div class="row">
-          <input id="linkInput" placeholder="Paste a product link (OFF link works best)" />
-          <button id="linkLookupBtn" class="secondary">Detect & lookup</button>
+      <label>Camera</label>
+      <div class="videoWrap">
+        <div id="quaggaTarget"></div>
+      </div>
+
+      <div class="split" style="margin-top:10px;">
+        <button id="startBtn" class="max220">Start scanner</button>
+        <button id="stopBtn" class="ghost max140">Stop</button>
+        <button id="torchBtn" class="ghost max220" style="display:none;">Flashlight: Off</button>
+
+        <label class="fileBtn max300">
+          Upload barcode photo
+          <input id="barcodePhoto" type="file" accept="image/*" />
+        </label>
+
+        <label class="fileBtn max300">
+          Upload nutrition label (OCR)
+          <input id="labelPhoto" type="file" accept="image/*" />
+        </label>
+
+        <select id="cameraSelect" class="max280" aria-label="Camera selection"></select>
+      </div>
+
+      <div class="twoCards" style="margin-top:12px;">
+        <div>
+          <label>Barcode (UPC/EAN)</label>
+          <div class="row">
+            <input id="barcode" placeholder="Scan fills this, or type it" inputmode="numeric" />
+            <button id="lookupBtn" class="secondary">Lookup</button>
+          </div>
+          <div class="muted" style="margin-top:6px;">If found, you can add by serving or grams.</div>
         </div>
-        <div class="muted" style="margin-top:6px;">
-          Works best with Open Food Facts links, or any link that contains a barcode number.
-          If we can’t extract a barcode due to website restrictions, use Label OCR or Verify/Edit below.
+
+        <div>
+          <label>Add from link</label>
+          <div class="row">
+            <input id="linkInput" placeholder="Paste a product link (OFF link works best)" />
+            <button id="linkLookupBtn" class="secondary">Detect & lookup</button>
+          </div>
+          <div class="muted" style="margin-top:6px;">
+            Works best with Open Food Facts links or links containing a barcode number. Otherwise use OCR / Verify.
+          </div>
         </div>
       </div>
+
+      <div id="productCard" style="display:none; margin-top:12px;">
+        <div class="split" style="gap:8px;">
+          <span class="pill ok" id="sourcePill">Source: —</span>
+          <span class="pill" id="coveragePill" style="display:none;">Coverage: —</span>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div style="font-weight:950;" id="prodName"></div>
+          <div class="small" id="prodMeta"></div>
+        </div>
+
+        <label>Serving input</label>
+        <div class="row3">
+          <select id="mode">
+            <option value="serving">By serving</option>
+            <option value="grams">By grams</option>
+          </select>
+          <input id="qty" type="number" min="0" step="0.25" value="1" />
+          <button id="addBtn">Add to today</button>
+        </div>
+        <div class="muted" id="modeHelp" style="margin-top:6px;">—</div>
+        <div class="status" id="nutriPreview">—</div>
+
+        <div class="divider"></div>
+
+        <details id="verifyPanel">
+          <summary>Accuracy: verify / edit macros (barcode OR custom food)</summary>
+          <div class="muted" style="margin-top:6px;">
+            For “accurate every macro,” enter the nutrition label once (or use OCR) and save.
+            If there’s no barcode, this saves as a <b>Custom food</b> on this device.
+          </div>
+
+          <label>Food name</label>
+          <input id="editFoodName" placeholder="e.g., Homemade protein oats" />
+
+          <label>Serving size text (optional)</label>
+          <input id="editServingText" placeholder="e.g., 1 bar (40g)" />
+
+          <div class="row" style="margin-top:6px;">
+            <div>
+              <label>Serving grams (optional)</label>
+              <input id="editServingGrams" type="number" min="0" step="0.1" placeholder="e.g., 40" />
+            </div>
+            <div>
+              <label>Which numbers are you entering?</label>
+              <select id="editBasis">
+                <option value="serving">Per serving</option>
+                <option value="100g">Per 100g</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:6px;">
+            <div>
+              <label>Calories (kcal)</label>
+              <input id="editKcal" type="number" min="0" step="1" />
+            </div>
+            <div>
+              <label>Protein (g)</label>
+              <input id="editProtein" type="number" min="0" step="0.1" />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:6px;">
+            <div>
+              <label>Carbs (g)</label>
+              <input id="editCarbs" type="number" min="0" step="0.1" />
+            </div>
+            <div>
+              <label>Fat (g)</label>
+              <input id="editFat" type="number" min="0" step="0.1" />
+            </div>
+          </div>
+
+          <div class="split" style="margin-top:10px;">
+            <button id="saveOverride" class="ghost max220">Save verified</button>
+            <button id="clearOverride" class="danger max220">Remove verified</button>
+          </div>
+
+          <div class="status" id="verifyStatus" style="margin-top:10px;">—</div>
+        </details>
+      </div>
+
+      <div class="status" id="status">Ready.</div>
     </div>
-
-    <div id="productCard" style="display:none; margin-top:12px;">
-      <div class="split" style="gap:8px;">
-        <span class="pill ok" id="sourcePill">Source: —</span>
-        <span class="pill" id="coveragePill" style="display:none;">Coverage: —</span>
-      </div>
-
-      <div style="margin-top:10px;">
-        <div style="font-weight:950;" id="prodName"></div>
-        <div class="small" id="prodMeta"></div>
-      </div>
-
-      <label>Serving input</label>
-      <div class="row3">
-        <select id="mode">
-          <option value="serving">By serving</option>
-          <option value="grams">By grams</option>
-        </select>
-        <input id="qty" type="number" min="0" step="0.25" value="1" />
-        <button id="addBtn">Add to today</button>
-      </div>
-      <div class="muted" id="modeHelp" style="margin-top:6px;">—</div>
-      <div class="status" id="nutriPreview">—</div>
-
-      <div class="divider"></div>
-
-      <!-- Accuracy / Verification -->
-      <details id="verifyPanel">
-        <summary>Accuracy: verify / edit macros (barcode OR custom food)</summary>
-        <div class="muted" style="margin-top:6px;">
-          For “accurate every macro,” enter the nutrition label once (or use OCR) and save.
-          If there’s no barcode, this saves as a <b>Custom food</b> on this device.
-        </div>
-
-        <label>Food name</label>
-        <input id="editFoodName" placeholder="e.g., Homemade protein oats" />
-
-        <label>Serving size text (optional)</label>
-        <input id="editServingText" placeholder="e.g., 1 bar (40g)" />
-
-        <div class="row" style="margin-top:6px;">
-          <div>
-            <label>Serving grams (optional)</label>
-            <input id="editServingGrams" type="number" min="0" step="0.1" placeholder="e.g., 40" />
-          </div>
-          <div>
-            <label>Which numbers are you entering?</label>
-            <select id="editBasis">
-              <option value="serving">Per serving</option>
-              <option value="100g">Per 100g</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:6px;">
-          <div>
-            <label>Calories (kcal)</label>
-            <input id="editKcal" type="number" min="0" step="1" />
-          </div>
-          <div>
-            <label>Protein (g)</label>
-            <input id="editProtein" type="number" min="0" step="0.1" />
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:6px;">
-          <div>
-            <label>Carbs (g)</label>
-            <input id="editCarbs" type="number" min="0" step="0.1" />
-          </div>
-          <div>
-            <label>Fat (g)</label>
-            <input id="editFat" type="number" min="0" step="0.1" />
-          </div>
-        </div>
-
-        <div class="split" style="margin-top:10px;">
-          <button id="saveOverride" class="ghost" style="max-width:220px;">Save verified</button>
-          <button id="clearOverride" class="danger" style="max-width:220px;">Remove verified</button>
-        </div>
-
-        <div class="status" id="verifyStatus" style="margin-top:10px;">—</div>
-      </details>
-    </div>
-
-    <div class="status" id="status">Ready.</div>
   </section>
 
-  <!-- RIGHT: Targets + Today + Workouts -->
-  <section class="card">
-    <h2>Today</h2>
+  <!-- TAB 2: TODAY -->
+  <section id="tabToday" class="tabPane">
+    <div class="card">
+      <h2>Today</h2>
 
-    <h3>Targets</h3>
-    <div class="row">
-      <div>
-        <label>Calories target</label>
-        <input id="tCalories" type="number" min="0" step="10" value="2000" />
+      <h3>Targets</h3>
+      <div class="row">
+        <div>
+          <label>Calories target</label>
+          <input id="tCalories" type="number" min="0" step="10" value="2000" />
+        </div>
+        <div>
+          <label>Protein target (g)</label>
+          <input id="tProtein" type="number" min="0" step="5" value="170" />
+        </div>
       </div>
-      <div>
-        <label>Protein target (g)</label>
-        <input id="tProtein" type="number" min="0" step="5" value="170" />
+      <div class="row">
+        <div>
+          <label>Carbs target (g)</label>
+          <input id="tCarbs" type="number" min="0" step="5" value="200" />
+        </div>
+        <div>
+          <label>Fat target (g)</label>
+          <input id="tFat" type="number" min="0" step="5" value="60" />
+        </div>
+      </div>
+
+      <div class="split" style="margin-top:10px;">
+        <button id="saveTargets" class="ghost max160">Save</button>
+        <button id="exportCsv" class="ghost max160">Export CSV</button>
+        <button id="clearToday" class="danger max160">Clear day</button>
+      </div>
+
+      <h3>Totals</h3>
+      <div class="kpiRow">
+        <div class="kpi" id="kpiFood">Food: —</div>
+        <div class="kpi" id="kpiBurn">Burn: —</div>
+        <div class="kpi" id="kpiNet">Net: —</div>
+      </div>
+
+      <div class="macroGrid">
+        <div class="macroCard">
+          <div class="macroTop">
+            <div>
+              <div class="macroLabel">Calories (Net)</div>
+              <div class="macroValue" id="mCal">—</div>
+              <div class="macroSub" id="mCalSub">—</div>
+            </div>
+            <div class="macroSub" id="mCalRem">—</div>
+          </div>
+          <div class="bar"><div id="bCal"></div></div>
+        </div>
+
+        <div class="macroCard">
+          <div class="macroTop">
+            <div>
+              <div class="macroLabel">Protein</div>
+              <div class="macroValue" id="mP">—</div>
+              <div class="macroSub" id="mPSub">—</div>
+            </div>
+            <div class="macroSub" id="mPRem">—</div>
+          </div>
+          <div class="bar"><div id="bP"></div></div>
+        </div>
+
+        <div class="macroCard">
+          <div class="macroTop">
+            <div>
+              <div class="macroLabel">Carbs</div>
+              <div class="macroValue" id="mC">—</div>
+              <div class="macroSub" id="mCSub">—</div>
+            </div>
+            <div class="macroSub" id="mCRem">—</div>
+          </div>
+          <div class="bar"><div id="bC"></div></div>
+        </div>
+
+        <div class="macroCard">
+          <div class="macroTop">
+            <div>
+              <div class="macroLabel">Fat</div>
+              <div class="macroValue" id="mF">—</div>
+              <div class="macroSub" id="mFSub">—</div>
+            </div>
+            <div class="macroSub" id="mFRem">—</div>
+          </div>
+          <div class="bar"><div id="bF"></div></div>
+        </div>
+      </div>
+
+      <h3>Food log</h3>
+      <div class="scrollBox" style="max-height:360px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="right">kcal</th>
+              <th class="right">P</th>
+              <th class="right">C</th>
+              <th class="right">F</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Tip: if a product is missing macros, go to <b>Foods</b> → <b>OCR / Verify</b> → <b>Save</b>.
       </div>
     </div>
-    <div class="row">
-      <div>
-        <label>Carbs target (g)</label>
-        <input id="tCarbs" type="number" min="0" step="5" value="200" />
+  </section>
+
+  <!-- TAB 3: WORKOUTS -->
+  <section id="tabWorkouts" class="tabPane">
+    <div class="card">
+      <h2>Workouts</h2>
+
+      <div class="muted">
+        Log your workout + calories burned. It subtracts from your <b>net calories</b> on the Today tab.
       </div>
-      <div>
-        <label>Fat target (g)</label>
-        <input id="tFat" type="number" min="0" step="5" value="60" />
+
+      <h3>Add workout</h3>
+      <div class="row3">
+        <select id="workoutType">
+          <option value="Strength">Strength</option>
+          <option value="Cardio">Cardio</option>
+          <option value="Sports">Sports</option>
+          <option value="Other">Other</option>
+        </select>
+        <select id="muscleGroup">
+          <option value="Full Body">Full Body</option>
+          <option value="Chest">Chest</option>
+          <option value="Back">Back</option>
+          <option value="Shoulders">Shoulders</option>
+          <option value="Arms">Arms</option>
+          <option value="Legs">Legs</option>
+          <option value="Glutes">Glutes</option>
+          <option value="Core">Core</option>
+          <option value="Cardio/Conditioning">Cardio/Conditioning</option>
+        </select>
+        <input id="workoutCals" type="number" min="0" step="5" placeholder="Calories burned" />
       </div>
-    </div>
 
-    <div class="split" style="margin-top:10px;">
-      <button id="saveTargets" class="ghost" style="max-width:160px;">Save</button>
-      <button id="exportCsv" class="ghost" style="max-width:160px;">Export CSV</button>
-      <button id="clearToday" class="danger" style="max-width:160px;">Clear day</button>
-    </div>
+      <div class="row" style="margin-top:10px;">
+        <input id="workoutNotes" placeholder="Notes (optional): e.g., Push day, 45 min, PRs..." />
+        <button id="addWorkout" class="secondary">Add workout</button>
+      </div>
 
-    <h3>Totals</h3>
-    <div id="totals" class="status">—</div>
-
-    <h3>Workout log</h3>
-    <div class="row3">
-      <select id="workoutType">
-        <option value="Strength">Strength</option>
-        <option value="Cardio">Cardio</option>
-        <option value="Sports">Sports</option>
-        <option value="Other">Other</option>
-      </select>
-      <select id="muscleGroup">
-        <option value="Full Body">Full Body</option>
-        <option value="Chest">Chest</option>
-        <option value="Back">Back</option>
-        <option value="Shoulders">Shoulders</option>
-        <option value="Arms">Arms</option>
-        <option value="Legs">Legs</option>
-        <option value="Glutes">Glutes</option>
-        <option value="Core">Core</option>
-        <option value="Cardio/Conditioning">Cardio/Conditioning</option>
-      </select>
-      <input id="workoutCals" type="number" min="0" step="5" placeholder="Calories burned" />
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <input id="workoutNotes" placeholder="Notes (optional): e.g., Push day, 45 min, PRs..." />
-      <button id="addWorkout" class="secondary">Add workout</button>
-    </div>
-
-    <div style="max-height:170px; overflow:auto; border:1px solid #e5e7eb; border-radius:12px; margin-top:10px;">
-      <table>
-        <thead>
-          <tr>
-            <th>Workout</th>
-            <th class="right">Burn</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="workoutBody"></tbody>
-      </table>
-    </div>
-
-    <h3>Food log</h3>
-    <div style="max-height:260px; overflow:auto; border:1px solid #e5e7eb; border-radius:12px;">
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="right">kcal</th>
-            <th class="right">P</th>
-            <th class="right">C</th>
-            <th class="right">F</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="logBody"></tbody>
-      </table>
-    </div>
-
-    <div class="muted" style="margin-top:10px;">
-      Tip: if barcode lookup is missing macros, use <b>Label OCR</b> → <b>Save verified</b>.
+      <h3>Workout log</h3>
+      <div class="scrollBox" style="max-height:420px; margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Workout</th>
+              <th class="right">Burn</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="workoutBody"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 </main>
+
+<!-- Bottom Tab Bar -->
+<nav class="tabbar" role="navigation" aria-label="Tabs">
+  <div class="tabbarInner">
+    <button class="tabBtn active" id="btnFoods" data-tab="foods">Foods</button>
+    <button class="tabBtn" id="btnToday" data-tab="today">Today</button>
+    <button class="tabBtn" id="btnWorkouts" data-tab="workouts">Workouts</button>
+  </div>
+</nav>
 
 <!-- Quagga2 global build -->
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
@@ -404,11 +613,47 @@
   }
 
   // ---------------------------
+  // Tabs
+  // ---------------------------
+  const tabFoods = document.getElementById("tabFoods");
+  const tabToday = document.getElementById("tabToday");
+  const tabWorkouts = document.getElementById("tabWorkouts");
+
+  const btnFoods = document.getElementById("btnFoods");
+  const btnToday = document.getElementById("btnToday");
+  const btnWorkouts = document.getElementById("btnWorkouts");
+
+  function setActiveTab(name){
+    // stop scanner if leaving foods
+    if (name !== "foods") {
+      try { stopScan(); } catch {}
+    }
+
+    tabFoods.classList.toggle("active", name === "foods");
+    tabToday.classList.toggle("active", name === "today");
+    tabWorkouts.classList.toggle("active", name === "workouts");
+
+    btnFoods.classList.toggle("active", name === "foods");
+    btnToday.classList.toggle("active", name === "today");
+    btnWorkouts.classList.toggle("active", name === "workouts");
+
+    LS.set("activeTab", name);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  document.querySelectorAll(".tabBtn").forEach(b => {
+    b.addEventListener("click", () => setActiveTab(b.dataset.tab));
+  });
+
+  // restore tab
+  setActiveTab(LS.get("activeTab", "foods"));
+
+  // ---------------------------
   // Elements
   // ---------------------------
   const status = document.getElementById("status");
 
-  // Food input
+  // Foods input
   const cameraSelect = document.getElementById("cameraSelect");
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
@@ -456,10 +701,34 @@
   const saveTargets = document.getElementById("saveTargets");
   const exportCsvBtn = document.getElementById("exportCsv");
   const clearToday = document.getElementById("clearToday");
-  const totalsEl = document.getElementById("totals");
   const logBody = document.getElementById("logBody");
 
-  // Workout panel
+  // Totals UI
+  const kpiFood = document.getElementById("kpiFood");
+  const kpiBurn = document.getElementById("kpiBurn");
+  const kpiNet  = document.getElementById("kpiNet");
+
+  const mCal = document.getElementById("mCal");
+  const mP   = document.getElementById("mP");
+  const mC   = document.getElementById("mC");
+  const mF   = document.getElementById("mF");
+
+  const mCalSub = document.getElementById("mCalSub");
+  const mPSub   = document.getElementById("mPSub");
+  const mCSub   = document.getElementById("mCSub");
+  const mFSub   = document.getElementById("mFSub");
+
+  const mCalRem = document.getElementById("mCalRem");
+  const mPRem   = document.getElementById("mPRem");
+  const mCRem   = document.getElementById("mCRem");
+  const mFRem   = document.getElementById("mFRem");
+
+  const bCal = document.getElementById("bCal");
+  const bP   = document.getElementById("bP");
+  const bC   = document.getElementById("bC");
+  const bF   = document.getElementById("bF");
+
+  // Workouts panel
   const workoutType = document.getElementById("workoutType");
   const muscleGroup = document.getElementById("muscleGroup");
   const workoutCals = document.getElementById("workoutCals");
@@ -511,37 +780,50 @@
     return items.reduce((acc, it) => acc + (Number(it.burned)||0), 0);
   }
 
-  function classify(remaining) {
-    if (remaining >= 0) return "ok";
-    if (remaining > -150) return "warn";
-    return "bad";
-  }
-
   function render() {
     const foods = getFoods();
     const wos = getWorkouts();
     const totals = sumFoods(foods);
     const burned = sumWorkouts(wos);
-
     const t = LS.get("targets", defaultTargets);
 
+    // Net calories: food - exercise
     const netCals = totals.calories - burned;
-    const remNet = t.calories - netCals;
 
-    const remP = t.protein - totals.protein;
-    const remCarbs = t.carbs - totals.carbs;
-    const remFat = t.fat - totals.fat;
+    // KPI chips
+    kpiFood.textContent = `Food: ${totals.calories.toFixed(0)} kcal`;
+    kpiBurn.textContent = `Burn: ${burned.toFixed(0)} kcal`;
+    kpiNet.textContent  = `Net: ${netCals.toFixed(0)} kcal`;
 
-    totalsEl.innerHTML = [
-      `<div class="pill ${classify(remNet)}"><b>Net Calories</b> ${netCals.toFixed(0)} / ${t.calories} (rem ${remNet.toFixed(0)})</div>`,
-      `<div class="pill"><b>Food Calories</b> ${totals.calories.toFixed(0)}</div>`,
-      `<div class="pill"><b>Exercise Burn</b> ${burned.toFixed(0)}</div>`,
-      `<div class="pill ${classify(remP)}"><b>Protein</b> ${totals.protein.toFixed(1)} / ${t.protein}g (rem ${remP.toFixed(1)}g)</div>`,
-      `<div class="pill ${classify(remCarbs)}"><b>Carbs</b> ${totals.carbs.toFixed(1)} / ${t.carbs}g (rem ${remCarbs.toFixed(1)}g)</div>`,
-      `<div class="pill ${classify(remFat)}"><b>Fat</b> ${totals.fat.toFixed(1)} / ${t.fat}g (rem ${remFat.toFixed(1)}g)</div>`
-    ].join(" ");
+    // Macro numbers
+    mCal.textContent = `${netCals.toFixed(0)}`;
+    mP.textContent   = `${totals.protein.toFixed(0)}g`;
+    mC.textContent   = `${totals.carbs.toFixed(0)}g`;
+    mF.textContent   = `${totals.fat.toFixed(0)}g`;
 
-    // Foods table
+    mCalSub.textContent = `Target ${t.calories} • Net`;
+    mPSub.textContent   = `Target ${t.protein}g`;
+    mCSub.textContent   = `Target ${t.carbs}g`;
+    mFSub.textContent   = `Target ${t.fat}g`;
+
+    const remNet = (t.calories - netCals);
+    const remP = (t.protein - totals.protein);
+    const remC = (t.carbs - totals.carbs);
+    const remF = (t.fat - totals.fat);
+
+    mCalRem.textContent = `${remNet >= 0 ? "Remaining" : "Over"} ${Math.abs(remNet).toFixed(0)} kcal`;
+    mPRem.textContent   = `${remP >= 0 ? "Remaining" : "Over"} ${Math.abs(remP).toFixed(0)}g`;
+    mCRem.textContent   = `${remC >= 0 ? "Remaining" : "Over"} ${Math.abs(remC).toFixed(0)}g`;
+    mFRem.textContent   = `${remF >= 0 ? "Remaining" : "Over"} ${Math.abs(remF).toFixed(0)}g`;
+
+    // Progress bars (cap at 120%)
+    const pct = (val, target) => target > 0 ? Math.min(120, Math.max(0, (val/target)*100)) : 0;
+    bCal.style.width = pct(netCals, t.calories).toFixed(1) + "%";
+    bP.style.width   = pct(totals.protein, t.protein).toFixed(1) + "%";
+    bC.style.width   = pct(totals.carbs, t.carbs).toFixed(1) + "%";
+    bF.style.width   = pct(totals.fat, t.fat).toFixed(1) + "%";
+
+    // Foods table (Today tab)
     logBody.innerHTML = "";
     foods.forEach((it, idx) => {
       const tr = document.createElement("tr");
@@ -569,7 +851,7 @@
       });
     });
 
-    // Workouts table
+    // Workouts table (Workouts tab)
     workoutBody.innerHTML = "";
     wos.forEach((it, idx) => {
       const tr = document.createElement("tr");
@@ -604,9 +886,27 @@
   exportCsvBtn.addEventListener("click", () => {
     const foods = getFoods();
     const wos = getWorkouts();
+    const totals = sumFoods(foods);
+    const burned = sumWorkouts(wos);
+    const t = LS.get("targets", defaultTargets);
+    const netCals = totals.calories - burned;
 
     const lines = [];
-    lines.push("SECTION, timestamp, name/type, detail/muscle, calories, protein_g, carbs_g, fat_g, burned, barcode, source, notes");
+
+    // SUMMARY section (great for Sheets/Excel)
+    lines.push("SECTION,metric,value");
+    lines.push(`SUMMARY,Date,${new Date().toISOString().slice(0,10)}`);
+    lines.push(`SUMMARY,Food Calories (kcal),${totals.calories.toFixed(0)}`);
+    lines.push(`SUMMARY,Exercise Burn (kcal),${burned.toFixed(0)}`);
+    lines.push(`SUMMARY,Net Calories (kcal),${netCals.toFixed(0)}`);
+    lines.push(`SUMMARY,Protein (g),${totals.protein.toFixed(1)}`);
+    lines.push(`SUMMARY,Carbs (g),${totals.carbs.toFixed(1)}`);
+    lines.push(`SUMMARY,Fat (g),${totals.fat.toFixed(1)}`);
+    lines.push(`SUMMARY,Targets (kcal/P/C/F),${t.calories}/${t.protein}/${t.carbs}/${t.fat}`);
+    lines.push("");
+
+    // Detailed rows
+    lines.push("SECTION,timestamp,name/type,detail/muscle,calories,protein_g,carbs_g,fat_g,burned,barcode,source,notes");
 
     foods.forEach(it => {
       lines.push([
@@ -758,7 +1058,7 @@
 
     nutriPreview.textContent = JSON.stringify({
       item: currentFood.name,
-      barcode: currentFood.barcode,
+      barcode: currentFood.barcode || "",
       amount: detail,
       calories_kcal: Math.round(macros.calories),
       protein_g: round1(macros.protein),
@@ -802,10 +1102,8 @@
     finalFood.barcode = barcode;
     currentFood = finalFood;
 
-    // UI
     prodName.textContent = finalFood.name;
     prodMeta.textContent = [finalFood.brand, finalFood.servingSizeText].filter(Boolean).join(" • ");
-
     sourcePill.textContent = `Source: ${finalFood.source}`;
 
     const hasAll100g = ["kcal","protein","carbs","fat"].every(k => Number.isFinite(finalFood.per100g?.[k]) && finalFood.per100g[k] >= 0);
@@ -824,7 +1122,7 @@
     } else if (parsed) {
       status.textContent = "Found product. (Tip: verify if you want guaranteed accuracy.)";
     } else {
-      status.textContent = "Not found in database. Use Label OCR or Verify/Edit to enter macros.";
+      status.textContent = "Not found in database. Use OCR / Verify/Edit to enter macros.";
       verifyPanel.open = true;
     }
   }
@@ -835,7 +1133,6 @@
     lookup(code);
   });
 
-  // Link → barcode → lookup
   linkLookupBtn.addEventListener("click", () => {
     const link = linkInput.value.trim();
     if (!link) return toast("Paste a link first.");
@@ -850,14 +1147,13 @@
 
     status.textContent =
       "Couldn’t extract a barcode from that link.\n\n" +
-      "Because this is a GitHub Pages (front-end only) app, most websites block reading nutrition facts automatically.\n" +
-      "Fix: copy the barcode number into the barcode box, OR use Label OCR / Verify/Edit.";
+      "Many websites block front-end scraping.\n" +
+      "Fix: copy the barcode digits into the barcode box, OR use OCR / Verify/Edit.";
     verifyPanel.open = true;
   });
 
-  // Add to today
   addBtn.addEventListener("click", () => {
-    if (!currentFood) return toast("Lookup a product OR use Label OCR first.");
+    if (!currentFood) return toast("Lookup a product OR use OCR first.");
     const qty = Number(qtyEl.value || 0);
     if (!Number.isFinite(qty) || qty <= 0) return toast("Enter a quantity > 0.");
 
@@ -865,7 +1161,7 @@
 
     const nonZero = macros.calories || macros.protein || macros.carbs || macros.fat;
     if (!nonZero) {
-      toast("No macro data yet. Use Label OCR or Verify/Edit to enter macros.");
+      toast("No macro data yet. Use OCR / Verify/Edit to enter macros.");
       verifyPanel.open = true;
       return;
     }
@@ -887,9 +1183,10 @@
     setFoods(foods);
     render();
     toast("Added food.");
+    // quick hop to Today
+    setActiveTab("today");
   });
 
-  // Verify/edit
   function hydrateVerifyPanel(food) {
     const overrides = getOverrides();
     const ov = food.barcode ? overrides[food.barcode] : null;
@@ -930,7 +1227,7 @@
     const servingGrams = num(editServingGrams.value);
     const name = (editFoodName.value || "").trim() || currentFood?.name || "Custom food";
 
-    // BARCODE PATH (verified override)
+    // BARCODE PATH
     if (currentFood?.barcode) {
       const overrides = getOverrides();
       const existing = overrides[currentFood.barcode] || {};
@@ -980,7 +1277,6 @@
     customFoods.unshift(template);
     setCustomFoods(customFoods);
 
-    // Make currentFood usable immediately
     currentFood = {
       barcode: "",
       name: template.name,
@@ -1000,8 +1296,8 @@
     sourcePill.textContent = "Source: Custom (You)";
     coveragePill.style.display = "inline-block";
     coveragePill.textContent = "Coverage: Custom ✓";
-
     productCard.style.display = "block";
+
     verifyPanel.open = false;
     updateModeHelp(currentFood);
     updatePreview();
@@ -1010,7 +1306,6 @@
   });
 
   clearOverride.addEventListener("click", () => {
-    // If barcode → clear override
     if (currentFood?.barcode) {
       const overrides = getOverrides();
       if (overrides[currentFood.barcode]) {
@@ -1023,7 +1318,7 @@
       }
       return;
     }
-    toast("For custom foods (no barcode), remove by clearing localStorage or just stop using it.");
+    toast("Custom foods: to remove, clear browser storage for this site.");
   });
 
   // ---------------------------
@@ -1053,6 +1348,7 @@
     workoutNotes.value = "";
     render();
     toast("Added workout.");
+    setActiveTab("today");
   });
 
   // ---------------------------
@@ -1106,19 +1402,16 @@
       .trim()
       .toLowerCase();
   }
-
   function pickNumberNear(text, keyword) {
     const re = new RegExp(`${keyword}\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)`, "i");
     const m = text.match(re);
     return m ? Number(m[1]) : null;
   }
-
   function pickMacro(text, keyword) {
     const re = new RegExp(`${keyword}\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)\\s*g?`, "i");
     const m = text.match(re);
     return m ? Number(m[1]) : null;
   }
-
   function parseNutritionFromOcr(rawText) {
     const t = normalizeOcrText(rawText);
 
@@ -1148,9 +1441,7 @@
       if (g) servingGrams = Number(g[1]);
     }
 
-    // Basic sanity
     if (Number.isFinite(calories) && calories > 4000) calories = null;
-
     return { calories, protein, carbs, fat, servingText, servingGrams, ocrText: rawText };
   }
 
@@ -1169,36 +1460,30 @@
       const text = await ocrLabelFile(file);
       const parsed = parseNutritionFromOcr(text);
 
-      // Ensure UI is visible
       productCard.style.display = "block";
       verifyPanel.open = true;
 
-      // Create a temporary currentFood if none exists
-      if (!currentFood) {
-        currentFood = {
-          barcode: "",
-          name: "Custom label item",
-          brand: "",
-          servingSizeText: "",
-          servingGrams: null,
-          perServing: { kcal:null, protein:null, carbs:null, fat:null },
-          per100g: { kcal:null, protein:null, carbs:null, fat:null },
-          hasServing: false,
-          has100g: false,
-          source: "Label OCR (confirm)",
-          accuracyNote: ""
-        };
-      }
+      currentFood = {
+        barcode: "",
+        name: "Custom label item",
+        brand: "",
+        servingSizeText: "",
+        servingGrams: null,
+        perServing: { kcal:null, protein:null, carbs:null, fat:null },
+        per100g: { kcal:null, protein:null, carbs:null, fat:null },
+        hasServing: false,
+        has100g: false,
+        source: "Label OCR (confirm)",
+        accuracyNote: ""
+      };
 
-      // Populate display
       prodName.textContent = "Label OCR item (confirm values)";
       prodMeta.textContent = "Filled from nutrition label photo";
       sourcePill.textContent = "Source: Label OCR (confirm)";
       coveragePill.style.display = "inline-block";
       coveragePill.textContent = "Coverage: OCR → verify";
 
-      // Fill verify form
-      editFoodName.value = currentFood?.name && currentFood.name !== "(Unknown product)" ? currentFood.name : "Custom label item";
+      editFoodName.value = "Custom label item";
       editBasis.value = "serving";
 
       if (parsed.servingText) editServingText.value = parsed.servingText;
@@ -1211,9 +1496,8 @@
 
       verifyStatus.textContent =
         "OCR complete.\n" +
-        "Please confirm the values above (OCR can misread glare/angles).\n\n" +
-        "Tip: If something is missing, just type it in, then tap “Save verified”.\n\n" +
-        "Raw OCR (for debugging):\n" + text.slice(0, 800);
+        "Please confirm values above (OCR can misread glare/angles).\n\n" +
+        "Raw OCR (debug):\n" + text.slice(0, 700);
 
       status.textContent = "OCR complete. Confirm values → Save verified → Add to today.";
     } catch (err) {
@@ -1304,7 +1588,7 @@
 
     scanning = true;
     lastDecoded = null;
-    status.textContent = "Starting scanner… (Quagga2)";
+    status.textContent = "Starting scanner…";
 
     await listCamerasForDropdown();
 
@@ -1332,18 +1616,19 @@
       },
       locator: { patchSize: "medium", halfSample: true },
       locate: true,
-      decoder: { readers: ["upc_reader", "ean_reader", "ean_reader", "ean_8_reader"] }
+      decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
     }, (err) => {
       if (err) {
         scanning = false;
         status.textContent =
           "Scanner error:\n" + (err?.message || String(err)) +
-          "\n\nFixes:\n- iPhone Settings → Safari → Camera = Allow\n- Open in Safari (not in-app browser)\n- Reload with ?v=NEW";
+          "\n\nFixes:\n- iPhone Settings → Safari → Camera = Allow\n- Open in Safari (not in-app browser)\n- Reload the page";
         return;
       }
 
       Quagga.start();
 
+      // Save active deviceId so iPhone stops flipping to front camera
       try {
         const track = Quagga.CameraAccess.getActiveTrack?.();
         const settings = track?.getSettings?.();
@@ -1358,7 +1643,7 @@
         torchOn = false;
       }
 
-      status.textContent = "Scanning… (Quagga2)\nTips: fill the frame, avoid glare, hold steady 1–2s.";
+      status.textContent = "Scanning…\nTips: fill the frame, avoid glare, hold steady 1–2s.";
     });
 
     Quagga.onDetected(onDetectedHandler);
@@ -1387,7 +1672,37 @@
   stopBtn.addEventListener("click", stopScan);
 
   // ---------------------------
-  // Initial render
+  // Workout add
+  // ---------------------------
+  addWorkout.addEventListener("click", () => {
+    const type = workoutType.value;
+    const muscle = muscleGroup.value;
+    const burned = Number(workoutCals.value || 0);
+    const notes = workoutNotes.value.trim();
+
+    if (!Number.isFinite(burned) || burned < 0) return toast("Enter calories burned (0 or more).");
+
+    const entry = {
+      timestamp: new Date().toISOString(),
+      type,
+      muscle,
+      burned,
+      notes
+    };
+
+    const wos = getWorkouts();
+    wos.unshift(entry);
+    setWorkouts(wos);
+
+    workoutCals.value = "";
+    workoutNotes.value = "";
+    render();
+    toast("Added workout.");
+    setActiveTab("today");
+  });
+
+  // ---------------------------
+  // Init
   // ---------------------------
   render();
 </script>
