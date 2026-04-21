@@ -1,2330 +1,642 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Macro Scan & Log</title>
-
-  <style>
-    :root { color-scheme: light; }
-
-    body{
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
-      margin:0; background:#f6f7fb; color:#111827;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    header{
-      padding:14px 16px;
-      background:#111827;
-      color:#fff;
-      position:sticky; top:0; z-index:50;
-    }
-    header h1{ font-size:16px; margin:0; }
-
-    main{
-      padding:14px;
-      max-width:1100px;
-      margin:0 auto;
-      padding-bottom: 130px; /* room for tab bar */
-    }
-
-    .card{
-      background:#fff;
-      border:1px solid #e5e7eb;
-      border-radius:16px;
-      padding:16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.04);
-      margin-bottom:12px;
-    }
-
-    h2{ margin:0 0 8px 0; font-size:17px; }
-    h3{ margin:14px 0 6px 0; font-size:14px; color:#111827; opacity:.9; }
-
-    label{
-      display:block; font-weight:850; font-size:12px;
-      color:#374151; margin:10px 0 6px;
-    }
-
-    input, select, button, textarea{
-      width:100%;
-      padding:11px 12px;
-      border:1px solid #d1d5db;
-      border-radius:14px;
-      font-size:14px;
-      background:#fff;
-      box-sizing: border-box;
-      min-height:44px; /* iOS tap target */
-    }
-    textarea{ min-height: 84px; resize: vertical; }
-
-    button{
-      cursor:pointer;
-      border:0;
-      background:#2563eb;
-      color:#fff;
-      font-weight:900;
-    }
-    button:active{ transform: translateY(1px); }
-    button.secondary{ background:#111827; }
-    button.ghost{ background:#f3f4f6; color:#111827; border:1px solid #e5e7eb; font-weight:850; }
-    button.danger{ background:#dc2626; }
-    button.good{ background:#16a34a; }
-
-    .muted{ color:#6b7280; font-size:12px; line-height:1.35; }
-    .split{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
-    .twoCards{ display:grid; gap:12px; }
-    @media (min-width: 980px){ .twoCards{ grid-template-columns: 1fr 1fr; } }
-
-    .status{
-      margin-top:10px; white-space:pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:12px; background:#f3f4f6; border:1px solid #e5e7eb;
-      padding:10px; border-radius:14px;
-    }
-
-    table{ width:100%; border-collapse:collapse; }
-    th, td{
-      text-align:left; padding:10px 8px; border-bottom:1px solid #e5e7eb;
-      font-size:13px; vertical-align:top;
-    }
-    th{ font-size:12px; color:#374151; }
-    .right{ text-align:right; }
-    .small{ font-size:12px; color:#6b7280; }
-
-    .pill{
-      display:inline-block; padding:6px 10px; border-radius:999px;
-      background:#f3f4f6; border:1px solid #e5e7eb; font-size:12px; margin-right:8px;
-    }
-    .ok{ background:#ecfdf5; border-color:#10b98133; }
-    .warn{ background:#fff7ed; border-color:#f59e0b33; }
-    .bad{ background:#fef2f2; border-color:#ef444433; }
-
-    .videoWrap{
-      position:relative;
-      width:100%;
-      aspect-ratio: 4 / 3;
-      border-radius:16px;
-      overflow:hidden;
-      background:#111827;
-      border:1px solid #111827;
-    }
-    #quaggaTarget{ position:absolute; inset:0; z-index:3; }
-    #quaggaTarget video, #quaggaTarget canvas{
-      position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-    }
-
-    .fileBtn{
-      display:inline-block; padding:11px 12px; border-radius:14px;
-      border:1px solid #e5e7eb; background:#f3f4f6;
-      cursor:pointer; font-weight:900; color:#111827; user-select:none;
-      min-height:44px;
-    }
-    .fileBtn input{ display:none; }
-
-    .divider{ height:1px; background:#e5e7eb; margin:12px 0; }
-
-    details{ border:1px solid #e5e7eb; border-radius:14px; padding:10px 12px; background:#fff; }
-    details > summary{ cursor:pointer; font-weight:950; color:#111827; }
-
-    /* Tabs */
-    .tabPane{ display:none; }
-    .tabPane.active{ display:block; }
-
-    .tabbar{
-      position:fixed;
-      left:0; right:0; bottom:0;
-      padding-bottom: env(safe-area-inset-bottom);
-      background: rgba(255,255,255,.9);
-      backdrop-filter: saturate(180%) blur(14px);
-      border-top:1px solid #e5e7eb;
-      z-index:100;
-    }
-    .tabbarInner{
-      max-width:1100px;
-      margin:0 auto;
-      display:grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap:6px;
-      padding:10px 10px 12px;
-    }
-    .tabBtn{
-      background:transparent;
-      border:1px solid #e5e7eb;
-      color:#111827;
-      border-radius:14px;
-      padding:10px 8px;
-      font-weight:950;
-      min-height:44px;
-      font-size:13px;
-      line-height:1.1;
-    }
-    .tabBtn.active{
-      background:#111827;
-      border-color:#111827;
-      color:#fff;
-    }
-
-    /* Macro dashboard */
-    .kpiRow{
-      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-      margin-top:10px;
-    }
-    .kpi{
-      padding:8px 10px;
-      border:1px solid #e5e7eb;
-      background:#f9fafb;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:900;
-      color:#111827;
-    }
-    .macroGrid{
-      display:grid; gap:10px;
-      grid-template-columns: 1fr 1fr;
-      margin-top:10px;
-    }
-    .macroCard{
-      border:1px solid #e5e7eb;
-      border-radius:16px;
-      padding:12px;
-      background:#fff;
-    }
-    .macroTop{
-      display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
-    }
-    .macroLabel{ font-size:12px; font-weight:900; color:#374151; }
-    .macroValue{ font-size:18px; font-weight:950; color:#111827; line-height:1; }
-    .macroSub{ font-size:12px; color:#6b7280; margin-top:2px; }
-
-    .bar{
-      margin-top:10px;
-      height:10px;
-      background:#f3f4f6;
-      border-radius:999px;
-      overflow:hidden;
-      border:1px solid #e5e7eb;
-    }
-    .bar > div{
-      height:100%;
-      width:0%;
-      background:#2563eb;
-      border-radius:999px;
-      transition: width .25s ease;
-    }
-
-    .scrollBox{
-      overflow:auto;
-      border:1px solid #e5e7eb;
-      border-radius:14px;
-      background:#fff;
-    }
-
-    .noteBox{
-      background:#f8fafc;
-      border:1px solid #e5e7eb;
-      border-radius:14px;
-      padding:10px 12px;
-      font-size:12px;
-      color:#374151;
-      line-height:1.35;
-    }
-
-    .max140{ max-width:140px; }
-    .max160{ max-width:160px; }
-    .max180{ max-width:180px; }
-    .max220{ max-width:220px; }
-    .max280{ max-width:280px; }
-    .max320{ max-width:320px; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A Good Morning Tree Service — Field Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green-dark:#1a2e1a;--green-mid:#2d5a27;--green-accent:#4a8c3f;
+  --green-pale:#c8e6c4;--green-ghost:#f0f7ef;
+  --amber:#c8860a;--amber-light:#fdf3dc;--red:#b83232;
+  --blue:#2563a8;
+  --cream:#faf8f4;--paper:#f4f1eb;--ink:#1a1a18;--ink-mid:#3d3d38;
+  --ink-soft:#6b6b64;--ink-ghost:#a8a89e;--border:#d8d4c8;--border-soft:#ece9e0;
+  --white:#ffffff;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:14px;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+html{font-size:15px}
+body{font-family:var(--font-body);background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+input,select,textarea{font-family:var(--font-body);font-size:.88rem;color:var(--ink);background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;width:100%;transition:border-color .15s;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--green-accent);box-shadow:0 0 0 3px rgba(74,140,63,.12)}
+textarea{resize:vertical;line-height:1.6}
+select{cursor:pointer}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=range]{-webkit-appearance:none;background:transparent;padding:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--border);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--green-accent);border-radius:50%;margin-top:-6px}
+label{display:block;font-size:.72rem;font-weight:500;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+button{font-family:var(--font-body);cursor:pointer;border:none;background:none;transition:all .15s}
+</style>
 </head>
-
 <body>
-<header>
-  <h1>Macro Scan & Log</h1>
-</header>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useCallback,useRef} = React;
 
-<main>
-  <!-- TAB: FOODS -->
-  <section id="tabFoods" class="tabPane active">
-    <div class="card">
-      <h2>Foods (Barcode + Link)</h2>
-      <div class="muted">
-        iPhone tip: open in <b>Safari</b> via <b>HTTPS</b> (GitHub Pages). Fill the frame with barcode, avoid glare, hold steady 1–2s.
-      </div>
+// DATA
+const STORAGE_KEY='agmts_jobs_v1';
+const SETTINGS_KEY='agmts_settings_v1';
+const DEFAULT_SETTINGS={companyName:'A Good Morning Tree Service',phone:'(512) 555-0100',email:'office@agmts.com',isaNumber:'TX-XXXX',tdaNumber:'XXXXXXX',rateRemoval:65,ratePruning:28,rateTreatment:180,rateStump:12,rateDebrisHaul:150,multConfined:1.35,multCrane:1.6,taxRate:0.04};
+const WORK_TYPES=[{id:'removal',label:'Removal',badge:'removal'},{id:'pruning',label:'Crown Prune',badge:'pruning'},{id:'deadwood',label:'Deadwood',badge:'pruning'},{id:'clearance',label:'Utility Clearance',badge:'pruning'},{id:'stump',label:'Stump Grind',badge:'stump'},{id:'debris',label:'Debris Haul',badge:'stump'},{id:'crane',label:'Crane Required',badge:'removal'},{id:'treatment',label:'Trunk Injection',badge:'treatment'},{id:'spray',label:'Crown Spray',badge:'treatment'},{id:'drench',label:'Soil Drench',badge:'treatment'},{id:'cabling',label:'Cabling/Bracing',badge:'cabling'},{id:'assessment',label:'Risk Assessment',badge:'cabling'}];
+const BADGE_COLORS={removal:{bg:'#fdeaea',color:'#7a1f1f'},pruning:{bg:'#e8f0fc',color:'#1a3f7a'},treatment:{bg:'#fdf3dc',color:'#7a4a0a'},stump:{bg:'#f0f7ef',color:'#1a4a18'},cabling:{bg:'#ede8fc',color:'#3a1f7a'}};
+const PIN_COLORS={removal:'#b83232',pruning:'#2563a8',treatment:'#c8860a',stump:'#2d5a27',cabling:'#5b3fa8'};
+let _uid=0;
+function uid(){return`id_${Date.now()}_${++_uid}`}
+function createTree(n){return{id:uid(),tag:`T${n}`,species:'',commonName:'',dbh:'',height:'',condition:'fair',workTypes:[],notes:'',accessNotes:'',photos:[],mapX:.25+Math.random()*.5,mapY:.2+Math.random()*.5,difficulty:'standard'}}
+function createJob(){const now=new Date();return{id:uid(),jobNumber:`${now.getFullYear()}-${String(now.getTime()).slice(-4)}`,status:'draft',createdAt:now.toISOString(),updatedAt:now.toISOString(),clientName:'',clientPhone:'',clientEmail:'',address:'',city:'',state:'TX',zip:'',siteAccess:'open',siteNotes:'',trees:[createTree(1)],pricingOverrides:{},notes:''}}
+function loadJobs(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):[]}catch{return[]}}
+function saveJobs(j){localStorage.setItem(STORAGE_KEY,JSON.stringify(j));try{const bc=new BroadcastChannel('agmts');bc.postMessage({type:'upd'});bc.close()}catch{}}
+function loadSettings(){try{const r=localStorage.getItem(SETTINGS_KEY);return r?{...DEFAULT_SETTINGS,...JSON.parse(r)}:DEFAULT_SETTINGS}catch{return DEFAULT_SETTINGS}}
+function saveSettings(s){localStorage.setItem(SETTINGS_KEY,JSON.stringify(s))}
+function calcEstimate(job,settings){
+  const s={...settings,...(job.pricingOverrides||{})};
+  const lines=[];let sub=0;
+  job.trees.forEach(tree=>{
+    const dbh=parseFloat(tree.dbh)||0;if(!dbh||!tree.workTypes.length)return;
+    const dm=tree.difficulty==='confined'?s.multConfined:tree.difficulty==='crane'?s.multCrane:1.0;
+    tree.workTypes.forEach(wt=>{
+      let base=0,label='';
+      if(wt==='removal'){base=dbh*s.rateRemoval*dm;label='Removal';}
+      else if(['pruning','deadwood','clearance'].includes(wt)){base=dbh*s.ratePruning;label=WORK_TYPES.find(w=>w.id===wt)?.label||wt;}
+      else if(wt==='stump'){base=dbh*s.rateStump;label='Stump Grind';}
+      else if(wt==='debris'){base=s.rateDebrisHaul;label='Debris Haul';}
+      else if(['treatment','spray','drench'].includes(wt)){base=s.rateTreatment;label=WORK_TYPES.find(w=>w.id===wt)?.label||wt;}
+      else if(wt==='cabling'){base=200+dbh*10;label='Cabling/Bracing';}
+      else if(wt==='assessment'){base=175;label='Risk Assessment';}
+      if(base>0){const total=Math.round(base);sub+=total;lines.push({treeTag:tree.tag,treeName:tree.commonName||tree.species||tree.tag,work:label,dbh,total});}
+    });
+  });
+  const tax=Math.round(sub*(s.taxRate||.04));
+  return{lines,subtotal:sub,tax,total:sub+tax};
+}
 
-      <label>Camera (barcode)</label>
-      <div class="videoWrap">
-        <div id="quaggaTarget"></div>
-      </div>
+// UI COMPONENTS
+function Btn({onClick,variant='outline',size='md',children,style={},disabled}){
+  const base={fontFamily:'var(--font-body)',fontWeight:400,borderRadius:'var(--radius-sm)',cursor:disabled?'not-allowed':'pointer',opacity:disabled?.5:1,display:'inline-flex',alignItems:'center',gap:6,transition:'all .15s',whiteSpace:'nowrap'};
+  const sz={sm:{fontSize:'.78rem',padding:'5px 12px'},md:{fontSize:'.85rem',padding:'8px 16px'},lg:{fontSize:'.95rem',padding:'11px 22px'}};
+  const vr={primary:{background:'var(--green-mid)',color:'#fff',border:'1px solid var(--green-mid)'},outline:{background:'transparent',color:'var(--ink)',border:'1px solid var(--border)'},ghost:{background:'transparent',color:'var(--ink-soft)',border:'1px solid transparent'},danger:{background:'transparent',color:'var(--red)',border:'1px solid var(--red)'}};
+  return <button onClick={disabled?undefined:onClick} style={{...base,...sz[size],...vr[variant],...style}}>{children}</button>;
+}
+function Card({children,style={},padding='18px 20px'}){return <div style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',padding,boxShadow:'0 1px 3px rgba(26,46,26,.08)',...style}}>{children}</div>}
+function SLabel({children,style={}}){return <div style={{fontSize:'.7rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:10,fontFamily:'var(--font-mono)',...style}}>{children}</div>}
+function Badge({type,children}){const c=BADGE_COLORS[type]||BADGE_COLORS.cabling;return <span style={{background:c.bg,color:c.color,fontSize:'.7rem',fontWeight:500,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{children}</span>}
+function StatusBadge({status}){const m={draft:{bg:'#f4f1eb',color:'#6b6b64',l:'Draft'},active:{bg:'#e8f0fc',color:'#1a3f7a',l:'Active'},scheduled:{bg:'#fdf3dc',color:'#7a4a0a',l:'Scheduled'},complete:{bg:'#f0f7ef',color:'#1a4a18',l:'Complete'}};const s=m[status]||m.draft;return <span style={{background:s.bg,color:s.color,fontSize:'.7rem',fontWeight:500,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{s.l}</span>}
 
-      <div class="split" style="margin-top:10px;">
-        <button id="startBtn" class="max220">Start scanner</button>
-        <button id="stopBtn" class="ghost max140">Stop</button>
-        <button id="torchBtn" class="ghost max220" style="display:none;">Flashlight: Off</button>
+// APP
+function App(){
+  const [jobs,setJobs]=useState(()=>loadJobs());
+  const [settings,setSettings]=useState(()=>loadSettings());
+  const [route,setRoute]=useState(()=>window.location.hash||'#/');
 
-        <label class="fileBtn max320">
-          Upload barcode photo
-          <input id="barcodePhoto" type="file" accept="image/*" />
-        </label>
+  useEffect(()=>{
+    const h=()=>setRoute(window.location.hash||'#/');
+    window.addEventListener('hashchange',h);
+    let bc;try{bc=new BroadcastChannel('agmts');bc.onmessage=e=>{if(e.data?.type==='upd')setJobs(loadJobs())}}catch{}
+    return()=>{window.removeEventListener('hashchange',h);bc?.close()};
+  },[]);
 
-        <select id="cameraSelect" class="max280" aria-label="Camera selection"></select>
-      </div>
+  function nav(hash){window.location.hash=hash;}
+  function updateJob(id,updater){setJobs(prev=>{const next=prev.map(j=>{if(j.id!==id)return j;const u=typeof updater==='function'?updater(j):{...j,...updater};return{...u,updatedAt:new Date().toISOString()}});saveJobs(next);return next});}
+  function addJob(job){setJobs(prev=>{const next=[...prev,job];saveJobs(next);return next})}
+  function deleteJob(id){setJobs(prev=>{const next=prev.filter(j=>j.id!==id);saveJobs(next);return next})}
+  function updateSettings(u){setSettings(prev=>{const next={...prev,...u};saveSettings(next);return next})}
 
-      <div class="twoCards" style="margin-top:12px;">
-        <div>
-          <label>Barcode (UPC/EAN)</label>
-          <div class="row">
-            <input id="barcode" placeholder="Scan fills this, or type it" inputmode="numeric" />
-            <button id="lookupBtn" class="secondary" type="button">Lookup</button>
+  const hash=route.replace('#','');
+  let page='list',jobId=null,tab='intake';
+  if(hash.startsWith('/job/')){const p=hash.split('/');jobId=p[2];tab=p[3]||'intake';page='job';}
+  else if(hash==='/settings'){page='settings';}
+  const currentJob=jobs.find(j=>j.id===jobId);
+
+  return(
+    <div style={{display:'flex',height:'100vh',overflow:'hidden'}}>
+      <aside style={{width:205,flexShrink:0,background:'var(--green-dark)',display:'flex',flexDirection:'column'}}>
+        <div style={{padding:'20px 16px 16px',borderBottom:'1px solid rgba(255,255,255,.08)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:9}}>
+            <div style={{width:31,height:31,borderRadius:7,background:'var(--green-accent)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15}}>🌳</div>
+            <div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'.88rem',color:'#fff',lineHeight:1.2}}>A Good Morning</div>
+              <div style={{fontSize:'.6rem',color:'rgba(255,255,255,.4)',letterSpacing:'.08em',fontFamily:'var(--font-mono)'}}>TREE SERVICE</div>
+            </div>
           </div>
-          <div class="muted" style="margin-top:6px;">If found, you can add by serving or grams.</div>
         </div>
-
-        <div>
-          <label>Add from link</label>
-          <div class="row">
-            <input id="linkInput" placeholder="Paste a product link (barcode digits in link works best)" />
-            <button id="linkLookupBtn" class="secondary" type="button">Detect & lookup</button>
-          </div>
-          <div class="muted" style="margin-top:6px;">
-            If we can’t extract digits from the link, copy/paste the barcode number manually.
-          </div>
-        </div>
-      </div>
-
-      <div id="productCard" style="display:none; margin-top:12px;">
-        <div class="split" style="gap:8px;">
-          <span class="pill ok" id="sourcePill">Source: —</span>
-          <span class="pill" id="coveragePill" style="display:none;">Coverage: —</span>
-        </div>
-
-        <div style="margin-top:10px;">
-          <div style="font-weight:950;" id="prodName"></div>
-          <div class="small" id="prodMeta"></div>
-        </div>
-
-        <label>Serving input</label>
-        <div class="row3">
-          <select id="mode">
-            <option value="serving">By serving</option>
-            <option value="grams">By grams</option>
-          </select>
-          <input id="qty" type="number" min="0" step="0.25" value="1" />
-          <button id="addBtn" type="button">Add to today</button>
-        </div>
-        <div class="muted" id="modeHelp" style="margin-top:6px;">—</div>
-        <div class="status" id="nutriPreview">—</div>
-
-        <div class="divider"></div>
-
-        <details id="verifyPanel">
-          <summary>Accuracy: verify / edit macros for this barcode</summary>
-          <div class="muted" style="margin-top:6px;">
-            Enter the nutrition label once and save. Your verified values will be used next time you scan this barcode on this device.
-          </div>
-
-          <label>Serving size text (optional)</label>
-          <input id="editServingText" placeholder="e.g., 1 bar (40g)" />
-
-          <div class="row" style="margin-top:6px;">
-            <div>
-              <label>Serving grams (optional)</label>
-              <input id="editServingGrams" type="number" min="0" step="0.1" placeholder="e.g., 40" />
-            </div>
-            <div>
-              <label>Which numbers are you entering?</label>
-              <select id="editBasis">
-                <option value="serving">Per serving</option>
-                <option value="100g">Per 100g</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:6px;">
-            <div>
-              <label>Calories (kcal)</label>
-              <input id="editKcal" type="number" min="0" step="1" />
-            </div>
-            <div>
-              <label>Protein (g)</label>
-              <input id="editProtein" type="number" min="0" step="0.1" />
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:6px;">
-            <div>
-              <label>Carbs (g)</label>
-              <input id="editCarbs" type="number" min="0" step="0.1" />
-            </div>
-            <div>
-              <label>Fat (g)</label>
-              <input id="editFat" type="number" min="0" step="0.1" />
-            </div>
-          </div>
-
-          <div class="split" style="margin-top:10px;">
-            <button id="saveOverride" class="ghost max220" type="button">Save as verified</button>
-            <button id="clearOverride" class="danger max220" type="button">Remove verified data</button>
-          </div>
-
-          <div class="status" id="verifyStatus" style="margin-top:10px;">—</div>
-        </details>
-      </div>
-
-      <div class="status" id="status">Ready.</div>
+        <nav style={{flex:1,padding:'10px 8px'}}>
+          {[{hash:'#/',label:'📋 Jobs'},{hash:'#/settings',label:'⚙️ Settings'}].map(({hash:h,label})=>{
+            const active=h==='#/'?hash==='/'||hash==='':hash.startsWith(h.replace('#',''));
+            return <button key={h} onClick={()=>nav(h)} style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'10px 12px',borderRadius:6,border:'none',cursor:'pointer',background:active?'rgba(255,255,255,.12)':'transparent',color:active?'#fff':'rgba(255,255,255,.5)',fontSize:'.86rem',fontFamily:'var(--font-body)',marginBottom:2}}>{label}</button>;
+          })}
+        </nav>
+        <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,.08)',fontSize:'.63rem',color:'rgba(255,255,255,.25)',fontFamily:'var(--font-mono)',lineHeight:1.8}}>Field Ops v1.0<br/>Kyle, TX</div>
+      </aside>
+      <main style={{flex:1,overflow:'auto'}}>
+        {page==='list'&&<JobList jobs={jobs} addJob={addJob} deleteJob={deleteJob} nav={nav}/>}
+        {page==='job'&&currentJob&&<JobDetail job={currentJob} updateJob={updateJob} settings={settings} nav={nav} activeTab={tab}/>}
+        {page==='job'&&!currentJob&&<div style={{padding:40,textAlign:'center',color:'var(--ink-soft)'}}>Job not found. <Btn onClick={()=>nav('#/')}>Back to jobs</Btn></div>}
+        {page==='settings'&&<Settings settings={settings} updateSettings={updateSettings}/>}
+      </main>
     </div>
-  </section>
+  );
+}
 
-  <!-- TAB: MEALS (typed builder) -->
-  <section id="tabMeals" class="tabPane">
-    <div class="card">
-      <h2>Meal Builder (Type foods)</h2>
-      <div class="muted">
-        Type foods like <b>chicken</b> or <b>quinoa</b>. We use general macros per 100g (editable).
-        If it’s off, edit macros and save your version.
-      </div>
-
-      <h3>Add ingredient</h3>
-      <div class="row">
-        <input id="mealFoodQuery" placeholder="Type a food (e.g., chicken breast cooked, quinoa cooked)" />
-        <button id="mealSearchBtn" class="secondary" type="button">Search</button>
-      </div>
-
-      <div id="mealSearchResults" class="status" style="margin-top:10px;">Search results will appear here.</div>
-
-      <div class="divider"></div>
-
-      <h3>Current meal</h3>
-      <div class="split" style="margin-top:10px;">
-        <input id="mealName" placeholder="Meal name (optional) e.g., Lunch bowl" class="max320" />
-        <button id="mealAddToToday" class="good max220" type="button">Add meal to Today</button>
-        <button id="mealClear" class="danger max180" type="button">Clear meal</button>
-      </div>
-
-      <div class="status" id="mealTotals" style="margin-top:10px;">—</div>
-
-      <div class="scrollBox" style="max-height:420px; margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Ingredient</th>
-              <th class="right">g</th>
-              <th class="right">kcal</th>
-              <th class="right">P</th>
-              <th class="right">C</th>
-              <th class="right">F</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="mealBody"></tbody>
-        </table>
-      </div>
-
-      <div class="muted" style="margin-top:10px;">
-        Tip: Tap <b>Edit macros</b> on an ingredient to adjust its per-100g values and save it as your custom version.
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Your custom typed foods</h2>
-      <div class="muted">These are your saved “general macros” overrides for typed foods (this device only).</div>
-
-      <div class="row" style="margin-top:10px;">
-        <input id="customTypedSearch" placeholder="Search your custom foods…" />
-        <button id="customTypedSearchBtn" class="ghost" type="button">Search</button>
-      </div>
-
-      <div id="customTypedResults" class="status" style="margin-top:10px;">—</div>
-    </div>
-  </section>
-
-  <!-- TAB: TODAY -->
-  <section id="tabToday" class="tabPane">
-    <div class="card">
-      <h2>Today</h2>
-
-      <h3>Targets</h3>
-      <div class="row">
+// JOB LIST
+function JobList({jobs,addJob,deleteJob,nav}){
+  const [search,setSearch]=useState('');
+  const [filter,setFilter]=useState('all');
+  function handleNew(){const job=createJob();addJob(job);nav(`#/job/${job.id}/intake`);}
+  const filtered=jobs.filter(j=>filter==='all'||j.status===filter).filter(j=>{if(!search)return true;const q=search.toLowerCase();return j.clientName?.toLowerCase().includes(q)||j.address?.toLowerCase().includes(q)||j.jobNumber?.includes(q)}).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+  const stats={total:jobs.length,active:jobs.filter(j=>j.status==='active').length,scheduled:jobs.filter(j=>j.status==='scheduled').length,draft:jobs.filter(j=>j.status==='draft').length};
+  return(
+    <div style={{padding:'26px 26px 40px',maxWidth:860,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
         <div>
-          <label>Calories target</label>
-          <input id="tCalories" type="number" min="0" step="10" value="2000" />
+          <h1 style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.75rem',letterSpacing:'-.01em'}}>Job Board</h1>
+          <p style={{color:'var(--ink-soft)',fontSize:'.82rem',marginTop:3}}>Field assessments, estimates & crew assignments</p>
         </div>
-        <div>
-          <label>Protein target (g)</label>
-          <input id="tProtein" type="number" min="0" step="5" value="170" />
-        </div>
+        <Btn variant="primary" size="lg" onClick={handleNew}>+ New Job</Btn>
       </div>
-      <div class="row">
-        <div>
-          <label>Carbs target (g)</label>
-          <input id="tCarbs" type="number" min="0" step="5" value="200" />
-        </div>
-        <div>
-          <label>Fat target (g)</label>
-          <input id="tFat" type="number" min="0" step="5" value="60" />
-        </div>
-      </div>
-
-      <div class="split" style="margin-top:10px;">
-        <button id="saveTargets" class="ghost max160" type="button">Save</button>
-        <button id="exportCsv" class="ghost max160" type="button">Export CSV</button>
-        <button id="clearToday" class="danger max160" type="button">Clear day</button>
-      </div>
-
-      <h3>Totals</h3>
-      <div class="kpiRow">
-        <div class="kpi" id="kpiFood">Food: —</div>
-        <div class="kpi" id="kpiBurn">Burn: —</div>
-        <div class="kpi" id="kpiNet">Net: —</div>
-      </div>
-
-      <div class="macroGrid">
-        <div class="macroCard">
-          <div class="macroTop">
-            <div>
-              <div class="macroLabel">Calories (Net)</div>
-              <div class="macroValue" id="mCal">—</div>
-              <div class="macroSub" id="mCalSub">—</div>
-            </div>
-            <div class="macroSub" id="mCalRem">—</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:10,marginBottom:20}}>
+        {[{l:'Total',v:stats.total,c:'var(--ink)'},{l:'Active',v:stats.active,c:'var(--blue)'},{l:'Scheduled',v:stats.scheduled,c:'var(--amber)'},{l:'Drafts',v:stats.draft,c:'var(--ink-ghost)'}].map(s=>(
+          <div key={s.l} style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-md)',padding:'12px 14px'}}>
+            <div style={{fontSize:'.68rem',color:'var(--ink-soft)',fontFamily:'var(--font-mono)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:4}}>{s.l}</div>
+            <div style={{fontSize:'1.75rem',fontWeight:300,fontFamily:'var(--font-display)',color:s.c}}>{s.v}</div>
           </div>
-          <div class="bar"><div id="bCal"></div></div>
-        </div>
-
-        <div class="macroCard">
-          <div class="macroTop">
-            <div>
-              <div class="macroLabel">Protein</div>
-              <div class="macroValue" id="mP">—</div>
-              <div class="macroSub" id="mPSub">—</div>
-            </div>
-            <div class="macroSub" id="mPRem">—</div>
-          </div>
-          <div class="bar"><div id="bP"></div></div>
-        </div>
-
-        <div class="macroCard">
-          <div class="macroTop">
-            <div>
-              <div class="macroLabel">Carbs</div>
-              <div class="macroValue" id="mC">—</div>
-              <div class="macroSub" id="mCSub">—</div>
-            </div>
-            <div class="macroSub" id="mCRem">—</div>
-          </div>
-          <div class="bar"><div id="bC"></div></div>
-        </div>
-
-        <div class="macroCard">
-          <div class="macroTop">
-            <div>
-              <div class="macroLabel">Fat</div>
-              <div class="macroValue" id="mF">—</div>
-              <div class="macroSub" id="mFSub">—</div>
-            </div>
-            <div class="macroSub" id="mFRem">—</div>
-          </div>
-          <div class="bar"><div id="bF"></div></div>
+        ))}
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:15,flexWrap:'wrap',alignItems:'center'}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by client, address, job #…" style={{flex:1,minWidth:180}}/>
+        <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+          {['all','active','scheduled','draft','complete'].map(f=>(
+            <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 11px',borderRadius:'var(--radius-sm)',border:'1px solid '+(filter===f?'var(--green-accent)':'var(--border)'),background:filter===f?'var(--green-ghost)':'transparent',color:filter===f?'var(--green-mid)':'var(--ink-soft)',fontSize:'.77rem',cursor:'pointer',fontFamily:'var(--font-body)'}}>
+              {f.charAt(0).toUpperCase()+f.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
-
-      <h3>Food log</h3>
-      <div class="scrollBox" style="max-height:360px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th class="right">kcal</th>
-              <th class="right">P</th>
-              <th class="right">C</th>
-              <th class="right">F</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="logBody"></tbody>
-        </table>
-      </div>
-
-      <div class="muted" style="margin-top:10px;">
-        Tip: Build a meal in the <b>Meals</b> tab and add it to Today in one tap.
-      </div>
+      {filtered.length===0?(
+        <div style={{textAlign:'center',padding:'50px 20px',color:'var(--ink-soft)'}}>
+          <div style={{fontSize:'2.2rem',marginBottom:12}}>🌳</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.15rem',color:'var(--ink-mid)',marginBottom:6}}>{jobs.length===0?'No jobs yet':'No results'}</div>
+          <div style={{fontSize:'.82rem',marginBottom:18}}>{jobs.length===0?'Create your first field assessment to get started.':'Try adjusting your search.'}</div>
+          {jobs.length===0&&<Btn variant="primary" onClick={handleNew}>+ Create First Job</Btn>}
+        </div>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {filtered.map(job=>{
+            const date=new Date(job.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            return(
+              <div key={job.id} onClick={()=>nav(`#/job/${job.id}/intake`)} style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',padding:'13px 17px',cursor:'pointer',display:'flex',alignItems:'center',gap:13,flexWrap:'wrap'}}
+                onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 16px rgba(26,46,26,.1)'}
+                onMouseLeave={e=>e.currentTarget.style.boxShadow=''}>
+                <span style={{fontFamily:'var(--font-mono)',fontSize:'.72rem',color:'var(--ink-soft)',minWidth:78}}>#{job.jobNumber}</span>
+                <div style={{flex:1,minWidth:150}}>
+                  <div style={{fontWeight:500,fontSize:'.9rem',marginBottom:2}}>{job.clientName||<span style={{color:'var(--ink-ghost)',fontWeight:400}}>No client</span>}</div>
+                  {job.address&&<div style={{fontSize:'.77rem',color:'var(--ink-soft)'}}>📍 {job.address}{job.city?`, ${job.city}`:''}</div>}
+                </div>
+                <div style={{fontSize:'.78rem',color:'var(--ink-soft)'}}>🌳 {job.trees?.length||0} trees</div>
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'.73rem',color:'var(--ink-ghost)'}}>{date}</div>
+                <StatusBadge status={job.status}/>
+                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))deleteJob(job.id)}} style={{color:'var(--ink-ghost)',border:'none',background:'none',cursor:'pointer',fontSize:'.83rem',padding:'2px 5px'}}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
-  </section>
+  );
+}
 
-  <!-- TAB: WORKOUTS -->
-  <section id="tabWorkouts" class="tabPane">
-    <div class="card">
-      <h2>Workouts</h2>
-
-      <div class="muted">
-        Log workout + calories burned. It subtracts from <b>net calories</b> in Today.
-      </div>
-
-      <h3>Add workout</h3>
-      <div class="row3">
-        <select id="workoutType">
-          <option value="Strength">Strength</option>
-          <option value="Cardio">Cardio</option>
-          <option value="Sports">Sports</option>
-          <option value="Other">Other</option>
-        </select>
-        <select id="muscleGroup">
-          <option value="Full Body">Full Body</option>
-          <option value="Chest">Chest</option>
-          <option value="Back">Back</option>
-          <option value="Shoulders">Shoulders</option>
-          <option value="Arms">Arms</option>
-          <option value="Legs">Legs</option>
-          <option value="Glutes">Glutes</option>
-          <option value="Core">Core</option>
-          <option value="Cardio/Conditioning">Cardio/Conditioning</option>
-        </select>
-        <input id="workoutCals" type="number" min="0" step="5" placeholder="Calories burned" />
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <input id="workoutNotes" placeholder="Notes (optional): e.g., Push day, 45 min..." />
-        <button id="addWorkout" class="secondary" type="button">Add workout</button>
-      </div>
-
-      <h3>Workout log</h3>
-      <div class="scrollBox" style="max-height:420px; margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Workout</th>
-              <th class="right">Burn</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="workoutBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- TAB: SLEEP -->
-  <section id="tabSleep" class="tabPane">
-    <div class="card">
-      <h2>Sleep</h2>
-      <div class="muted">
-        Manual sleep log (web apps can’t read Apple Health sleep).
-      </div>
-
-      <h3>Log sleep</h3>
-      <div class="row">
-        <div>
-          <label>Date</label>
-          <input id="sleepDate" type="date" />
-        </div>
-        <div>
-          <label>Quality (1–5)</label>
-          <select id="sleepQuality">
-            <option value="5">5 (great)</option>
-            <option value="4">4</option>
-            <option value="3" selected>3</option>
-            <option value="2">2</option>
-            <option value="1">1 (poor)</option>
+// JOB DETAIL
+function JobDetail({job,updateJob,settings,nav,activeTab}){
+  const TABS=[{id:'intake',label:'Field Intake',icon:'📋'},{id:'estimate',label:'Estimate',icon:'💲'},{id:'scope',label:'Scope of Work',icon:'📄'},{id:'crew',label:'Crew Map',icon:'🗺️'}];
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{background:'var(--white)',borderBottom:'1px solid var(--border-soft)',padding:'13px 20px',position:'sticky',top:0,zIndex:40}}>
+        <div style={{display:'flex',alignItems:'center',gap:11,flexWrap:'wrap',marginBottom:11}}>
+          <Btn variant="ghost" size="sm" onClick={()=>nav('#/')}>← Jobs</Btn>
+          <div style={{width:1,height:17,background:'var(--border)'}}/>
+          <span style={{fontFamily:'var(--font-mono)',fontSize:'.72rem',color:'var(--ink-soft)'}}>#{job.jobNumber}</span>
+          <span style={{fontWeight:500}}>{job.clientName||'Unnamed Client'}</span>
+          {job.address&&<span style={{fontSize:'.78rem',color:'var(--ink-soft)'}}>{job.address}{job.city?`, ${job.city}`:''}</span>}
+          <select value={job.status} onChange={e=>updateJob(job.id,{status:e.target.value})} style={{width:'auto',fontSize:'.77rem',padding:'5px 9px',marginLeft:'auto',fontFamily:'var(--font-mono)'}}>
+            <option value="draft">Draft</option><option value="active">Active</option>
+            <option value="scheduled">Scheduled</option><option value="complete">Complete</option>
           </select>
         </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label>Bedtime</label>
-          <input id="sleepBed" type="time" />
-        </div>
-        <div>
-          <label>Wake time</label>
-          <input id="sleepWake" type="time" />
+        <div style={{display:'flex',gap:2,overflowX:'auto'}}>
+          {TABS.map(({id,label,icon})=>(
+            <button key={id} onClick={()=>nav(`#/job/${job.id}/${id}`)} style={{display:'flex',alignItems:'center',gap:5,padding:'7px 12px',border:'none',cursor:'pointer',background:activeTab===id?'var(--green-ghost)':'transparent',color:activeTab===id?'var(--green-mid)':'var(--ink-soft)',borderBottom:activeTab===id?'2px solid var(--green-accent)':'2px solid transparent',fontFamily:'var(--font-body)',fontSize:'.82rem',fontWeight:activeTab===id?500:400,whiteSpace:'nowrap'}}>
+              {icon} {label}
+            </button>
+          ))}
         </div>
       </div>
-
-      <label>Notes (optional)</label>
-      <input id="sleepNotes" placeholder="e.g., woke up 2x, caffeine late, sore..." />
-
-      <div class="split" style="margin-top:10px;">
-        <button id="saveSleep" class="secondary max180" type="button">Save sleep</button>
-        <button id="clearSleepDay" class="danger max180" type="button">Delete date</button>
-      </div>
-
-      <h3>Last 7 days</h3>
-      <div class="kpiRow">
-        <div class="kpi" id="sleepAvgHours">Avg hours: —</div>
-        <div class="kpi" id="sleepAvgQuality">Avg quality: —</div>
-        <div class="kpi" id="sleepNights">Nights logged: —</div>
-      </div>
-
-      <div class="scrollBox" style="max-height:360px; margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th class="right">Hours</th>
-              <th class="right">Quality</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody id="sleepBody"></tbody>
-        </table>
+      <div style={{flex:1,overflow:'auto'}}>
+        {activeTab==='intake'&&<IntakeTab job={job} updateJob={updateJob}/>}
+        {activeTab==='estimate'&&<EstimateTab job={job} updateJob={updateJob} settings={settings}/>}
+        {activeTab==='scope'&&<ScopeTab job={job} settings={settings}/>}
+        {activeTab==='crew'&&<CrewMapTab job={job} updateJob={updateJob}/>}
       </div>
     </div>
-  </section>
+  );
+}
 
-  <!-- TAB: PLAN -->
-  <section id="tabPlan" class="tabPane">
-    <div class="card">
-      <h2>Plan (Deficit + Muscle retention)</h2>
-      <div class="muted">
-        Uses a standard TDEE estimate (Mifflin-St Jeor). Tap “Apply targets” to set your Today targets.
-      </div>
-
-      <h3>Deficit calculator</h3>
-      <div class="row">
-        <div>
-          <label>Gender</label>
-          <select id="pGender">
-            <option value="female">Female</option>
-            <option value="male">Male</option>
-          </select>
+// INTAKE TAB
+function IntakeTab({job,updateJob}){
+  const [expanded,setExpanded]=useState(()=>job.trees.map(t=>t.id));
+  function update(f,v){updateJob(job.id,{[f]:v})}
+  function updateTree(tid,f,v){updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,[f]:v}:t)}))}
+  function toggleWork(tid,wid){updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{if(t.id!==tid)return t;const has=t.workTypes.includes(wid);return{...t,workTypes:has?t.workTypes.filter(w=>w!==wid):[...t.workTypes,wid]}})}))}
+  function addTree(){const t=createTree(job.trees.length+1);updateJob(job.id,j=>({...j,trees:[...j.trees,t]}));setExpanded(p=>[...p,t.id])}
+  function removeTree(tid){if(!confirm('Remove this tree?'))return;updateJob(job.id,j=>({...j,trees:j.trees.filter(t=>t.id!==tid)}))}
+  function toggleExpand(id){setExpanded(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])}
+  return(
+    <div style={{padding:'20px 20px 40px',maxWidth:860,margin:'0 auto'}}>
+      <Card style={{marginBottom:16}}>
+        <SLabel>Property & client</SLabel>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:11,marginBottom:11}}>
+          <div><label>Client name</label><input value={job.clientName} onChange={e=>update('clientName',e.target.value)} placeholder="Full name"/></div>
+          <div><label>Phone</label><input value={job.clientPhone} onChange={e=>update('clientPhone',e.target.value)} placeholder="(512) 000-0000"/></div>
+          <div><label>Email</label><input value={job.clientEmail} onChange={e=>update('clientEmail',e.target.value)} placeholder="email@example.com"/></div>
         </div>
-        <div>
-          <label>Age</label>
-          <input id="pAge" type="number" min="10" step="1" value="23" />
+        <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 80px',gap:11,marginBottom:11}}>
+          <div><label>Street address</label><input value={job.address} onChange={e=>update('address',e.target.value)} placeholder="123 Main St"/></div>
+          <div><label>City</label><input value={job.city} onChange={e=>update('city',e.target.value)} placeholder="Kyle"/></div>
+          <div><label>Zip</label><input value={job.zip} onChange={e=>update('zip',e.target.value)} placeholder="78640"/></div>
         </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:11}}>
+          <div><label>Site access</label>
+            <select value={job.siteAccess} onChange={e=>update('siteAccess',e.target.value)}>
+              <option value="open">Open — easy access</option>
+              <option value="locked">Locked gate — key required</option>
+              <option value="narrow">Narrow driveway</option>
+              <option value="steep">Steep slope</option>
+              <option value="restricted">Restricted — call ahead</option>
+            </select>
+          </div>
+          <div><label>Site notes</label><input value={job.siteNotes} onChange={e=>update('siteNotes',e.target.value)} placeholder="Overhead lines, irrigation, fencing…"/></div>
+        </div>
+      </Card>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:11}}>
+        <SLabel style={{margin:0}}>Tagged trees ({job.trees.length})</SLabel>
+        <Btn variant="outline" size="sm" onClick={addTree}>+ Add tree</Btn>
       </div>
+      {job.trees.map((tree,idx)=>{
+        const isOpen=expanded.includes(tree.id);
+        const pw=WORK_TYPES.find(w=>w.id===tree.workTypes[0]);
+        return(
+          <div key={tree.id} style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',marginBottom:9,overflow:'hidden'}}>
+            <div onClick={()=>toggleExpand(tree.id)} style={{display:'flex',alignItems:'center',gap:9,padding:'12px 15px',cursor:'pointer',background:isOpen?'var(--green-ghost)':'var(--white)',borderBottom:isOpen?'1px solid var(--border-soft)':'none'}}>
+              <span style={{background:'var(--green-mid)',color:'#fff',fontSize:'.71rem',fontWeight:500,padding:'2px 8px',borderRadius:99,fontFamily:'var(--font-mono)',flexShrink:0}}>{tree.tag||`T${idx+1}`}</span>
+              <span style={{fontWeight:500,flex:1,fontSize:'.88rem'}}>{tree.commonName||tree.species||<span style={{color:'var(--ink-ghost)',fontWeight:400}}>Untitled tree</span>}{tree.dbh&&<span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:'.78rem',marginLeft:7}}>{tree.dbh}" DBH</span>}</span>
+              {pw&&<Badge type={pw.badge}>{pw.label}</Badge>}
+              {tree.workTypes.length>1&&<span style={{fontSize:'.71rem',color:'var(--ink-ghost)',fontFamily:'var(--font-mono)'}}>+{tree.workTypes.length-1}</span>}
+              <span style={{color:'var(--ink-ghost)',fontSize:'.82rem'}}>{isOpen?'▲':'▼'}</span>
+            </div>
+            {isOpen&&(
+              <div style={{padding:'15px 15px 17px'}}>
+                <div style={{display:'grid',gridTemplateColumns:'58px 1fr 1fr',gap:9,marginBottom:9}}>
+                  <div><label>Tag</label><input value={tree.tag} onChange={e=>updateTree(tree.id,'tag',e.target.value)}/></div>
+                  <div><label>Common name</label><input value={tree.commonName} onChange={e=>updateTree(tree.id,'commonName',e.target.value)} placeholder="Live Oak"/></div>
+                  <div><label>Species</label><input value={tree.species} onChange={e=>updateTree(tree.id,'species',e.target.value)} placeholder="Quercus virginiana"/></div>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'95px 95px 1fr 1fr',gap:9,marginBottom:9}}>
+                  <div><label>DBH (in)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updateTree(tree.id,'dbh',e.target.value)} placeholder="24"/></div>
+                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updateTree(tree.id,'height',e.target.value)} placeholder="48"/></div>
+                  <div><label>Condition</label>
+                    <select value={tree.condition} onChange={e=>updateTree(tree.id,'condition',e.target.value)}>
+                      {['excellent','good','fair','poor','critical'].map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+                    </select>
+                  </div>
+                  <div><label>Difficulty</label>
+                    <select value={tree.difficulty} onChange={e=>updateTree(tree.id,'difficulty',e.target.value)}>
+                      <option value="standard">Standard</option>
+                      <option value="confined">Confined (1.35×)</option>
+                      <option value="crane">Crane req. (1.6×)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{marginBottom:9}}><label>Work type</label>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:5}}>
+                    {WORK_TYPES.map(wt=>{const sel=tree.workTypes.includes(wt.id);return<button key={wt.id} onClick={()=>toggleWork(tree.id,wt.id)} style={{padding:'4px 10px',borderRadius:99,cursor:'pointer',border:'1px solid '+(sel?'var(--green-accent)':'var(--border)'),background:sel?'var(--green-ghost)':'var(--paper)',color:sel?'var(--green-mid)':'var(--ink-soft)',fontSize:'.76rem',fontFamily:'var(--font-body)',fontWeight:sel?500:400}}>{wt.label}</button>})}
+                  </div>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginBottom:9}}>
+                  <div><label>Field notes</label><textarea rows={3} value={tree.notes} onChange={e=>updateTree(tree.id,'notes',e.target.value)} placeholder="Observations, hazards, disease signs…"/></div>
+                  <div><label>Access notes</label><textarea rows={3} value={tree.accessNotes} onChange={e=>updateTree(tree.id,'accessNotes',e.target.value)} placeholder="Equipment staging, utilities…"/></div>
+                </div>
+                <div style={{marginBottom:9}}><label>Photos</label>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5,alignItems:'center'}}>
+                    {tree.photos.map((p,pi)=>(
+                      <div key={pi} style={{width:60,height:60,borderRadius:'var(--radius-md)',overflow:'hidden',border:'1px solid var(--border)',position:'relative',flexShrink:0}}>
+                        <img src={p.url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                        <button onClick={()=>updateTree(tree.id,'photos',tree.photos.filter((_,i)=>i!==pi))} style={{position:'absolute',top:2,right:2,width:16,height:16,borderRadius:'50%',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                      </div>
+                    ))}
+                    <label style={{width:60,height:60,borderRadius:'var(--radius-md)',border:'1.5px dashed var(--border)',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,color:'var(--ink-ghost)',fontSize:'.6rem',textTransform:'uppercase',letterSpacing:'.04em',background:'var(--paper)',flexShrink:0,margin:0}}>
+                      📷<span>Add</span>
+                      <input type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>{Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=ev=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tree.id?{...t,photos:[...t.photos,{url:ev.target.result,name:file.name}]}:t)}));r.readAsDataURL(file)})}}/>
+                    </label>
+                  </div>
+                </div>
+                <div style={{display:'flex',justifyContent:'flex-end'}}>
+                  <Btn variant="danger" size="sm" onClick={()=>removeTree(tree.id)}>🗑 Remove tree</Btn>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <button onClick={addTree} style={{width:'100%',padding:15,border:'1.5px dashed var(--border)',borderRadius:'var(--radius-lg)',background:'transparent',color:'var(--ink-soft)',cursor:'pointer',fontSize:'.86rem',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'var(--font-body)'}}
+        onMouseEnter={e=>e.currentTarget.style.background='var(--paper)'}
+        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+        + Tag another tree or work zone
+      </button>
+    </div>
+  );
+}
 
-      <div class="row">
-        <div>
-          <label>Height</label>
-          <div class="row">
-            <input id="pHeightFt" type="number" min="3" step="1" placeholder="ft" value="5" />
-            <input id="pHeightIn" type="number" min="0" step="1" placeholder="in" value="3" />
+// ESTIMATE TAB
+function EstimateTab({job,updateJob,settings}){
+  const [showPricing,setShowPricing]=useState(false);
+  const overrides=job.pricingOverrides||{};
+  const merged={...settings,...overrides};
+  const est=calcEstimate(job,merged);
+  const noTrees=job.trees.every(t=>!t.dbh||!t.workTypes.length);
+  function setOverride(key,val){updateJob(job.id,j=>({...j,pricingOverrides:{...j.pricingOverrides,[key]:parseFloat(val)||val}}))}
+  function handlePrint(){
+    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    const rows=est.lines.map(l=>`<tr><td>${l.treeTag}</td><td>${l.treeName}</td><td>${l.work}</td><td>${l.dbh}"</td><td style="text-align:right">$${l.total.toLocaleString()}</td></tr>`).join('');
+    const win=window.open('','_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Estimate #${job.jobNumber}</title><style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;font-size:13px}h1{font-weight:300;font-size:21px}table{width:100%;border-collapse:collapse;margin-top:18px}th{font-size:11px;text-transform:uppercase;padding:8px;border-bottom:1px solid #ccc;text-align:left}td{padding:9px 8px;border-bottom:1px solid #eee}.tot{font-weight:600}@media print{body{margin:20px}}</style></head><body><h1>${settings.companyName||'Tree Service'}</h1><p style="color:#666">${date}</p><p><strong>Client:</strong> ${job.clientName||'—'} | <strong>Phone:</strong> ${job.clientPhone||'—'}<br><strong>Address:</strong> ${job.address||'—'}${job.city?', '+job.city:''}<br><strong>Job #:</strong> ${job.jobNumber}</p><table><thead><tr><th>Tag</th><th>Tree</th><th>Scope</th><th>DBH</th><th style="text-align:right">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="color:#888;padding:9px 8px">Subtotal</td><td style="text-align:right;padding:9px 8px">$${est.subtotal.toLocaleString()}</td></tr><tr><td colspan="4" style="color:#888;padding:6px 8px">Tax/permits</td><td style="text-align:right;padding:6px 8px">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="4" style="padding:10px 8px">Estimate Total</td><td style="text-align:right;padding:10px 8px">$${est.total.toLocaleString()}</td></tr></tfoot></table><p style="margin-top:28px;font-size:11px;color:#888">ISA Cert #: ${settings.isaNumber||'—'} | TDA License #: ${settings.tdaNumber||'—'}<br>${settings.companyName||''} · ${settings.phone||''} · ${settings.email||''}</p></body></html>`);
+    win.document.close();win.print();
+  }
+  return(
+    <div style={{padding:'20px 20px 40px',maxWidth:800,margin:'0 auto'}}>
+      <div style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',marginBottom:16,overflow:'hidden'}}>
+        <button onClick={()=>setShowPricing(s=>!s)} style={{width:'100%',padding:'12px 16px',border:'none',background:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'var(--font-body)',fontSize:'.86rem',color:'var(--ink)'}}>
+          <span style={{fontWeight:500}}>Pricing rules {Object.keys(overrides).length>0&&<span style={{color:'var(--amber)',fontSize:'.72rem',fontFamily:'var(--font-mono)'}}>(job override active)</span>}</span>
+          <span>{showPricing?'▲':'▼'}</span>
+        </button>
+        {showPricing&&(
+          <div style={{padding:'4px 16px 16px',borderTop:'1px solid var(--border-soft)'}}>
+            <p style={{fontSize:'.77rem',color:'var(--ink-soft)',margin:'9px 0 13px'}}>Overrides default settings for this job only.</p>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(175px,1fr))',gap:10}}>
+              {[{key:'rateRemoval',label:'Removal/DBH inch',pre:'$'},{key:'ratePruning',label:'Pruning/DBH inch',pre:'$'},{key:'rateTreatment',label:'Treatment flat',pre:'$'},{key:'rateStump',label:'Stump/DBH inch',pre:'$'},{key:'rateDebrisHaul',label:'Debris haul',pre:'$'},{key:'multConfined',label:'Confined mult.',pre:'×'},{key:'multCrane',label:'Crane mult.',pre:'×'},{key:'taxRate',label:'Tax rate',pre:''}].map(({key,label,pre})=>(
+                <div key={key} style={{background:'var(--paper)',borderRadius:'var(--radius-md)',padding:'9px 11px'}}>
+                  <label style={{marginBottom:5}}>{label}</label>
+                  <div style={{display:'flex',alignItems:'center',gap:5}}>{pre&&<span style={{fontSize:'.82rem',color:'var(--ink-soft)'}}>{pre}</span>}<input type="number" step={key.includes('mult')||key==='taxRate'?'.01':'1'} value={overrides[key]??settings[key]??DEFAULT_SETTINGS[key]} onChange={e=>setOverride(key,e.target.value)}/></div>
+                  {overrides[key]!==undefined&&<button onClick={()=>{const n={...overrides};delete n[key];updateJob(job.id,{pricingOverrides:n})}} style={{fontSize:'.7rem',color:'var(--ink-ghost)',background:'none',border:'none',cursor:'pointer',marginTop:3,padding:0,fontFamily:'var(--font-body)'}}>Reset</button>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <Card style={{marginBottom:13,padding:0,overflow:'hidden'}}>
+        <div style={{padding:'12px 17px',borderBottom:'1px solid var(--border-soft)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div><SLabel style={{marginBottom:2}}>Itemized estimate</SLabel><div style={{fontSize:'.77rem',color:'var(--ink-soft)'}}>{job.clientName||'Client'} · {job.address||'No address'} · Job #{job.jobNumber}</div></div>
+          <Btn variant="outline" size="sm" onClick={handlePrint}>🖨 Print / PDF</Btn>
+        </div>
+        {noTrees?(
+          <div style={{padding:'32px 17px',textAlign:'center',color:'var(--ink-ghost)',fontSize:'.86rem'}}>No trees with DBH and work types set. Complete Field Intake first.</div>
+        ):(
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:'.82rem'}}>
+            <thead><tr style={{background:'var(--paper)'}}>
+              {['Tag','Tree','Scope','DBH','Amount'].map(h=><th key={h} style={{padding:'9px 13px',textAlign:h==='Amount'?'right':'left',fontFamily:'var(--font-mono)',fontSize:'.69rem',color:'var(--ink-soft)',fontWeight:500,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid var(--border-soft)',whiteSpace:'nowrap'}}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {est.lines.map((line,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid var(--border-soft)'}}>
+                  <td style={{padding:'10px 13px'}}><span style={{background:'var(--green-mid)',color:'#fff',fontSize:'.69rem',fontWeight:500,padding:'2px 7px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{line.treeTag}</span></td>
+                  <td style={{padding:'10px 13px',color:'var(--ink-soft)',fontSize:'.79rem'}}>{line.treeName}</td>
+                  <td style={{padding:'10px 13px'}}>{line.work}</td>
+                  <td style={{padding:'10px 13px',fontFamily:'var(--font-mono)',fontSize:'.79rem',color:'var(--ink-soft)'}}>{line.dbh}"</td>
+                  <td style={{padding:'10px 13px',textAlign:'right',fontFamily:'var(--font-mono)',fontWeight:500}}>${line.total.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{borderTop:'1px solid var(--border)'}}><td colSpan={4} style={{padding:'9px 13px',color:'var(--ink-soft)',fontSize:'.79rem'}}>Subtotal</td><td style={{padding:'9px 13px',textAlign:'right',fontFamily:'var(--font-mono)'}}>${est.subtotal.toLocaleString()}</td></tr>
+              <tr><td colSpan={4} style={{padding:'5px 13px',color:'var(--ink-soft)',fontSize:'.75rem'}}>Tax/permits ({((merged.taxRate||.04)*100).toFixed(0)}%)</td><td style={{padding:'5px 13px',textAlign:'right',fontFamily:'var(--font-mono)',fontSize:'.79rem',color:'var(--ink-soft)'}}>${est.tax.toLocaleString()}</td></tr>
+              <tr style={{background:'var(--green-ghost)',borderTop:'1px solid var(--green-pale)'}}><td colSpan={4} style={{padding:'12px 13px',fontWeight:500,fontSize:'.97rem',fontFamily:'var(--font-display)',fontStyle:'italic'}}>Estimate total</td><td style={{padding:'12px 13px',textAlign:'right',fontFamily:'var(--font-mono)',fontWeight:500,fontSize:'1.12rem',color:'var(--green-mid)'}}>${est.total.toLocaleString()}</td></tr>
+            </tfoot>
+          </table>
+        )}
+      </Card>
+      <Card><SLabel>Internal notes</SLabel><textarea rows={4} value={job.notes} onChange={e=>updateJob(job.id,{notes:e.target.value})} placeholder="Scheduling, equipment, crew assignments, client communications…" style={{marginTop:4}}/></Card>
+    </div>
+  );
+}
+
+// SCOPE TAB
+function ScopeTab({job,settings}){
+  const est=calcEstimate(job,settings);
+  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const treesWithWork=job.trees.filter(t=>t.workTypes.length>0);
+  const addr=[job.address,job.city,job.state,job.zip].filter(Boolean).join(', ');
+  const condText={excellent:'is in excellent structural condition',good:'is in good condition with no significant defects observed',fair:'is in fair condition with some areas of concern noted',poor:'is in poor condition and exhibits significant structural deficiencies',critical:'is in critical condition and poses an elevated risk of failure'};
+  function handlePrint(){
+    const treeBlocks=treesWithWork.map(tree=>{const wl=tree.workTypes.map(wt=>WORK_TYPES.find(w=>w.id===wt)?.label||wt).join(', ');return `<h3 style="font-size:14px;margin:20px 0 8px">${tree.tag} — ${tree.commonName||tree.species||'Tree'}${tree.dbh?`, ${tree.dbh}" DBH`:''}</h3><div style="border-left:3px solid #c8e6c4;padding-left:14px;font-size:13px;line-height:1.8"><p><strong>Work:</strong> ${wl}.</p>${tree.notes?`<p><strong>Assessment:</strong> ${tree.notes}</p>`:''} ${tree.accessNotes?`<p><strong>Access:</strong> ${tree.accessNotes}</p>`:''}</div>`}).join('');
+    const estRows=est.lines.map(l=>`<tr><td>${l.treeTag}</td><td>${l.work}</td><td style="text-align:right">$${l.total.toLocaleString()}</td></tr>`).join('');
+    const win=window.open('','_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Scope of Work #${job.jobNumber}</title><style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;font-size:13px;color:#222;line-height:1.7}h1{font-size:23px;font-weight:300;color:#1a2e1a}h2{font-size:14px;font-weight:400;color:#555;margin:20px 0 8px;border-bottom:1px solid #eee;padding-bottom:5px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #eee}.tot{font-weight:600}@media print{body{margin:20px}}</style></head><body><h1>Scope of Work</h1><p><strong>Job #:</strong> ${job.jobNumber} | <strong>Date:</strong> ${date}</p><p><strong>Client:</strong> ${job.clientName||'—'} | <strong>Phone:</strong> ${job.clientPhone||'—'}</p><p><strong>Address:</strong> ${addr||'—'}</p><h2>Overview</h2><p>${settings.companyName||'This company'} has assessed ${treesWithWork.length} tree(s) at the above property. All work per ANSI A300 standards and applicable TDA requirements.</p>${job.siteNotes?`<p><strong>Site notes:</strong> ${job.siteNotes}</p>`:''}<h2>Tree Scope</h2>${treeBlocks}${est.lines.length?`<h2>Estimate</h2><table><thead><tr><th>Tag</th><th>Work</th><th style="text-align:right">Amount</th></tr></thead><tbody>${estRows}</tbody><tfoot><tr><td colspan="2">Tax/permits</td><td style="text-align:right">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="2">Total</td><td style="text-align:right">$${est.total.toLocaleString()}</td></tr></tfoot></table>`:''}<p style="margin-top:32px;font-size:11px;color:#888">ISA Cert #: ${settings.isaNumber||'—'} | TDA License #: ${settings.tdaNumber||'—'}<br>${settings.companyName||''} · ${settings.phone||''} · ${settings.email||''}</p></body></html>`);
+    win.document.close();win.print();
+  }
+  return(
+    <div style={{padding:'20px 20px 40px',maxWidth:800,margin:'0 auto'}}>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:13}}><Btn variant="outline" size="sm" onClick={handlePrint}>🖨 Print / export</Btn></div>
+      <Card>
+        <div style={{marginBottom:20,paddingBottom:17,borderBottom:'1px solid var(--border-soft)'}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.5rem',marginBottom:7,color:'var(--green-dark)'}}>Scope of Work</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'3px 16px',fontSize:'.82rem',color:'var(--ink-soft)'}}>
+            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Job #:</strong> {job.jobNumber}</div>
+            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Date:</strong> {date}</div>
+            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Client:</strong> {job.clientName||'—'}</div>
+            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Phone:</strong> {job.clientPhone||'—'}</div>
+            <div style={{gridColumn:'1/-1'}}><strong style={{color:'var(--ink)',fontWeight:500}}>Address:</strong> {addr||'—'}</div>
           </div>
         </div>
-        <div>
-          <label>Current weight (lb)</label>
-          <input id="pWeight" type="number" min="70" step="1" value="185" />
+        <div style={{marginBottom:20}}><SLabel>Overview</SLabel>
+          <p style={{fontSize:'.85rem',lineHeight:1.8,color:'var(--ink-mid)'}}>{settings.companyName||'This company'} has assessed {treesWithWork.length} {treesWithWork.length===1?'tree':'trees'} at the above-referenced property on behalf of {job.clientName||'the property owner'}. The following scope of work was prepared following an on-site evaluation conducted by a licensed arborist. All work shall be performed in accordance with ANSI A300 pruning standards, applicable municipal ordinances, and applicable TDA pesticide application requirements.</p>
+          {job.siteNotes&&<div style={{marginTop:9,padding:'8px 12px',background:'var(--amber-light)',borderRadius:'var(--radius-md)',fontSize:'.82rem',color:'var(--ink-mid)'}}><strong>Site notes:</strong> {job.siteNotes}</div>}
         </div>
-      </div>
+        {treesWithWork.length===0?<div style={{padding:'28px 0',textAlign:'center',color:'var(--ink-ghost)',fontSize:'.85rem'}}>No trees with assigned work. Complete Field Intake to generate scope text.</div>
+        :treesWithWork.map((tree,i)=>{
+          const wl=tree.workTypes.map(wt=>WORK_TYPES.find(w=>w.id===wt)?.label||wt).join(', ');
+          const hasTreatment=tree.workTypes.some(w=>['treatment','spray','drench'].includes(w));
+          const hasCrane=tree.workTypes.includes('crane');
+          const hasStump=tree.workTypes.includes('stump');
+          return(
+            <div key={tree.id} style={{marginBottom:i<treesWithWork.length-1?22:0,paddingBottom:i<treesWithWork.length-1?22:0,borderBottom:i<treesWithWork.length-1?'1px solid var(--border-soft)':'none'}}>
+              <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:9}}>
+                <span style={{background:'var(--green-mid)',color:'#fff',fontSize:'.71rem',fontWeight:500,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{tree.tag}</span>
+                <span style={{fontWeight:500,fontSize:'.95rem'}}>{tree.commonName||tree.species||'Tree'}{tree.species&&tree.commonName?` (${tree.species})`:''}{tree.dbh&&<span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:'.82rem',marginLeft:7}}>{tree.dbh}" DBH</span>}{tree.height&&<span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:'.82rem',marginLeft:5}}>{tree.height}' ht.</span>}</span>
+              </div>
+              <div style={{borderLeft:'3px solid var(--green-pale)',paddingLeft:13}}>
+                <p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Recommended work:</strong> {wl}.</p>
+                {tree.notes&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Assessment:</strong> The specimen {condText[tree.condition]||'has been assessed on site'}. {tree.notes}</p>}
+                {(tree.accessNotes||hasCrane)&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Access & methodology:</strong> {tree.accessNotes||''}{hasCrane?' Crane access required.':''}</p>}
+                {hasStump&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Stump:</strong> Stump grinding to grade is included in this scope.</p>}
+                {hasTreatment&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)'}}><strong>Regulatory note:</strong> A TDA Pesticide Applicator Record (Form Q527) will be completed and retained per 4 TAC §7.24. Client copy available upon request.</p>}
+              </div>
+            </div>
+          );
+        })}
+        {est.lines.length>0&&(
+          <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid var(--border-soft)'}}>
+            <SLabel>Estimate summary</SLabel>
+            {est.lines.map((l,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'.83rem',color:'var(--ink-mid)',lineHeight:2}}><span>{l.treeTag} — {l.work}</span><span style={{fontFamily:'var(--font-mono)'}}>${l.total.toLocaleString()}</span></div>)}
+            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid var(--border-soft)',paddingTop:8,marginTop:5,fontWeight:500,fontSize:'.88rem'}}><span>Estimate total (incl. tax/permits)</span><span style={{fontFamily:'var(--font-mono)',color:'var(--green-mid)'}}>${est.total.toLocaleString()}</span></div>
+          </div>
+        )}
+        <div style={{marginTop:22,paddingTop:17,borderTop:'1px solid var(--border-soft)',display:'flex',flexWrap:'wrap',gap:'5px 26px',fontSize:'.75rem',color:'var(--ink-soft)',fontFamily:'var(--font-mono)'}}>
+          <span>ISA Cert #: {settings.isaNumber||'—'}</span>
+          <span>TDA License #: {settings.tdaNumber||'—'}</span>
+          <span>{settings.companyName||''}</span>
+          <span>{settings.phone||''}</span>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
-      <div class="row">
-        <div>
-          <label>Goal weight (lb)</label>
-          <input id="pGoalWeight" type="number" min="70" step="1" value="175" />
+// CREW MAP TAB
+function CrewMapTab({job,updateJob}){
+  const [selected,setSelected]=useState(null);
+  const [dragging,setDragging]=useState(null);
+  const mapRef=useRef(null);
+  const selectedTree=job.trees.find(t=>t.id===selected);
+  function getCoords(e){const rect=mapRef.current.getBoundingClientRect();const cx=e.touches?e.touches[0].clientX:e.clientX;const cy=e.touches?e.touches[0].clientY:e.clientY;return{x:Math.max(.04,Math.min(.96,(cx-rect.left)/rect.width)),y:Math.max(.04,Math.min(.96,(cy-rect.top)/rect.height))}}
+  function onMove(e){if(!dragging)return;const c=getCoords(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===dragging?{...t,mapX:c.x,mapY:c.y}:t)}))}
+  function pinColor(tree){const wt=WORK_TYPES.find(w=>w.id===tree.workTypes[0]);return PIN_COLORS[wt?.badge]||'#4a8c3f'}
+  return(
+    <div style={{padding:'17px 20px 40px',maxWidth:900,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:16,flexWrap:'wrap'}}>
+        <div style={{flex:'1 1 360px'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+            <SLabel style={{margin:0}}>Property map — drag pins to position</SLabel>
+            <span style={{fontSize:'.69rem',color:'var(--ink-ghost)',fontFamily:'var(--font-mono)'}}>Tap to view task</span>
+          </div>
+          <div ref={mapRef} style={{position:'relative',background:'#d4edda',borderRadius:'var(--radius-lg)',border:'1px solid var(--border-soft)',overflow:'hidden',cursor:dragging?'grabbing':'default',userSelect:'none',touchAction:'none'}}
+            onMouseMove={onMove} onMouseUp={()=>setDragging(null)} onMouseLeave={()=>setDragging(null)}
+            onTouchMove={onMove} onTouchEnd={()=>setDragging(null)}>
+            <svg viewBox="0 0 600 320" style={{width:'100%',display:'block'}}>
+              <rect width="600" height="320" fill="#c8e6c4"/>
+              <rect x="170" y="72" width="195" height="155" rx="6" fill="#e8d5b7" stroke="#c4a882" strokeWidth="1.5"/>
+              <rect x="193" y="92" width="148" height="108" rx="2" fill="#f5ecd7"/>
+              <text x="267" y="143" fill="#a07850" fontSize="10" textAnchor="middle" fontFamily="Georgia,serif">Residence</text>
+              <rect x="170" y="227" width="195" height="70" fill="#b8d9b4" opacity="0.5"/>
+              <rect x="0" y="290" width="600" height="30" fill="#bbb" opacity="0.4"/>
+              <text x="300" y="308" fill="#666" fontSize="9" textAnchor="middle" fontFamily="monospace">Street</text>
+              <text x="26" y="18" fill="#555" fontSize="9" fontFamily="monospace">↑ N</text>
+            </svg>
+            {job.trees.map(tree=>{
+              const color=pinColor(tree);const isSel=selected===tree.id;
+              return(
+                <div key={tree.id} style={{position:'absolute',left:(tree.mapX||.5)*100+'%',top:(tree.mapY||.4)*100+'%',transform:'translate(-50%,-50%)',zIndex:isSel?10:5,cursor:'grab'}}
+                  onMouseDown={e=>{e.preventDefault();setDragging(tree.id);setSelected(tree.id)}}
+                  onTouchStart={()=>{setDragging(tree.id);setSelected(tree.id)}}
+                  onClick={()=>setSelected(tree.id)}>
+                  <div style={{width:isSel?33:27,height:isSel?33:27,borderRadius:'50%',background:color,border:isSel?'3px solid white':'2px solid rgba(255,255,255,.7)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:isSel?'0 2px 10px rgba(0,0,0,.3)':'0 1px 4px rgba(0,0,0,.2)',transition:'all .15s'}}>
+                    <span style={{color:'white',fontSize:isSel?'.68rem':'.62rem',fontWeight:600,fontFamily:'var(--font-mono)'}}>{tree.tag}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
+            {Object.entries(PIN_COLORS).map(([type,color])=>(
+              <div key={type} style={{display:'flex',alignItems:'center',gap:4,fontSize:'.71rem',color:'var(--ink-soft)'}}>
+                <div style={{width:9,height:9,borderRadius:'50%',background:color}}/>{type.charAt(0).toUpperCase()+type.slice(1)}
+              </div>
+            ))}
+          </div>
         </div>
-        <div>
-          <label>Activity level</label>
-          <select id="pActivity">
-            <option value="1.2">Sedentary (little exercise)</option>
-            <option value="1.375">Light (1–3 days/week)</option>
-            <option value="1.55" selected>Moderate (3–5 days/week)</option>
-            <option value="1.725">Very active (6–7 days/week)</option>
-            <option value="1.9">Athlete (2x/day)</option>
-          </select>
+        <div style={{flex:'1 1 230px',minWidth:220}}>
+          <SLabel>Task detail</SLabel>
+          {!selectedTree?(
+            <div style={{background:'var(--paper)',borderRadius:'var(--radius-lg)',border:'1px dashed var(--border)',padding:'28px 16px',textAlign:'center',color:'var(--ink-ghost)',fontSize:'.83rem'}}>Tap a pin to view task details</div>
+          ):(
+            <div style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',padding:14}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+                <span style={{background:pinColor(selectedTree),color:'#fff',fontSize:'.74rem',fontWeight:600,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{selectedTree.tag}</span>
+                <div><div style={{fontWeight:500,fontSize:'.9rem'}}>{selectedTree.commonName||selectedTree.species||'Tree'}</div>
+                {selectedTree.dbh&&<div style={{fontSize:'.73rem',color:'var(--ink-soft)',fontFamily:'var(--font-mono)'}}>{selectedTree.dbh}" DBH · {selectedTree.condition}</div>}</div>
+              </div>
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:4,fontFamily:'var(--font-mono)'}}>Work assigned</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>{selectedTree.workTypes.map(wt=>{const f=WORK_TYPES.find(w=>w.id===wt);const c=BADGE_COLORS[f?.badge]||{};return<span key={wt} style={{background:c.bg,color:c.color,fontSize:'.69rem',padding:'3px 8px',borderRadius:99,fontWeight:500}}>{f?.label||wt}</span>})}</div>
+              </div>
+              {selectedTree.notes&&<div style={{marginBottom:8}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:3,fontFamily:'var(--font-mono)'}}>Field notes</div><p style={{fontSize:'.79rem',lineHeight:1.65,color:'var(--ink-mid)'}}>{selectedTree.notes}</p></div>}
+              {selectedTree.accessNotes&&<div style={{marginBottom:8,padding:'7px 10px',background:'var(--amber-light)',borderRadius:'var(--radius-sm)'}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--amber)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:2,fontFamily:'var(--font-mono)'}}>Access / hazard</div><p style={{fontSize:'.78rem',lineHeight:1.6,color:'#7a4a0a'}}>{selectedTree.accessNotes}</p></div>}
+              {selectedTree.photos?.length>0&&<div style={{marginBottom:8}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:4,fontFamily:'var(--font-mono)'}}>Photos</div><div style={{display:'flex',gap:5,flexWrap:'wrap'}}>{selectedTree.photos.map((p,i)=><img key={i} src={p.url} alt="" style={{width:54,height:54,objectFit:'cover',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)'}}/>)}</div></div>}
+              <div style={{paddingTop:10,borderTop:'1px solid var(--border-soft)'}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6,fontFamily:'var(--font-mono)'}}>All tags</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:5}}>{job.trees.map(tree=><button key={tree.id} onClick={()=>setSelected(tree.id)} style={{background:selected===tree.id?pinColor(tree):'var(--paper)',color:selected===tree.id?'#fff':'var(--ink-soft)',border:'1px solid '+(selected===tree.id?pinColor(tree):'var(--border)'),borderRadius:99,padding:'3px 9px',cursor:'pointer',fontSize:'.71rem',fontFamily:'var(--font-mono)',fontWeight:500}}>{tree.tag}</button>)}</div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label>Fat loss speed</label>
-          <select id="pSpeed">
-            <option value="slow">Slow (≈0.5 lb/week)</option>
-            <option value="moderate" selected>Moderate (≈1.0 lb/week)</option>
-            <option value="aggressive">Aggressive (≈1.5 lb/week)</option>
-          </select>
-        </div>
-        <div>
-          <label>Muscle retention priority</label>
-          <select id="pRetention">
-            <option value="high" selected>High (maximize retention)</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="split" style="margin-top:10px;">
-        <button id="calcPlan" class="secondary max180" type="button">Calculate</button>
-        <button id="applyPlan" class="good max220" type="button">Apply targets to Today</button>
-      </div>
-
-      <div class="status" id="planOut">—</div>
-      <div class="noteBox" style="margin-top:10px;">
-        Muscle retention rule used here: higher retention → higher protein + slightly smaller deficit.
-        This is a planner, not medical advice.
       </div>
     </div>
-  </section>
-</main>
-
-<!-- Bottom Tab Bar -->
-<nav class="tabbar" role="navigation" aria-label="Tabs">
-  <div class="tabbarInner">
-    <button class="tabBtn active" id="btnFoods" data-tab="foods" type="button">Foods</button>
-    <button class="tabBtn" id="btnMeals" data-tab="meals" type="button">Meals</button>
-    <button class="tabBtn" id="btnToday" data-tab="today" type="button">Today</button>
-    <button class="tabBtn" id="btnWorkouts" data-tab="workouts" type="button">Workouts</button>
-    <button class="tabBtn" id="btnSleep" data-tab="sleep" type="button">Sleep</button>
-    <button class="tabBtn" id="btnPlan" data-tab="plan" type="button">Plan</button>
-  </div>
-</nav>
-
-<!-- Quagga2 global build -->
-<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-
-<script type="module">
-  // ---------------------------
-  // Storage helpers
-  // ---------------------------
-  const LS = {
-    get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
-    set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
-  };
-
-  const OVERRIDE_KEY = "barcode_overrides_v1"; // { [barcode]: {...} }
-  function getOverrides(){ return LS.get(OVERRIDE_KEY, {}); }
-  function setOverrides(map){ LS.set(OVERRIDE_KEY, map); }
-
-  const todayKey = (prefix) => {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${prefix}_${yyyy}-${mm}-${dd}`;
-  };
-
-  const FOOD_KEY = () => todayKey("foods");
-  const WORKOUT_KEY = () => todayKey("workouts");
-  const defaultTargets = { calories: 2000, protein: 170, carbs: 200, fat: 60 };
-
-  // Meals
-  const MEAL_KEY = "current_meal_v1"; // { name, items:[{id,name,grams,per100g:{kcal,protein,carbs,fat}, source}] }
-  const CUSTOM_TYPED_FOODS_KEY = "custom_typed_foods_v1"; // { [id]: {name, per100g... , updatedAtISO} }
-
-  function getMeal(){ return LS.get(MEAL_KEY, { name:"", items:[] }); }
-  function setMeal(m){ LS.set(MEAL_KEY, m); }
-  function getTypedCustoms(){ return LS.get(CUSTOM_TYPED_FOODS_KEY, {}); }
-  function setTypedCustoms(m){ LS.set(CUSTOM_TYPED_FOODS_KEY, m); }
-
-  // Sleep
-  const SLEEP_KEY = "sleep_log_v1"; // { "YYYY-MM-DD": {bed,wake,hours,quality,notes} }
-  function getSleepMap(){ return LS.get(SLEEP_KEY, {}); }
-  function setSleepMap(m){ LS.set(SLEEP_KEY, m); }
-
-  // ---------------------------
-  // Utils
-  // ---------------------------
-  function round1(x){ return Math.round((x + Number.EPSILON) * 10) / 10; }
-  function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
-  function csv(s){ const t = String(s ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; }
-  function num(v) { const x = Number(v); return Number.isFinite(x) ? x : null; }
-  function safe(v){ return Number.isFinite(v) ? v : 0; }
-
-  function isoDateLocal(d=new Date()){
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function toast(msg) {
-    status.textContent = msg;
-    setTimeout(() => { if (status.textContent === msg) status.textContent = "Ready."; }, 1600);
-  }
-
-  function extractBarcodeFromText(text){
-    const s = String(text || "");
-    const m = s.match(/(\d{8}|\d{12}|\d{13}|\d{14})/);
-    return m ? m[1] : null;
-  }
-
-  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
-
-  // ---------------------------
-  // Elements
-  // ---------------------------
-  const status = document.getElementById("status");
-
-  // Tabs
-  const tabFoods = document.getElementById("tabFoods");
-  const tabMeals = document.getElementById("tabMeals");
-  const tabToday = document.getElementById("tabToday");
-  const tabWorkouts = document.getElementById("tabWorkouts");
-  const tabSleep = document.getElementById("tabSleep");
-  const tabPlan = document.getElementById("tabPlan");
-
-  const btnFoods = document.getElementById("btnFoods");
-  const btnMeals = document.getElementById("btnMeals");
-  const btnToday = document.getElementById("btnToday");
-  const btnWorkouts = document.getElementById("btnWorkouts");
-  const btnSleep = document.getElementById("btnSleep");
-  const btnPlan = document.getElementById("btnPlan");
-
-  function setActiveTab(name){
-    if (name !== "foods") { try { stopScan(); } catch {} }
-
-    tabFoods.classList.toggle("active", name === "foods");
-    tabMeals.classList.toggle("active", name === "meals");
-    tabToday.classList.toggle("active", name === "today");
-    tabWorkouts.classList.toggle("active", name === "workouts");
-    tabSleep.classList.toggle("active", name === "sleep");
-    tabPlan.classList.toggle("active", name === "plan");
-
-    btnFoods.classList.toggle("active", name === "foods");
-    btnMeals.classList.toggle("active", name === "meals");
-    btnToday.classList.toggle("active", name === "today");
-    btnWorkouts.classList.toggle("active", name === "workouts");
-    btnSleep.classList.toggle("active", name === "sleep");
-    btnPlan.classList.toggle("active", name === "plan");
-
-    LS.set("activeTab", name);
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }
-
-  document.querySelectorAll(".tabBtn").forEach(b => {
-    b.addEventListener("click", () => setActiveTab(b.dataset.tab));
-  });
-
-  // Restore tab
-  setActiveTab(LS.get("activeTab", "foods"));
-
-  // Foods
-  const cameraSelect = document.getElementById("cameraSelect");
-  const startBtn = document.getElementById("startBtn");
-  const stopBtn = document.getElementById("stopBtn");
-  const torchBtn = document.getElementById("torchBtn");
-
-  const barcodeEl = document.getElementById("barcode");
-  const lookupBtn = document.getElementById("lookupBtn");
-  const photoInput = document.getElementById("barcodePhoto");
-
-  const linkInput = document.getElementById("linkInput");
-  const linkLookupBtn = document.getElementById("linkLookupBtn");
-
-  const productCard = document.getElementById("productCard");
-  const sourcePill = document.getElementById("sourcePill");
-  const coveragePill = document.getElementById("coveragePill");
-  const prodName = document.getElementById("prodName");
-  const prodMeta = document.getElementById("prodMeta");
-  const nutriPreview = document.getElementById("nutriPreview");
-
-  const modeEl = document.getElementById("mode");
-  const qtyEl = document.getElementById("qty");
-  const addBtn = document.getElementById("addBtn");
-  const modeHelp = document.getElementById("modeHelp");
-
-  // Verify panel
-  const verifyPanel = document.getElementById("verifyPanel");
-  const editServingText = document.getElementById("editServingText");
-  const editServingGrams = document.getElementById("editServingGrams");
-  const editBasis = document.getElementById("editBasis");
-  const editKcal = document.getElementById("editKcal");
-  const editProtein = document.getElementById("editProtein");
-  const editCarbs = document.getElementById("editCarbs");
-  const editFat = document.getElementById("editFat");
-  const saveOverride = document.getElementById("saveOverride");
-  const clearOverride = document.getElementById("clearOverride");
-  const verifyStatus = document.getElementById("verifyStatus");
-
-  // Meals
-  const mealFoodQuery = document.getElementById("mealFoodQuery");
-  const mealSearchBtn = document.getElementById("mealSearchBtn");
-  const mealSearchResults = document.getElementById("mealSearchResults");
-  const mealName = document.getElementById("mealName");
-  const mealAddToToday = document.getElementById("mealAddToToday");
-  const mealClear = document.getElementById("mealClear");
-  const mealTotals = document.getElementById("mealTotals");
-  const mealBody = document.getElementById("mealBody");
-
-  const customTypedSearch = document.getElementById("customTypedSearch");
-  const customTypedSearchBtn = document.getElementById("customTypedSearchBtn");
-  const customTypedResults = document.getElementById("customTypedResults");
-
-  // Today
-  const tCalories = document.getElementById("tCalories");
-  const tProtein = document.getElementById("tProtein");
-  const tCarbs = document.getElementById("tCarbs");
-  const tFat = document.getElementById("tFat");
-  const saveTargets = document.getElementById("saveTargets");
-  const exportCsvBtn = document.getElementById("exportCsv");
-  const clearToday = document.getElementById("clearToday");
-  const logBody = document.getElementById("logBody");
-
-  const kpiFood = document.getElementById("kpiFood");
-  const kpiBurn = document.getElementById("kpiBurn");
-  const kpiNet  = document.getElementById("kpiNet");
-
-  const mCal = document.getElementById("mCal");
-  const mP   = document.getElementById("mP");
-  const mC   = document.getElementById("mC");
-  const mF   = document.getElementById("mF");
-
-  const mCalSub = document.getElementById("mCalSub");
-  const mPSub   = document.getElementById("mPSub");
-  const mCSub   = document.getElementById("mCSub");
-  const mFSub   = document.getElementById("mFSub");
-
-  const mCalRem = document.getElementById("mCalRem");
-  const mPRem   = document.getElementById("mPRem");
-  const mCRem   = document.getElementById("mCRem");
-  const mFRem   = document.getElementById("mFRem");
-
-  const bCal = document.getElementById("bCal");
-  const bP   = document.getElementById("bP");
-  const bC   = document.getElementById("bC");
-  const bF   = document.getElementById("bF");
-
-  // Workouts
-  const workoutType = document.getElementById("workoutType");
-  const muscleGroup = document.getElementById("muscleGroup");
-  const workoutCals = document.getElementById("workoutCals");
-  const workoutNotes = document.getElementById("workoutNotes");
-  const addWorkout = document.getElementById("addWorkout");
-  const workoutBody = document.getElementById("workoutBody");
-
-  // Sleep
-  const sleepDate = document.getElementById("sleepDate");
-  const sleepQuality = document.getElementById("sleepQuality");
-  const sleepBed = document.getElementById("sleepBed");
-  const sleepWake = document.getElementById("sleepWake");
-  const sleepNotes = document.getElementById("sleepNotes");
-  const saveSleep = document.getElementById("saveSleep");
-  const clearSleepDay = document.getElementById("clearSleepDay");
-  const sleepBody = document.getElementById("sleepBody");
-  const sleepAvgHours = document.getElementById("sleepAvgHours");
-  const sleepAvgQuality = document.getElementById("sleepAvgQuality");
-  const sleepNights = document.getElementById("sleepNights");
-
-  // Plan
-  const pGender = document.getElementById("pGender");
-  const pAge = document.getElementById("pAge");
-  const pHeightFt = document.getElementById("pHeightFt");
-  const pHeightIn = document.getElementById("pHeightIn");
-  const pWeight = document.getElementById("pWeight");
-  const pGoalWeight = document.getElementById("pGoalWeight");
-  const pActivity = document.getElementById("pActivity");
-  const pSpeed = document.getElementById("pSpeed");
-  const pRetention = document.getElementById("pRetention");
-  const calcPlan = document.getElementById("calcPlan");
-  const applyPlan = document.getElementById("applyPlan");
-  const planOut = document.getElementById("planOut");
-
-  // ---------------------------
-  // Targets init
-  // ---------------------------
-  const targets = LS.get("targets", defaultTargets);
-  tCalories.value = targets.calories;
-  tProtein.value = targets.protein;
-  tCarbs.value = targets.carbs;
-  tFat.value = targets.fat;
-
-  saveTargets.addEventListener("click", () => {
-    const t = {
-      calories: Number(tCalories.value || 0),
-      protein: Number(tProtein.value || 0),
-      carbs: Number(tCarbs.value || 0),
-      fat: Number(tFat.value || 0)
-    };
-    LS.set("targets", t);
-    render();
-    toast("Targets saved.");
-  });
-
-  // ---------------------------
-  // Food + Workout storage
-  // ---------------------------
-  function getFoods() { return LS.get(FOOD_KEY(), []); }
-  function setFoods(items) { LS.set(FOOD_KEY(), items); }
-
-  function getWorkouts(){ return LS.get(WORKOUT_KEY(), []); }
-  function setWorkouts(items){ LS.set(WORKOUT_KEY(), items); }
-
-  function sumFoods(items) {
-    return items.reduce((acc, it) => {
-      acc.calories += it.calories;
-      acc.protein += it.protein;
-      acc.carbs += it.carbs;
-      acc.fat += it.fat;
-      return acc;
-    }, { calories:0, protein:0, carbs:0, fat:0 });
-  }
-
-  function sumWorkouts(items){
-    return items.reduce((acc, it) => acc + (Number(it.burned)||0), 0);
-  }
-
-  // ---------------------------
-  // Render Today + tables
-  // ---------------------------
-  function render() {
-    const foods = getFoods();
-    const wos = getWorkouts();
-    const totals = sumFoods(foods);
-    const burned = sumWorkouts(wos);
-    const t = LS.get("targets", defaultTargets);
-
-    const netCals = totals.calories - burned;
-
-    kpiFood.textContent = `Food: ${totals.calories.toFixed(0)} kcal`;
-    kpiBurn.textContent = `Burn: ${burned.toFixed(0)} kcal`;
-    kpiNet.textContent  = `Net: ${netCals.toFixed(0)} kcal`;
-
-    mCal.textContent = `${netCals.toFixed(0)}`;
-    mP.textContent   = `${totals.protein.toFixed(0)}g`;
-    mC.textContent   = `${totals.carbs.toFixed(0)}g`;
-    mF.textContent   = `${totals.fat.toFixed(0)}g`;
-
-    mCalSub.textContent = `Target ${t.calories} • Net`;
-    mPSub.textContent   = `Target ${t.protein}g`;
-    mCSub.textContent   = `Target ${t.carbs}g`;
-    mFSub.textContent   = `Target ${t.fat}g`;
-
-    const remNet = (t.calories - netCals);
-    const remP = (t.protein - totals.protein);
-    const remC = (t.carbs - totals.carbs);
-    const remF = (t.fat - totals.fat);
-
-    mCalRem.textContent = `${remNet >= 0 ? "Remaining" : "Over"} ${Math.abs(remNet).toFixed(0)} kcal`;
-    mPRem.textContent   = `${remP >= 0 ? "Remaining" : "Over"} ${Math.abs(remP).toFixed(0)}g`;
-    mCRem.textContent   = `${remC >= 0 ? "Remaining" : "Over"} ${Math.abs(remC).toFixed(0)}g`;
-    mFRem.textContent   = `${remF >= 0 ? "Remaining" : "Over"} ${Math.abs(remF).toFixed(0)}g`;
-
-    const pct = (val, target) => target > 0 ? Math.min(120, Math.max(0, (val/target)*100)) : 0;
-    bCal.style.width = pct(netCals, t.calories).toFixed(1) + "%";
-    bP.style.width   = pct(totals.protein, t.protein).toFixed(1) + "%";
-    bC.style.width   = pct(totals.carbs, t.carbs).toFixed(1) + "%";
-    bF.style.width   = pct(totals.fat, t.fat).toFixed(1) + "%";
-
-    // Foods table
-    logBody.innerHTML = "";
-    foods.forEach((it, idx) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>
-          <div style="font-weight:950">${escapeHtml(it.name)}</div>
-          <div class="small">${escapeHtml(it.detail)}</div>
-          <div class="small">${escapeHtml(it.source || "")}${it.barcode ? " • " + escapeHtml(it.barcode) : ""}</div>
-        </td>
-        <td class="right">${it.calories.toFixed(0)}</td>
-        <td class="right">${it.protein.toFixed(1)}</td>
-        <td class="right">${it.carbs.toFixed(1)}</td>
-        <td class="right">${it.fat.toFixed(1)}</td>
-        <td class="right"><button class="ghost" data-del-food="${idx}" style="padding:8px 10px; font-size:12px;" type="button">Delete</button></td>
-      `;
-      logBody.appendChild(tr);
-    });
-
-    logBody.querySelectorAll("button[data-del-food]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-del-food"));
-        const next = getFoods().filter((_, idx) => idx !== i);
-        setFoods(next);
-        render();
-      });
-    });
-
-    // Workouts table
-    workoutBody.innerHTML = "";
-    wos.forEach((it, idx) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>
-          <div style="font-weight:950">${escapeHtml(it.type)} • ${escapeHtml(it.muscle)}</div>
-          <div class="small">${escapeHtml(it.notes || "")}</div>
-        </td>
-        <td class="right">${Number(it.burned||0).toFixed(0)}</td>
-        <td class="right"><button class="ghost" data-del-wo="${idx}" style="padding:8px 10px; font-size:12px;" type="button">Delete</button></td>
-      `;
-      workoutBody.appendChild(tr);
-    });
-
-    workoutBody.querySelectorAll("button[data-del-wo]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-del-wo"));
-        const next = getWorkouts().filter((_, idx) => idx !== i);
-        setWorkouts(next);
-        render();
-      });
-    });
-
-    renderSleep();
-    renderMeal();
-    renderCustomTypedList();
-  }
-
-  clearToday.addEventListener("click", () => {
-    setFoods([]);
-    setWorkouts([]);
-    render();
-    toast("Cleared today.");
-  });
-
-  exportCsvBtn.addEventListener("click", () => {
-    const foods = getFoods();
-    const wos = getWorkouts();
-    const totals = sumFoods(foods);
-    const burned = sumWorkouts(wos);
-    const t = LS.get("targets", defaultTargets);
-    const netCals = totals.calories - burned;
-
-    const lines = [];
-    lines.push("SECTION,metric,value");
-    lines.push(`SUMMARY,Date,${new Date().toISOString().slice(0,10)}`);
-    lines.push(`SUMMARY,Food Calories (kcal),${totals.calories.toFixed(0)}`);
-    lines.push(`SUMMARY,Exercise Burn (kcal),${burned.toFixed(0)}`);
-    lines.push(`SUMMARY,Net Calories (kcal),${netCals.toFixed(0)}`);
-    lines.push(`SUMMARY,Protein (g),${totals.protein.toFixed(1)}`);
-    lines.push(`SUMMARY,Carbs (g),${totals.carbs.toFixed(1)}`);
-    lines.push(`SUMMARY,Fat (g),${totals.fat.toFixed(1)}`);
-    lines.push(`SUMMARY,Targets (kcal/P/C/F),${t.calories}/${t.protein}/${t.carbs}/${t.fat}`);
-    lines.push("");
-
-    lines.push("SECTION,timestamp,name/type,detail/muscle,calories,protein_g,carbs_g,fat_g,burned,barcode,source,notes");
-
-    foods.forEach(it => {
-      lines.push([
-        "FOOD",
-        it.timestamp,
-        csv(it.name),
-        csv(it.detail),
-        it.calories.toFixed(0),
-        it.protein.toFixed(1),
-        it.carbs.toFixed(1),
-        it.fat.toFixed(1),
-        "",
-        it.barcode || "",
-        csv(it.source || ""),
-        ""
-      ].join(","));
-    });
-
-    wos.forEach(it => {
-      lines.push([
-        "WORKOUT",
-        it.timestamp,
-        csv(it.type),
-        csv(it.muscle),
-        "",
-        "",
-        "",
-        "",
-        Number(it.burned||0).toFixed(0),
-        "",
-        "",
-        csv(it.notes || "")
-      ].join(","));
-    });
-
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `day_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // ---------------------------
-  // Barcode lookup (Open Food Facts)
-  // ---------------------------
-  let currentFood = null;
-
-  function guessServingGrams(servingText) {
-    if (!servingText) return null;
-    const m = servingText.match(/([\d.]+)\s*g/i);
-    if (!m) return null;
-    const v = Number(m[1]);
-    return Number.isFinite(v) ? v : null;
-  }
-
-  function parseOFF(product) {
-    const n = product.nutriments || {};
-    const name = product.product_name || product.abbreviated_product_name || "(Unknown product)";
-    const brand = product.brands || "";
-    const serving = product.serving_size || "";
-
-    const per100g = {
-      kcal: num(n["energy-kcal_100g"]),
-      protein: num(n["proteins_100g"]),
-      carbs: num(n["carbohydrates_100g"]),
-      fat: num(n["fat_100g"])
-    };
-
-    const perServing = {
-      kcal: num(n["energy-kcal_serving"]),
-      protein: num(n["proteins_serving"]),
-      carbs: num(n["carbohydrates_serving"]),
-      fat: num(n["fat_serving"])
-    };
-
-    const hasServing = Object.values(perServing).some(v => Number.isFinite(v) && v > 0);
-    const has100g = Object.values(per100g).some(v => Number.isFinite(v) && v > 0);
-
-    const servingGrams = guessServingGrams(serving);
-
-    return {
-      name,
-      brand,
-      servingSizeText: serving,
-      servingGrams,
-      per100g,
-      perServing,
-      hasServing,
-      has100g,
-      source: "Open Food Facts"
-    };
-  }
-
-  function applyOverride(barcode, baseFood) {
-    const overrides = getOverrides();
-    const ov = overrides[barcode];
-    if (!ov) return baseFood;
-
-    const merged = { ...baseFood };
-    merged.servingSizeText = ov.servingText ?? merged.servingSizeText;
-    merged.servingGrams = Number.isFinite(ov.servingGrams) ? ov.servingGrams : merged.servingGrams;
-
-    if (ov.perServing) merged.perServing = { ...merged.perServing, ...ov.perServing };
-    if (ov.per100g) merged.per100g = { ...merged.per100g, ...ov.per100g };
-
-    merged.hasServing = Object.values(merged.perServing).some(v => Number.isFinite(v) && v > 0);
-    merged.has100g = Object.values(merged.per100g).some(v => Number.isFinite(v) && v > 0);
-
-    merged.source = "Verified (You)";
-    merged.accuracyNote = `Verified on ${new Date(ov.updatedAtISO).toLocaleString()}`;
-    return merged;
-  }
-
-  function scaleMacros(macros, factor) {
-    return {
-      calories: safe(macros.kcal) * factor,
-      protein: safe(macros.protein) * factor,
-      carbs: safe(macros.carbs) * factor,
-      fat: safe(macros.fat) * factor
-    };
-  }
-
-  function computeForQty(foodData, qty, mode) {
-    if (mode === "serving") {
-      if (foodData.hasServing) return { macros: scaleMacros(foodData.perServing, qty), detail: `${qty} serving(s)` };
-      return { macros: scaleMacros(foodData.per100g, qty), detail: `${qty} × 100g (fallback)` };
-    }
-    const grams = qty;
-    return { macros: scaleMacros(foodData.per100g, grams / 100.0), detail: `${grams} g` };
-  }
-
-  function updateModeHelp(data) {
-    if (!data) return;
-    if (modeEl.value === "serving") {
-      modeHelp.textContent = data.hasServing
-        ? `Serving mode: uses per-serving values (${data.servingSizeText || "1 serving"}).`
-        : `Serving mode: per-serving data not available; using per 100g estimate.`;
-    } else {
-      modeHelp.textContent = `Gram mode: uses per 100g values scaled to grams.`;
-    }
-  }
-
-  function updatePreview() {
-    if (!currentFood) return;
-    const qty = Number(qtyEl.value || 0);
-    const { macros, detail } = computeForQty(currentFood, qty, modeEl.value);
-
-    nutriPreview.textContent = JSON.stringify({
-      item: currentFood.name,
-      barcode: currentFood.barcode,
-      amount: detail,
-      calories_kcal: Math.round(macros.calories),
-      protein_g: round1(macros.protein),
-      carbs_g: round1(macros.carbs),
-      fat_g: round1(macros.fat),
-      source: currentFood.source,
-      note: currentFood.accuracyNote || ""
-    }, null, 2);
-  }
-
-  modeEl.addEventListener("change", () => { updateModeHelp(currentFood); updatePreview(); });
-  qtyEl.addEventListener("input", updatePreview);
-
-  async function lookup(barcode) {
-    status.textContent = "Looking up barcode…";
-    productCard.style.display = "none";
-    currentFood = null;
-
-    const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(barcode)}.json`;
-    let parsed = null;
-
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.status === 1) parsed = parseOFF(data.product);
-    } catch {}
-
-    const base = parsed ?? {
-      name: "(Unknown product)",
-      brand: "",
-      servingSizeText: "",
-      servingGrams: null,
-      per100g: { kcal:null, protein:null, carbs:null, fat:null },
-      perServing: { kcal:null, protein:null, carbs:null, fat:null },
-      hasServing: false,
-      has100g: false,
-      source: parsed ? "Open Food Facts" : "No database result"
-    };
-
-    const finalFood = applyOverride(barcode, base);
-    finalFood.barcode = barcode;
-    currentFood = finalFood;
-
-    prodName.textContent = finalFood.name;
-    prodMeta.textContent = [finalFood.brand, finalFood.servingSizeText].filter(Boolean).join(" • ");
-
-    sourcePill.textContent = `Source: ${finalFood.source}`;
-
-    const hasAll100g = ["kcal","protein","carbs","fat"].every(k => Number.isFinite(finalFood.per100g?.[k]) && finalFood.per100g[k] >= 0);
-    const hasAllServing = ["kcal","protein","carbs","fat"].every(k => Number.isFinite(finalFood.perServing?.[k]) && finalFood.perServing[k] >= 0);
-
-    coveragePill.style.display = "inline-block";
-    coveragePill.textContent = `Coverage: ${hasAllServing ? "Per serving ✓" : "Per serving —"} • ${hasAll100g ? "Per 100g ✓" : "Per 100g —"}`;
-
-    productCard.style.display = "block";
-    updateModeHelp(finalFood);
-    updatePreview();
-    hydrateVerifyPanel(finalFood);
-
-    if (finalFood.source === "Verified (You)") {
-      status.textContent = `Using verified macros for ${barcode}.`;
-    } else if (parsed) {
-      status.textContent = "Found product. (Tip: verify if you want guaranteed accuracy.)";
-    } else {
-      status.textContent = "Not found in database. Use Verify/Edit to enter label macros.";
-      verifyPanel.open = true;
-    }
-  }
-
-  lookupBtn.addEventListener("click", () => {
-    const code = barcodeEl.value.trim();
-    if (!code) return toast("Enter a barcode first.");
-    lookup(code);
-  });
-
-  linkLookupBtn.addEventListener("click", () => {
-    const link = linkInput.value.trim();
-    if (!link) return toast("Paste a link first.");
-
-    const barcode = extractBarcodeFromText(link);
-    if (barcode) {
-      barcodeEl.value = barcode;
-      status.textContent = `Detected barcode from link: ${barcode}\nLooking up…`;
-      lookup(barcode);
-      return;
-    }
-
-    status.textContent =
-      "Couldn’t extract a barcode from that link.\n\n" +
-      "Fix: copy the barcode digits into the barcode box, OR use Verify/Edit.";
-    verifyPanel.open = true;
-  });
-
-  addBtn.addEventListener("click", () => {
-    if (!currentFood) return toast("Lookup a product first.");
-    const qty = Number(qtyEl.value || 0);
-    if (!Number.isFinite(qty) || qty <= 0) return toast("Enter a quantity > 0.");
-
-    const { macros, detail } = computeForQty(currentFood, qty, modeEl.value);
-
-    const nonZero = macros.calories || macros.protein || macros.carbs || macros.fat;
-    if (!nonZero) {
-      toast("No macro data yet. Use Verify/Edit to enter label macros.");
-      verifyPanel.open = true;
-      return;
-    }
-
-    const entry = {
-      timestamp: new Date().toISOString(),
-      name: currentFood.name,
-      detail,
-      calories: macros.calories,
-      protein: macros.protein,
-      carbs: macros.carbs,
-      fat: macros.fat,
-      barcode: currentFood.barcode,
-      source: currentFood.source
-    };
-
-    const foods = getFoods();
-    foods.unshift(entry);
-    setFoods(foods);
-    render();
-    toast("Added food.");
-    setActiveTab("today");
-  });
-
-  // Verify/edit
-  function hydrateVerifyPanel(food) {
-    const overrides = getOverrides();
-    const ov = overrides[food.barcode];
-
-    const lines = [];
-    lines.push(`Current source: ${food.source}`);
-    if (food.accuracyNote) lines.push(food.accuracyNote);
-
-    lines.push("");
-    lines.push("Current macro values (for reference):");
-    lines.push(`Per serving: kcal=${food.perServing?.kcal ?? "—"}, P=${food.perServing?.protein ?? "—"}, C=${food.perServing?.carbs ?? "—"}, F=${food.perServing?.fat ?? "—"}`);
-    lines.push(`Per 100g:    kcal=${food.per100g?.kcal ?? "—"}, P=${food.per100g?.protein ?? "—"}, C=${food.per100g?.carbs ?? "—"}, F=${food.per100g?.fat ?? "—"}`);
-    verifyStatus.textContent = lines.join("\n");
-
-    editServingText.value = ov?.servingText ?? (food.servingSizeText || "");
-    editServingGrams.value = Number.isFinite(ov?.servingGrams) ? ov.servingGrams : (Number.isFinite(food.servingGrams) ? food.servingGrams : "");
-    editBasis.value = (food.servingSizeText || food.hasServing) ? "serving" : "100g";
-
-    editKcal.value = "";
-    editProtein.value = "";
-    editCarbs.value = "";
-    editFat.value = "";
-  }
-
-  saveOverride.addEventListener("click", () => {
-    if (!currentFood?.barcode) return toast("Lookup a product first.");
-
-    const basis = editBasis.value;
-    const kcal = num(editKcal.value);
-    const p = num(editProtein.value);
-    const c = num(editCarbs.value);
-    const f = num(editFat.value);
-
-    if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
-      return toast("Enter Calories, Protein, Carbs, and Fat (all 4).");
-    }
-
-    const overrides = getOverrides();
-    const existing = overrides[currentFood.barcode] || {};
-
-    const servingText = (editServingText.value || "").trim();
-    const servingGrams = num(editServingGrams.value);
-
-    const next = {
-      servingText: servingText || existing.servingText || "",
-      servingGrams: Number.isFinite(servingGrams) ? servingGrams : (Number.isFinite(existing.servingGrams) ? existing.servingGrams : null),
-      perServing: existing.perServing || null,
-      per100g: existing.per100g || null,
-      updatedAtISO: new Date().toISOString()
-    };
-
-    if (basis === "serving") next.perServing = { kcal, protein:p, carbs:c, fat:f };
-    else next.per100g = { kcal, protein:p, carbs:c, fat:f };
-
-    // Auto-compute the other basis if serving grams provided
-    if (basis === "serving" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
-      const factor = 100.0 / next.servingGrams;
-      next.per100g = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
-    }
-    if (basis === "100g" && Number.isFinite(next.servingGrams) && next.servingGrams > 0) {
-      const factor = next.servingGrams / 100.0;
-      next.perServing = { kcal: round1(kcal * factor), protein: round1(p * factor), carbs: round1(c * factor), fat: round1(f * factor) };
-    }
-
-    overrides[currentFood.barcode] = next;
-    setOverrides(overrides);
-
-    toast("Saved verified macros.");
-    lookup(currentFood.barcode);
-  });
-
-  clearOverride.addEventListener("click", () => {
-    if (!currentFood?.barcode) return toast("Lookup a product first.");
-    const overrides = getOverrides();
-    if (overrides[currentFood.barcode]) {
-      delete overrides[currentFood.barcode];
-      setOverrides(overrides);
-      toast("Removed verified data.");
-      lookup(currentFood.barcode);
-    } else {
-      toast("No verified data to remove.");
-    }
-  });
-
-  // ---------------------------
-  // Photo upload barcode decode
-  // ---------------------------
-  photoInput.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const Quagga = window.Quagga;
-    if (!Quagga) {
-      toast("Scanner library not loaded.");
-      e.target.value = "";
-      return;
-    }
-
-    status.textContent = "Decoding barcode from photo…";
-    const url = URL.createObjectURL(file);
-
-    Quagga.decodeSingle({
-      src: url,
-      numOfWorkers: 0,
-      locate: true,
-      decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
-    }, (result) => {
-      URL.revokeObjectURL(url);
-      const code = result?.codeResult?.code;
-
-      if (!code) {
-        status.textContent = "Couldn’t decode that photo.\nTip: crop tight + brighter light + avoid blur.";
-        e.target.value = "";
-        return;
-      }
-
-      barcodeEl.value = code;
-      status.textContent = `Decoded from photo: ${code}\nLooking up…`;
-      lookup(code);
-      e.target.value = "";
-    });
-  });
-
-  // ---------------------------
-  // Scanner (Quagga2)
-  // ---------------------------
-  const Quagga = window.Quagga;
-  if (!Quagga) status.textContent = "Quagga failed to load. Check CDN + redeploy.";
-
-  let scanning = false;
-  let lastDecoded = null;
-  let torchOn = false;
-
-  async function listCamerasForDropdown() {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cams = devices.filter(d => d.kind === "videoinput");
-      cameraSelect.innerHTML = "";
-      cams.forEach((d, i) => {
-        const opt = document.createElement("option");
-        opt.value = d.deviceId;
-        opt.textContent = d.label || `Camera ${i + 1}`;
-        cameraSelect.appendChild(opt);
-      });
-
-      const savedRear = LS.get("rearCamDeviceId", null);
-      if (savedRear) cameraSelect.value = savedRear;
-    } catch {}
-  }
-
-  function supportsTorch() {
-    try {
-      const track = Quagga.CameraAccess.getActiveTrack?.();
-      const caps = track?.getCapabilities?.();
-      return !!caps?.torch;
-    } catch { return false; }
-  }
-
-  async function setTorch(on) {
-    try {
-      const track = Quagga.CameraAccess.getActiveTrack?.();
-      if (!track) return toast("No active camera track.");
-      const caps = track.getCapabilities?.();
-      if (!caps?.torch) return toast("Flashlight not supported.");
-
-      await track.applyConstraints({ advanced: [{ torch: on }] });
-      torchOn = on;
-      torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
-    } catch {
-      toast("Could not toggle flashlight.");
-    }
-  }
-
-  torchBtn.addEventListener("click", async () => { await setTorch(!torchOn); });
-
-  function onDetectedHandler(data) {
-    const code = data?.codeResult?.code;
-    if (!code) return;
-    if (code === lastDecoded) return;
-    lastDecoded = code;
-
-    barcodeEl.value = code;
-    status.textContent = `Decoded: ${code}\nLooking up…`;
-
-    setTimeout(() => {
-      stopScan();
-      lookup(code);
-    }, 250);
-  }
-
-  cameraSelect.addEventListener("change", async () => {
-    if (!scanning) return;
-    await stopScan();
-    await startScan();
-  });
-
-  async function startScan() {
-    if (!Quagga) return toast("Quagga not loaded.");
-    if (scanning) return;
-
-    scanning = true;
-    lastDecoded = null;
-    status.textContent = "Starting scanner… (Quagga2)";
-
-    await listCamerasForDropdown();
-
-    let chosenId = cameraSelect.value || null;
-    const savedRear = LS.get("rearCamDeviceId", null);
-    if (savedRear) chosenId = savedRear;
-
-    try { Quagga.offDetected(onDetectedHandler); } catch {}
-    try { Quagga.stop(); } catch {}
-    try { Quagga.CameraAccess.release(); } catch {}
-
-    const targetEl = document.getElementById("quaggaTarget");
-    if (targetEl) targetEl.innerHTML = "";
-
-    Quagga.init({
-      inputStream: {
-        type: "LiveStream",
-        target: targetEl,
-        constraints: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
-          ...(chosenId ? { deviceId: chosenId } : {})
-        }
-      },
-      locator: { patchSize: "medium", halfSample: true },
-      locate: true,
-      decoder: { readers: ["upc_reader", "ean_reader", "ean_8_reader"] }
-    }, (err) => {
-      if (err) {
-        scanning = false;
-        status.textContent =
-          "Scanner error:\n" + (err?.message || String(err)) +
-          "\n\nFixes:\n- iPhone Settings → Safari → Camera = Allow\n- Open in Safari (not in-app browser)\n- Reload the page";
-        return;
-      }
-
-      Quagga.start();
-
-      // Save active deviceId so iPhone stops flipping to front camera
-      try {
-        const track = Quagga.CameraAccess.getActiveTrack?.();
-        const settings = track?.getSettings?.();
-        if (settings?.deviceId) LS.set("rearCamDeviceId", settings.deviceId);
-      } catch {}
-
-      if (supportsTorch()) {
-        torchBtn.style.display = "inline-block";
-        torchBtn.textContent = `Flashlight: ${torchOn ? "On" : "Off"}`;
-      } else {
-        torchBtn.style.display = "none";
-        torchOn = false;
-      }
-
-      status.textContent = "Scanning… (Quagga2)\nTips: fill the frame, avoid glare, hold steady 1–2s.";
-    });
-
-    Quagga.onDetected(onDetectedHandler);
-  }
-
-  async function stopScan() {
-    if (!Quagga) return;
-
-    scanning = false;
-
-    if (torchOn) {
-      try { await setTorch(false); } catch {}
-    }
-
-    try { Quagga.offDetected(onDetectedHandler); } catch {}
-    try { Quagga.stop(); } catch {}
-    try { Quagga.CameraAccess.release(); } catch {}
-
-    const tgt = document.getElementById("quaggaTarget");
-    if (tgt) tgt.innerHTML = "";
-
-    status.textContent = "Scanner stopped.";
-  }
-
-  startBtn.addEventListener("click", startScan);
-  stopBtn.addEventListener("click", stopScan);
-
-  // ---------------------------
-  // Workouts
-  // ---------------------------
-  addWorkout.addEventListener("click", () => {
-    const type = workoutType.value;
-    const muscle = muscleGroup.value;
-    const burned = Number(workoutCals.value || 0);
-    const notes = workoutNotes.value.trim();
-
-    if (!Number.isFinite(burned) || burned < 0) return toast("Enter calories burned (0 or more).");
-
-    const entry = {
-      timestamp: new Date().toISOString(),
-      type,
-      muscle,
-      burned,
-      notes
-    };
-
-    const wos = getWorkouts();
-    wos.unshift(entry);
-    setWorkouts(wos);
-
-    workoutCals.value = "";
-    workoutNotes.value = "";
-    render();
-    toast("Added workout.");
-    setActiveTab("today");
-  });
-
-  // ---------------------------
-  // Sleep
-  // ---------------------------
-  sleepDate.value = isoDateLocal();
-
-  function computeSleepHours(bed, wake) {
-    if (!bed || !wake) return null;
-    const [bh,bm] = bed.split(":").map(Number);
-    const [wh,wm] = wake.split(":").map(Number);
-    if (![bh,bm,wh,wm].every(Number.isFinite)) return null;
-
-    let b = bh*60 + bm;
-    let w = wh*60 + wm;
-
-    // if wake earlier, assume next day
-    if (w <= b) w += 24*60;
-    const mins = w - b;
-    return round1(mins / 60);
-  }
-
-  saveSleep.addEventListener("click", () => {
-    const d = sleepDate.value || isoDateLocal();
-    const bed = sleepBed.value || "";
-    const wake = sleepWake.value || "";
-    const quality = Number(sleepQuality.value || 3);
-    const notes = sleepNotes.value.trim();
-
-    const hours = computeSleepHours(bed, wake);
-    const map = getSleepMap();
-    map[d] = { bed, wake, hours, quality, notes };
-    setSleepMap(map);
-
-    renderSleep();
-    toast("Saved sleep.");
-  });
-
-  clearSleepDay.addEventListener("click", () => {
-    const d = sleepDate.value || isoDateLocal();
-    const map = getSleepMap();
-    if (map[d]) {
-      delete map[d];
-      setSleepMap(map);
-      renderSleep();
-      toast("Deleted that date.");
-    } else {
-      toast("No sleep entry for that date.");
-    }
-  });
-
-  function renderSleep(){
-    const map = getSleepMap();
-
-    // last 7 dates incl today
-    const dates = [];
-    const now = new Date();
-    for (let i=0;i<7;i++){
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
-      dates.push(isoDateLocal(d));
-    }
-
-    let sumH = 0, sumQ = 0, n = 0;
-    sleepBody.innerHTML = "";
-
-    dates.forEach(dateStr => {
-      const e = map[dateStr];
-      if (!e) return;
-
-      n += 1;
-      sumQ += Number(e.quality||0);
-      if (Number.isFinite(e.hours)) sumH += Number(e.hours||0);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><div style="font-weight:950">${escapeHtml(dateStr)}</div><div class="small">${escapeHtml(e.bed||"")} → ${escapeHtml(e.wake||"")}</div></td>
-        <td class="right">${Number.isFinite(e.hours) ? e.hours.toFixed(1) : "—"}</td>
-        <td class="right">${Number(e.quality||0).toFixed(0)}</td>
-        <td>${escapeHtml(e.notes||"")}</td>
-      `;
-      sleepBody.appendChild(tr);
-    });
-
-    sleepNights.textContent = `Nights logged: ${n}`;
-    sleepAvgQuality.textContent = `Avg quality: ${n ? round1(sumQ/n).toFixed(1) : "—"}`;
-    sleepAvgHours.textContent = `Avg hours: ${n ? round1(sumH/n).toFixed(1) : "—"}`;
-  }
-
-  // ---------------------------
-  // Plan calculator
-  // ---------------------------
-  let lastPlan = null;
-
-  function lbsToKg(lb){ return lb * 0.45359237; }
-  function inchesToCm(inches){ return inches * 2.54; }
-
-  function mifflinBMR({gender, kg, cm, age}){
-    // Mifflin-St Jeor
-    // men: 10*kg + 6.25*cm - 5*age + 5
-    // women: 10*kg + 6.25*cm - 5*age - 161
-    const base = 10*kg + 6.25*cm - 5*age;
-    return gender === "male" ? (base + 5) : (base - 161);
-  }
-
-  function computePlan(){
-    const gender = pGender.value;
-    const age = Number(pAge.value || 0);
-    const ft = Number(pHeightFt.value || 0);
-    const inch = Number(pHeightIn.value || 0);
-    const weightLb = Number(pWeight.value || 0);
-    const goalLb = Number(pGoalWeight.value || 0);
-    const activity = Number(pActivity.value || 1.2);
-    const speed = pSpeed.value; // slow, moderate, aggressive
-    const retention = pRetention.value; // high, medium, low
-
-    const heightIn = ft*12 + inch;
-    const cm = inchesToCm(heightIn);
-    const kg = lbsToKg(weightLb);
-
-    const bmr = mifflinBMR({gender, kg, cm, age});
-    const tdee = bmr * activity;
-
-    // deficit targets by speed
-    let deficit = (speed === "slow") ? 250 : (speed === "aggressive" ? 750 : 500);
-
-    // retention adjusts deficit slightly
-    if (retention === "high") deficit = Math.min(deficit, 500);
-    if (retention === "low") deficit = Math.max(deficit, 500);
-
-    const calTarget = Math.max(1200, Math.round(tdee - deficit));
-
-    // Protein by retention (g/lb target bodyweight-ish)
-    // high: 0.9–1.0 g/lb, medium: 0.75–0.9, low: 0.65–0.75
-    const baseLb = Math.max(goalLb, weightLb);
-    let pPerLb = (retention === "high") ? 0.95 : (retention === "medium" ? 0.82 : 0.70);
-    const protein = Math.round(baseLb * pPerLb);
-
-    // Fat minimum (0.3 g/lb), slightly higher if low retention
-    let fat = Math.round(weightLb * (retention === "low" ? 0.35 : 0.30));
-    fat = clamp(fat, 40, 95);
-
-    // Carbs = remaining calories
-    const pCals = protein * 4;
-    const fCals = fat * 9;
-    const remaining = Math.max(0, calTarget - (pCals + fCals));
-    const carbs = Math.round(remaining / 4);
-
-    // Time estimate to goal
-    const lossPerWeek = speed === "slow" ? 0.5 : (speed === "aggressive" ? 1.5 : 1.0);
-    const lbsToLose = Math.max(0, weightLb - goalLb);
-    const weeks = lossPerWeek > 0 ? Math.ceil(lbsToLose / lossPerWeek) : null;
-
-    lastPlan = { calTarget, protein, carbs, fat, tdee: Math.round(tdee), deficit: Math.round(tdee - calTarget), weeks, lbsToLose };
-    planOut.textContent = JSON.stringify({
-      estimated_TDEE_kcal: Math.round(tdee),
-      chosen_deficit_kcal: Math.round(tdee - calTarget),
-      daily_targets: { calories: calTarget, protein_g: protein, carbs_g: carbs, fat_g: fat },
-      goal: { current_lb: weightLb, goal_lb: goalLb, lbs_to_lose: lbsToLose, est_weeks: weeks }
-    }, null, 2);
-  }
-
-  calcPlan.addEventListener("click", () => {
-    computePlan();
-    toast("Plan calculated.");
-  });
-
-  applyPlan.addEventListener("click", () => {
-    if (!lastPlan) computePlan();
-    if (!lastPlan) return toast("Calculate first.");
-
-    tCalories.value = lastPlan.calTarget;
-    tProtein.value = lastPlan.protein;
-    tCarbs.value = lastPlan.carbs;
-    tFat.value = lastPlan.fat;
-
-    LS.set("targets", { calories:lastPlan.calTarget, protein:lastPlan.protein, carbs:lastPlan.carbs, fat:lastPlan.fat });
-    render();
-    toast("Applied targets to Today.");
-    setActiveTab("today");
-  });
-
-  // ---------------------------
-  // Meal Builder (typed foods)
-  // ---------------------------
-  const BASE_FOODS = [
-    // Proteins (cooked unless noted)
-    { id:"chicken_breast_cooked", name:"Chicken breast (cooked)", per100g:{kcal:165, protein:31.0, carbs:0.0, fat:3.6} },
-    { id:"chicken_thigh_cooked", name:"Chicken thigh (cooked)", per100g:{kcal:209, protein:26.0, carbs:0.0, fat:11.0} },
-    { id:"ground_turkey_93_cooked", name:"Ground turkey 93% (cooked)", per100g:{kcal:176, protein:23.0, carbs:0.0, fat:9.0} },
-    { id:"salmon_cooked", name:"Salmon (cooked)", per100g:{kcal:206, protein:22.0, carbs:0.0, fat:12.0} },
-    { id:"egg_whole", name:"Egg (whole, raw)", per100g:{kcal:143, protein:12.6, carbs:0.7, fat:9.5} },
-    { id:"egg_whites", name:"Egg whites", per100g:{kcal:52, protein:10.9, carbs:0.7, fat:0.2} },
-    { id:"greek_yogurt_nonfat", name:"Greek yogurt (nonfat)", per100g:{kcal:59, protein:10.3, carbs:3.6, fat:0.4} },
-    { id:"tofu_firm", name:"Tofu (firm)", per100g:{kcal:144, protein:17.0, carbs:3.0, fat:8.7} },
-
-    // Carbs
-    { id:"quinoa_cooked", name:"Quinoa (cooked)", per100g:{kcal:120, protein:4.4, carbs:21.3, fat:1.9} },
-    { id:"rice_white_cooked", name:"Rice (white, cooked)", per100g:{kcal:130, protein:2.4, carbs:28.2, fat:0.3} },
-    { id:"oats_dry", name:"Oats (dry)", per100g:{kcal:389, protein:16.9, carbs:66.3, fat:6.9} },
-    { id:"potato_baked", name:"Potato (baked)", per100g:{kcal:93, protein:2.5, carbs:21.0, fat:0.1} },
-    { id:"tortilla_flour", name:"Flour tortilla", per100g:{kcal:313, protein:8.0, carbs:52.0, fat:8.0} },
-    { id:"black_beans_cooked", name:"Black beans (cooked)", per100g:{kcal:132, protein:8.9, carbs:23.7, fat:0.5} },
-
-    // Fats / extras
-    { id:"avocado", name:"Avocado", per100g:{kcal:160, protein:2.0, carbs:8.5, fat:14.7} },
-    { id:"olive_oil", name:"Olive oil", per100g:{kcal:884, protein:0.0, carbs:0.0, fat:100.0} },
-    { id:"peanut_butter", name:"Peanut butter", per100g:{kcal:588, protein:25.0, carbs:20.0, fat:50.0} },
-    { id:"cheddar", name:"Cheddar cheese", per100g:{kcal:403, protein:25.0, carbs:1.3, fat:33.0} },
-
-    // Veggies
-    { id:"broccoli", name:"Broccoli", per100g:{kcal:34, protein:2.8, carbs:6.6, fat:0.4} },
-    { id:"spinach", name:"Spinach", per100g:{kcal:23, protein:2.9, carbs:3.6, fat:0.4} },
-    { id:"bell_pepper", name:"Bell pepper", per100g:{kcal:31, protein:1.0, carbs:6.0, fat:0.3} }
-  ];
-
-  function normalizeKey(s){
-    return String(s||"").trim().toLowerCase()
-      .replace(/[^a-z0-9]+/g,"_")
-      .replace(/^_+|_+$/g,"")
-      .slice(0,60) || "custom_food";
-  }
-
-  function getFoodLibrary(){
-    const customs = getTypedCustoms();
-    const customArr = Object.entries(customs).map(([id, v]) => ({
-      id,
-      name: v.name,
-      per100g: v.per100g,
-      source: "Custom (You)"
-    }));
-    const baseArr = BASE_FOODS.map(x => ({...x, source:"General"}));
-    return [...customArr, ...baseArr];
-  }
-
-  function searchFoods(query){
-    const q = String(query||"").toLowerCase().trim();
-    if (!q) return [];
-    const lib = getFoodLibrary();
-    // simple scoring: contains
-    return lib
-      .map(item => {
-        const name = item.name.toLowerCase();
-        const score =
-          name === q ? 100 :
-          name.startsWith(q) ? 60 :
-          name.includes(q) ? 40 :
-          0;
-        return { item, score };
-      })
-      .filter(x => x.score > 0)
-      .sort((a,b) => b.score - a.score)
-      .slice(0, 10)
-      .map(x => x.item);
-  }
-
-  function computeMacrosForGrams(per100g, grams){
-    const factor = grams / 100.0;
-    return {
-      calories: safe(per100g.kcal) * factor,
-      protein: safe(per100g.protein) * factor,
-      carbs: safe(per100g.carbs) * factor,
-      fat: safe(per100g.fat) * factor
-    };
-  }
-
-  function mealSum(items){
-    return items.reduce((acc, it) => {
-      const m = computeMacrosForGrams(it.per100g, it.grams);
-      acc.calories += m.calories;
-      acc.protein += m.protein;
-      acc.carbs += m.carbs;
-      acc.fat += m.fat;
-      return acc;
-    }, { calories:0, protein:0, carbs:0, fat:0 });
-  }
-
-  function renderMeal(){
-    const meal = getMeal();
-    mealName.value = meal.name || "";
-
-    const totals = mealSum(meal.items);
-    mealTotals.textContent = JSON.stringify({
-      meal_name: meal.name || "",
-      totals: {
-        calories_kcal: Math.round(totals.calories),
-        protein_g: round1(totals.protein),
-        carbs_g: round1(totals.carbs),
-        fat_g: round1(totals.fat)
-      }
-    }, null, 2);
-
-    mealBody.innerHTML = "";
-    meal.items.forEach((it, idx) => {
-      const m = computeMacrosForGrams(it.per100g, it.grams);
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>
-          <div style="font-weight:950">${escapeHtml(it.name)}</div>
-          <div class="small">${escapeHtml(it.source || "")} • per 100g: ${it.per100g.kcal} kcal, P ${it.per100g.protein}g, C ${it.per100g.carbs}g, F ${it.per100g.fat}g</div>
-        </td>
-        <td class="right">
-          <input data-grams="${idx}" type="number" min="0" step="1" value="${Math.round(it.grams)}" style="min-height:36px; padding:8px 10px; font-size:13px;" />
-        </td>
-        <td class="right">${Math.round(m.calories)}</td>
-        <td class="right">${round1(m.protein)}</td>
-        <td class="right">${round1(m.carbs)}</td>
-        <td class="right">${round1(m.fat)}</td>
-        <td class="right">
-          <button class="ghost" data-edit="${idx}" style="padding:8px 10px; font-size:12px; margin-bottom:6px;" type="button">Edit macros</button>
-          <button class="danger" data-del="${idx}" style="padding:8px 10px; font-size:12px;" type="button">Delete</button>
-        </td>
-      `;
-      mealBody.appendChild(tr);
-    });
-
-    mealBody.querySelectorAll("input[data-grams]").forEach(inp => {
-      inp.addEventListener("input", () => {
-        const i = Number(inp.getAttribute("data-grams"));
-        const g = Number(inp.value || 0);
-        const meal = getMeal();
-        if (!meal.items[i]) return;
-        meal.items[i].grams = Math.max(0, g);
-        meal.name = mealName.value.trim();
-        setMeal(meal);
-        renderMeal();
-      });
-    });
-
-    mealBody.querySelectorAll("button[data-del]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-del"));
-        const meal = getMeal();
-        meal.items = meal.items.filter((_, idx) => idx !== i);
-        meal.name = mealName.value.trim();
-        setMeal(meal);
-        renderMeal();
-      });
-    });
-
-    mealBody.querySelectorAll("button[data-edit]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-edit"));
-        const meal = getMeal();
-        const it = meal.items[i];
-        if (!it) return;
-
-        // simple edit via prompt (works well on iOS)
-        const newK = prompt(`Edit kcal per 100g for "${it.name}"`, String(it.per100g.kcal));
-        if (newK === null) return;
-        const newP = prompt(`Edit protein (g) per 100g for "${it.name}"`, String(it.per100g.protein));
-        if (newP === null) return;
-        const newC = prompt(`Edit carbs (g) per 100g for "${it.name}"`, String(it.per100g.carbs));
-        if (newC === null) return;
-        const newF = prompt(`Edit fat (g) per 100g for "${it.name}"`, String(it.per100g.fat));
-        if (newF === null) return;
-
-        const kcal = Number(newK), p = Number(newP), c = Number(newC), f = Number(newF);
-        if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
-          toast("Invalid macro values. Must be 0+ numbers.");
-          return;
-        }
-
-        it.per100g = { kcal, protein: p, carbs: c, fat: f };
-
-        // save as custom typed food under its id
-        const customs = getTypedCustoms();
-        customs[it.id] = {
-          name: it.name,
-          per100g: it.per100g,
-          updatedAtISO: new Date().toISOString()
-        };
-        setTypedCustoms(customs);
-
-        // mark source
-        it.source = "Custom (You)";
-
-        meal.name = mealName.value.trim();
-        setMeal(meal);
-        renderMeal();
-        renderCustomTypedList();
-        toast("Saved your custom macros for this food.");
-      });
-    });
-  }
-
-  function renderCustomTypedList(){
-    const q = String(customTypedSearch.value || "").toLowerCase().trim();
-    const customs = getTypedCustoms();
-    const arr = Object.entries(customs).map(([id, v]) => ({ id, ...v }));
-
-    const filtered = q
-      ? arr.filter(x => (x.name||"").toLowerCase().includes(q) || x.id.includes(q))
-      : arr;
-
-    if (!filtered.length) {
-      customTypedResults.textContent = "No custom typed foods yet.";
-      return;
-    }
-
-    customTypedResults.textContent = filtered
-      .slice(0, 50)
-      .map(x => {
-        const p = x.per100g;
-        return `${x.name}  (per 100g: ${p.kcal} kcal, P ${p.protein}g, C ${p.carbs}g, F ${p.fat}g)`;
-      })
-      .join("\n");
-  }
-
-  mealSearchBtn.addEventListener("click", () => {
-    const q = mealFoodQuery.value.trim();
-    if (!q) { mealSearchResults.textContent = "Type something like 'chicken' or 'quinoa'."; return; }
-    const results = searchFoods(q);
-
-    if (!results.length) {
-      // allow create a new food quickly
-      const newId = "custom_" + normalizeKey(q);
-      mealSearchResults.innerHTML =
-        `No matches found.\n\n` +
-        `You can add it as a new custom food:\n` +
-        `• Name: ${escapeHtml(q)}\n` +
-        `Then you’ll be prompted to enter per-100g macros.`;
-      const should = confirm(`No matches found.\n\nCreate new custom food "${q}" now?`);
-      if (!should) return;
-
-      const kcal = Number(prompt(`Calories per 100g for "${q}"`, "100") || "");
-      const p = Number(prompt(`Protein (g) per 100g for "${q}"`, "10") || "");
-      const c = Number(prompt(`Carbs (g) per 100g for "${q}"`, "10") || "");
-      const f = Number(prompt(`Fat (g) per 100g for "${q}"`, "5") || "");
-      if (![kcal,p,c,f].every(v => Number.isFinite(v) && v >= 0)) {
-        toast("Invalid macros. Cancelled.");
-        return;
-      }
-      const customs = getTypedCustoms();
-      customs[newId] = { name: q, per100g:{kcal, protein:p, carbs:c, fat:f}, updatedAtISO: new Date().toISOString() };
-      setTypedCustoms(customs);
-      renderCustomTypedList();
-
-      // add to meal with default grams
-      const meal = getMeal();
-      meal.items.unshift({ id:newId, name:q, grams:150, per100g:{kcal, protein:p, carbs:c, fat:f}, source:"Custom (You)" });
-      meal.name = mealName.value.trim();
-      setMeal(meal);
-      renderMeal();
-      toast("Added custom food to meal.");
-      return;
-    }
-
-    // Show result list with add buttons
-    mealSearchResults.innerHTML = results.map((r, idx) => {
-      const p = r.per100g;
-      return `
-        <div style="margin-bottom:10px;">
-          <div style="font-weight:950">${escapeHtml(r.name)}</div>
-          <div class="small">${escapeHtml(r.source || "")} • per 100g: ${p.kcal} kcal, P ${p.protein}g, C ${p.carbs}g, F ${p.fat}g</div>
-          <div class="split" style="margin-top:6px;">
-            <input data-add-grams="${idx}" type="number" min="0" step="1" value="150" style="max-width:160px; min-height:36px; padding:8px 10px; font-size:13px;" />
-            <button class="good" data-add="${idx}" style="max-width:180px; padding:10px 12px;" type="button">Add ingredient</button>
-          </div>
+  );
+}
+
+// SETTINGS
+function Settings({settings,updateSettings}){
+  function set(key,val){updateSettings({[key]:val})}
+  return(
+    <div style={{padding:'24px 24px 60px',maxWidth:700,margin:'0 auto'}}>
+      <h1 style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.75rem',marginBottom:5}}>Settings</h1>
+      <p style={{color:'var(--ink-soft)',fontSize:'.82rem',marginBottom:24}}>Company info and default pricing. Applies to all new jobs.</p>
+      <Card style={{marginBottom:16}}>
+        <SLabel>Company information</SLabel>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:11}}>
+          <div style={{gridColumn:'1/-1'}}><label>Company name</label><input value={settings.companyName} onChange={e=>set('companyName',e.target.value)}/></div>
+          <div><label>Phone</label><input value={settings.phone} onChange={e=>set('phone',e.target.value)}/></div>
+          <div><label>Email</label><input value={settings.email} onChange={e=>set('email',e.target.value)}/></div>
+          <div><label>ISA Cert #</label><input value={settings.isaNumber} onChange={e=>set('isaNumber',e.target.value)}/></div>
+          <div><label>TDA License #</label><input value={settings.tdaNumber} onChange={e=>set('tdaNumber',e.target.value)}/></div>
         </div>
-      `;
-    }).join("");
+      </Card>
+      <Card style={{marginBottom:16}}>
+        <SLabel>Default pricing rules</SLabel>
+        <p style={{fontSize:'.77rem',color:'var(--ink-soft)',marginBottom:13}}>Used for all jobs. Override per-job on the Estimate tab.</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:11}}>
+          {[{key:'rateRemoval',label:'Removal per DBH inch',pre:'$'},{key:'ratePruning',label:'Pruning per DBH inch',pre:'$'},{key:'rateTreatment',label:'Treatment flat rate',pre:'$'},{key:'rateStump',label:'Stump grind per DBH inch',pre:'$'},{key:'rateDebrisHaul',label:'Debris haul flat',pre:'$'}].map(({key,label,pre})=>(
+            <div key={key}><label>{label}</label><div style={{display:'flex',alignItems:'center',gap:5}}><span style={{color:'var(--ink-soft)',fontSize:'.82rem'}}>{pre}</span><input type="number" min="0" value={settings[key]} onChange={e=>set(key,parseFloat(e.target.value)||0)}/></div></div>
+          ))}
+        </div>
+      </Card>
+      <Card style={{marginBottom:16}}>
+        <SLabel>Difficulty multipliers</SLabel>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:13}}>
+          <div><label>Confined felling ({settings.multConfined}×)</label><input type="range" min="1" max="2.5" step="0.05" value={settings.multConfined} onChange={e=>set('multConfined',parseFloat(e.target.value))}/></div>
+          <div><label>Crane required ({settings.multCrane}×)</label><input type="range" min="1" max="3" step="0.05" value={settings.multCrane} onChange={e=>set('multCrane',parseFloat(e.target.value))}/></div>
+          <div><label>Tax / permit rate ({(settings.taxRate*100).toFixed(0)}%)</label><input type="range" min="0" max="0.15" step="0.005" value={settings.taxRate} onChange={e=>set('taxRate',parseFloat(e.target.value))}/></div>
+        </div>
+      </Card>
+      <div style={{background:'var(--green-ghost)',borderRadius:'var(--radius-md)',padding:'12px 16px',border:'1px solid var(--green-pale)',fontSize:'.81rem',color:'var(--green-mid)'}}>
+        <strong>Data storage:</strong> All jobs save to your browser automatically. To share across devices, see the README for Supabase integration instructions (free, ~30 min setup).
+      </div>
+    </div>
+  );
+}
 
-    mealSearchResults.querySelectorAll("button[data-add]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-add"));
-        const r = results[i];
-        const gramsInput = mealSearchResults.querySelector(`input[data-add-grams="${i}"]`);
-        const grams = Number(gramsInput?.value || 0);
-        const g = Number.isFinite(grams) ? Math.max(0, grams) : 0;
-
-        const meal = getMeal();
-        meal.items.unshift({
-          id: r.id,
-          name: r.name,
-          grams: g || 150,
-          per100g: r.per100g,
-          source: r.source
-        });
-        meal.name = mealName.value.trim();
-        setMeal(meal);
-        renderMeal();
-        toast("Added ingredient.");
-      });
-    });
-  });
-
-  mealName.addEventListener("input", () => {
-    const meal = getMeal();
-    meal.name = mealName.value.trim();
-    setMeal(meal);
-  });
-
-  mealClear.addEventListener("click", () => {
-    setMeal({ name:"", items:[] });
-    mealFoodQuery.value = "";
-    mealSearchResults.textContent = "Search results will appear here.";
-    renderMeal();
-    toast("Cleared meal.");
-  });
-
-  mealAddToToday.addEventListener("click", () => {
-    const meal = getMeal();
-    if (!meal.items.length) { toast("Meal is empty."); return; }
-
-    const totals = mealSum(meal.items);
-    const name = (meal.name || "Meal").trim();
-    const detail = `${meal.items.length} items`;
-
-    const entry = {
-      timestamp: new Date().toISOString(),
-      name,
-      detail,
-      calories: totals.calories,
-      protein: totals.protein,
-      carbs: totals.carbs,
-      fat: totals.fat,
-      barcode: "",
-      source: "Meal Builder"
-    };
-
-    const foods = getFoods();
-    foods.unshift(entry);
-    setFoods(foods);
-    render();
-    toast("Added meal to Today.");
-    setActiveTab("today");
-  });
-
-  customTypedSearchBtn.addEventListener("click", renderCustomTypedList);
-  customTypedSearch.addEventListener("input", () => {
-    // live filter
-    renderCustomTypedList();
-  });
-
-  // ---------------------------
-  // Today: clear + export handled above
-  // ---------------------------
-
-  // ---------------------------
-  // Plan initial calc (optional)
-  // ---------------------------
-  // (Do nothing until user taps calculate.)
-
-  // ---------------------------
-  // Initial render
-  // ---------------------------
-  render();
+// BOOT
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
 </script>
 </body>
 </html>
