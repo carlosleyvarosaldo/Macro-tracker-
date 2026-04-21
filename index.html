@@ -284,15 +284,44 @@ async function fetchCalendarEvents(){
         if(resp.error){reject(new Error(resp.error));return;}
         try{
           const now=new Date();
-          // Start of current year — covers all past leads from Jan 1
-          const yearStart=new Date(now.getFullYear(),0,1);
-          const min=yearStart.toISOString();
-          const max=new Date(now.getTime()+45*24*60*60*1000).toISOString();
-          const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=250`;
-          const r=await fetch(url,{headers:{Authorization:`Bearer ${resp.access_token}`}});
-          if(!r.ok)throw new Error('Calendar API error '+r.status);
-          const data=await r.json();
-          resolve((data.items||[]).map(e=>({
+          // Full current year: Jan 1 00:00:00 through Dec 31 23:59:59.
+          // Using calendar-year bounds (not "now+45d") so the import list
+          // holds an apples-to-apples year of leads every time it opens.
+          const y=now.getFullYear();
+          const yearStart=new Date(y,0,1,0,0,0,0);
+          const yearEnd=new Date(y,11,31,23,59,59,999);
+          const min=encodeURIComponent(yearStart.toISOString());
+          const max=encodeURIComponent(yearEnd.toISOString());
+
+          // Paginate — a busy arborist calendar can exceed any single page.
+          // Keep looping on pageToken until Google stops returning one.
+          const base=`https://www.googleapis.com/calendar/v3/calendars/primary/events`
+            +`?timeMin=${min}&timeMax=${max}`
+            +`&singleEvents=true&orderBy=startTime&showDeleted=false&maxResults=250`;
+          const headers={Authorization:`Bearer ${resp.access_token}`};
+          const all=[];
+          let pageToken='',safety=0;
+          do{
+            const url=base+(pageToken?`&pageToken=${encodeURIComponent(pageToken)}`:'');
+            const r=await fetch(url,{headers});
+            if(!r.ok)throw new Error('Calendar API error '+r.status);
+            const data=await r.json();
+            (data.items||[]).forEach(e=>all.push(e));
+            pageToken=data.nextPageToken||'';
+            safety++;
+          }while(pageToken&&safety<20); // hard cap ~5000 events
+
+          // Filter out cancellations and events the user declined.
+          // (Accepted, tentative, and "needsAction" all stay — arborists
+          //  sometimes forget to accept their own holds.)
+          const filtered=all.filter(e=>{
+            if(e.status==='cancelled')return false;
+            const me=(e.attendees||[]).find(a=>a.self);
+            if(me&&me.responseStatus==='declined')return false;
+            return true;
+          });
+
+          resolve(filtered.map(e=>({
             id:e.id,
             title:e.summary||'Untitled',
             start:e.start?.dateTime||e.start?.date||'',
@@ -1075,8 +1104,156 @@ function CrewTab({job,updateJob}){
   function onMove(e){if(!drag)return;e.preventDefault();const c=getXY(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===drag?{...t,px:c.x,py:c.y}:t)}));}
   function onUp(){setDrag(null);}
 
+  // ─── Crew Map PDF export ─────────────────────────────────────────────
+  // The live Google Maps iframe can't be captured to canvas due to
+  // cross-origin rules, so instead we generate a printable brief with:
+  //   1) An SVG schematic of pin layout (same relative positions the
+  //      arborist placed on the satellite view)
+  //   2) A tappable link to the live satellite map so the crew can
+  //      pull up the aerial on their phone from the PDF
+  //   3) Full per-tree task list: tag, species, DBH, condition, scope
+  //      items + numbers, extras (cans/qty), field notes
+  //   4) Photo thumbnails embedded as data URLs
+  // Everything renders in a new window — the browser's print dialog
+  // lets the user Save As PDF. No API keys, no CORS, no backend.
+  function exportCrewPDF(){
+    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    const mapLink=addr?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`:'';
+
+    // Build the pin schematic. Pins carry px/py in [0,1] relative coords,
+    // so we plot them on a 600x380 SVG canvas with a property-outline
+    // backdrop. This is a schematic — it preserves relative positions
+    // but is not the satellite aerial itself.
+    const pinSvg=`<svg viewBox="0 0 600 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-height:420px;display:block;border:1px solid #d0d0d0;border-radius:6px;background:#eaf3e6">
+      <rect width="600" height="380" fill="#d8ebd2"/>
+      <rect x="160" y="75" width="280" height="175" rx="4" fill="#e8d5b7" stroke="#b89866" stroke-width="1.5"/>
+      <rect x="185" y="98" width="230" height="130" rx="2" fill="#f5ecd7"/>
+      <text x="300" y="168" fill="#a07850" font-family="Arial" font-size="11" text-anchor="middle" font-weight="600">RESIDENCE</text>
+      <rect x="0" y="335" width="600" height="45" fill="#bdbdbd" opacity="0.45"/>
+      <text x="300" y="363" fill="#555" font-family="Arial" font-size="10" text-anchor="middle">— STREET —</text>
+      <text x="18" y="22" fill="#2a5a22" font-family="Arial" font-size="11" font-weight="700">↑ N</text>
+      <text x="580" y="22" fill="#555" font-family="Arial" font-size="9" text-anchor="end">Pin schematic · not to scale</text>
+      ${job.trees.map((t,i)=>{
+        const cx=(t.px||.5)*600, cy=(t.py||.4)*380;
+        const col=PIN_COLORS[i%PIN_COLORS.length];
+        return `<g>
+          <circle cx="${cx}" cy="${cy}" r="17" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+          <text x="${cx}" y="${cy+4}" fill="#fff" font-family="Arial" font-size="11" font-weight="700" text-anchor="middle">${(t.tag||'').replace(/</g,'&lt;')}</text>
+        </g>`;
+      }).join('')}
+    </svg>`;
+
+    // Per-tree task blocks. Keep them printer-friendly: sharp headers,
+    // generous spacing for check-off in the field.
+    const treeBlocks=job.trees.map((tree,i)=>{
+      const col=PIN_COLORS[i%PIN_COLORS.length];
+      const items=tree.scopeItems.map(sid=>{
+        const item=SCOPE_ITEMS.find(s=>s.id===sid);
+        if(!item)return'';
+        const ex=tree.scopeExtras?.[sid];
+        const extra=ex?` <em style="color:#666">(${ex} ${item.extra||''})</em>`:'';
+        return`<li><strong style="color:#2d5a27;font-family:monospace">${item.num}.</strong> ${item.label}${extra}</li>`;
+      }).join('');
+      const photos=(tree.photos||[]).slice(0,4).map(p=>
+        `<img src="${p.url}" style="width:85px;height:85px;object-fit:cover;border-radius:3px;border:1px solid #bbb;margin-right:5px"/>`
+      ).join('');
+      const meta=[
+        tree.species||'Unidentified',
+        tree.dbh?`${tree.dbh}" DBH`:'',
+        tree.height?`${tree.height}' tall`:'',
+        tree.cond?tree.cond.charAt(0).toUpperCase()+tree.cond.slice(1):'',
+      ].filter(Boolean).join(' · ');
+
+      return`<div class="tree-block">
+        <div class="tree-hdr">
+          <span class="tree-pin" style="background:${col}">${(tree.tag||`T${i+1}`).replace(/</g,'&lt;')}</span>
+          <span class="tree-meta">${meta}</span>
+        </div>
+        ${items?`<div class="tree-section"><div class="section-lbl">Scope of Work</div><ul>${items}</ul></div>`:'<div class="tree-section" style="color:#999;font-style:italic;padding:4px 0">No scope items assigned</div>'}
+        ${tree.notes?`<div class="tree-section"><div class="section-lbl">Field Notes</div><p>${tree.notes.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p></div>`:''}
+        ${photos?`<div class="tree-section"><div class="section-lbl">Photos</div><div style="display:flex;flex-wrap:wrap;gap:4px">${photos}</div></div>`:''}
+      </div>`;
+    }).join('');
+
+    const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Crew Map — Job #${job.num}</title>
+<style>
+  @page{margin:0.5in}
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;max-width:7.5in;margin:0 auto;padding:24px 18px;font-size:12px;line-height:1.55;color:#222}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d5a27;padding-bottom:10px;margin-bottom:14px}
+  .hdr h1{font-size:19px;margin:0 0 3px;color:#1a2e1a;font-weight:600}
+  .hdr .meta{font-size:11px;color:#666;line-height:1.5}
+  .hdr .right{text-align:right;font-size:10px;color:#888}
+  .hdr .right strong{color:#2d5a27;font-size:11px}
+  .addr-box{background:#f4f8f2;border:1px solid #c8e6c4;border-radius:4px;padding:9px 12px;margin-bottom:16px;font-size:12px}
+  .addr-box .lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px}
+  .addr-box a{color:#1a6fa8;text-decoration:none;font-size:10px}
+  .map-section{margin-bottom:18px;page-break-inside:avoid}
+  .map-section .section-title{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:5px;font-weight:600}
+  .site-notes{background:#fdf3dc;border-left:3px solid #b87a00;padding:7px 11px;margin-bottom:14px;font-size:11px;color:#5a4000}
+  .tree-block{border:1px solid #d0d0d0;border-radius:5px;padding:11px 13px;margin-bottom:10px;page-break-inside:avoid;background:#fff}
+  .tree-hdr{display:flex;align-items:center;gap:9px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:6px}
+  .tree-pin{display:inline-block;min-width:32px;padding:3px 9px;border-radius:99px;color:#fff;font-weight:700;font-size:12px;text-align:center}
+  .tree-meta{font-weight:600;font-size:13px;color:#333}
+  .tree-section{margin-top:7px}
+  .section-lbl{font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#888;font-weight:600;margin-bottom:3px}
+  .tree-section ul{margin:0;padding-left:18px;line-height:1.75}
+  .tree-section p{margin:0;font-size:11px;color:#444}
+  .footer{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+  .print-btn{position:fixed;top:14px;right:14px;background:#2d5a27;color:#fff;border:none;padding:9px 16px;border-radius:4px;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10}
+  @media print{.print-btn{display:none}body{padding:0}}
+</style></head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Save as PDF</button>
+  <div class="hdr">
+    <div>
+      <h1>Crew Map &amp; Task Brief</h1>
+      <div class="meta">
+        <strong>${(job.client||'—').replace(/</g,'&lt;')}</strong>${job.phone?` · ${job.phone}`:''}<br>
+        Job #${job.num} · ${job.trees.length} tree${job.trees.length!==1?'s':''}
+      </div>
+    </div>
+    <div class="right">
+      <strong>A Good Morning Tree Service</strong><br>
+      Generated ${date}
+    </div>
+  </div>
+
+  <div class="addr-box">
+    <div class="lbl">Property</div>
+    <div><strong>${(addr||'Address not set').replace(/</g,'&lt;')}</strong></div>
+    ${mapLink?`<a href="${mapLink}" target="_blank">📍 Open live satellite view</a>`:''}
+  </div>
+
+  ${job.siteNotes?`<div class="site-notes"><strong>Site notes:</strong> ${job.siteNotes.replace(/</g,'&lt;')}</div>`:''}
+
+  <div class="map-section">
+    <div class="section-title">Pin Layout — Tree Locations on Property</div>
+    ${pinSvg}
+    <p style="font-size:10px;color:#888;margin-top:5px;text-align:center">Schematic showing relative tree positions — tap the live satellite link above for aerial view</p>
+  </div>
+
+  <div class="section-title" style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:8px;font-weight:600">Tree-by-Tree Task List</div>
+  ${treeBlocks}
+
+  <div class="footer">
+    <span>A Good Morning Tree Service</span>
+    <span>Crew brief generated by AGMTS Field Ops</span>
+  </div>
+</body></html>`;
+
+    const w=window.open('','_blank');
+    if(!w){alert('Popup blocked. Please allow popups and try again.');return;}
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
   return(
     <div style={{padding:'15px 15px 40px'}}>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}>
+        <button className="btn btn-sm btn-p" onClick={exportCrewPDF}><I d={ic.print} s={13}/>Export crew map PDF</button>
+      </div>
       <div style={{display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start'}}>
         {/* Map */}
         <div style={{flex:'1 1 300px',minWidth:260}}>
