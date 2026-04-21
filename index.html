@@ -2,212 +2,338 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>A Good Morning Tree Service — Field Ops</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>AGMTS Field Ops</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green-dark:#1a2e1a;--green-mid:#2d5a27;--green-accent:#4a8c3f;
-  --green-pale:#c8e6c4;--green-ghost:#f0f7ef;
-  --amber:#c8860a;--amber-light:#fdf3dc;--red:#b83232;
-  --blue:#2563a8;
-  --cream:#faf8f4;--paper:#f4f1eb;--ink:#1a1a18;--ink-mid:#3d3d38;
-  --ink-soft:#6b6b64;--ink-ghost:#a8a89e;--border:#d8d4c8;--border-soft:#ece9e0;
-  --white:#ffffff;
-  --radius-sm:4px;--radius-md:8px;--radius-lg:14px;
-  --font-display:'Fraunces',Georgia,serif;
-  --font-body:'DM Sans',sans-serif;
-  --font-mono:'DM Mono',monospace;
+  --g1:#0f1a0f;--g2:#1e3320;--g3:#2d5a27;--g4:#4a8c3f;--g5:#c8e6c4;--g6:#f0f7ef;
+  --ink:#111;--ink2:#444;--ink3:#888;--ink4:#bbb;
+  --bg:#f9f9f7;--card:#fff;--border:#e8e8e4;
+  --amber:#b87a00;--red:#c0392b;--blue:#1a6fa8;
+  --r4:4px;--r8:8px;--r12:12px;
+  --font:'Inter',system-ui,sans-serif;
 }
-html{font-size:15px}
-body{font-family:var(--font-body);background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
-input,select,textarea{font-family:var(--font-body);font-size:.88rem;color:var(--ink);background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;width:100%;transition:border-color .15s;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(--green-accent);box-shadow:0 0 0 3px rgba(74,140,63,.12)}
-textarea{resize:vertical;line-height:1.6}
-select{cursor:pointer}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+input,select,textarea{font-family:var(--font);font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--border);border-radius:var(--r4);padding:9px 12px;width:100%;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--g4)}
+textarea{resize:vertical;line-height:1.5;min-height:72px}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
-input[type=range]{-webkit-appearance:none;background:transparent;padding:0;cursor:pointer}
-input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--border);border-radius:2px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--green-accent);border-radius:50%;margin-top:-6px}
-label{display:block;font-size:.72rem;font-weight:500;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
-button{font-family:var(--font-body);cursor:pointer;border:none;background:none;transition:all .15s}
+input[type=range]{-webkit-appearance:none;padding:0;background:transparent;cursor:pointer;width:100%}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--border);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--g3);border-radius:50%;margin-top:-6.5px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+label{display:block;font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+button{font-family:var(--font);cursor:pointer;border:none;background:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+.page{display:flex;height:100vh;overflow:hidden;position:relative}
+/* Sidebar */
+.sidebar{width:220px;background:var(--g1);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s,width .25s;z-index:200}
+.sidebar.hidden{transform:translateX(-100%);position:absolute;height:100%;top:0;left:0}
+@media(max-width:640px){
+  .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-220px)}
+  .sidebar.open{transform:translateX(0)}
+}
+.sidebar-logo{padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.sidebar-icon{width:30px;height:30px;border-radius:6px;background:var(--g4);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sidebar-name{font-size:13px;font-weight:400;color:rgba(255,255,255,.9);line-height:1.3}
+.sidebar-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase}
+.sidebar-nav{flex:1;padding:10px 8px}
+.nav-item{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:6px;border:none;cursor:pointer;color:rgba(255,255,255,.45);font-size:13px;font-family:var(--font);background:transparent;transition:all .15s;margin-bottom:1px;text-align:left}
+.nav-item.active,.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{color:#fff}
+.sidebar-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.2);font-weight:300;letter-spacing:.03em}
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;min-height:52px}
+.menu-btn{width:34px;height:34px;border-radius:var(--r4);border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--ink2)}
+.menu-btn:hover{background:var(--bg)}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden}
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:16px}
+.card+.card{margin-top:12px}
+/* Tabs */
+.tabs{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--card);padding:0 16px}
+.tab{padding:11px 14px;border:none;background:transparent;color:var(--ink3);font-size:13px;font-family:var(--font);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab.active{color:var(--g3);border-bottom-color:var(--g3);font-weight:500}
+/* Tree cards */
+.tree-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);overflow:hidden;margin-bottom:8px;transition:box-shadow .15s}
+.tree-row:hover{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.tree-header{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+.tree-tag{background:var(--g3);color:#fff;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;flex-shrink:0;letter-spacing:.02em}
+.tree-body{padding:14px 14px 16px;border-top:1px solid var(--border);background:var(--bg)}
+/* Pill buttons (work types) */
+.pill{padding:5px 12px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--ink2);transition:all .12s;white-space:nowrap}
+.pill.on{border-color:var(--g4);background:var(--g6);color:var(--g3);font-weight:500}
+/* Badges */
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:400}
+.badge-r{background:#fdeaea;color:#7a1f1f}
+.badge-p{background:#e8f0fc;color:#1a3f7a}
+.badge-t{background:#fdf3dc;color:#7a4a0a}
+.badge-s{background:#f0f7ef;color:#1a4a18}
+.badge-c{background:#ede8fc;color:#3a1f7a}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r4);font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s;border:1px solid var(--border);background:transparent;color:var(--ink);white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn-primary{background:var(--g3);color:#fff;border-color:var(--g3)}
+.btn-primary:hover{background:var(--g2);border-color:var(--g2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-danger{color:var(--red);border-color:var(--red)}
+/* Grid helpers */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+@media(max-width:520px){.grid2,.grid3{grid-template-columns:1fr}}
+/* Map */
+#mapframe{width:100%;height:320px;border:none;border-radius:var(--r8);display:block}
+.map-container{position:relative}
+.map-overlay{position:absolute;inset:0;border-radius:var(--r8);pointer-events:none}
+/* Sidebar overlay for mobile */
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:190}
+.sidebar-backdrop.show{display:block}
+/* Estimate table */
+.est-table{width:100%;border-collapse:collapse;font-size:13px}
+.est-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+.est-table th:last-child,.est-table td:last-child{text-align:right}
+.est-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.est-table tr:last-child td{border-bottom:none}
+/* Job list row */
+.job-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.job-row:hover{box-shadow:0 2px 12px rgba(0,0,0,.07)}
+/* Stat cards */
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:14px;text-align:center}
+.stat-num{font-size:28px;font-weight:300;color:var(--ink);line-height:1}
+.stat-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+/* Section label */
+.slabel{font-size:10px;font-weight:500;color:var(--ink4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+/* Photo thumb */
+.photo-thumb{width:60px;height:60px;border-radius:var(--r4);object-fit:cover;border:1px solid var(--border);flex-shrink:0}
+.photo-add{width:60px;height:60px;border-radius:var(--r4);border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--ink4);font-size:10px;text-transform:uppercase;letter-spacing:.04em;background:var(--bg);flex-shrink:0}
+/* Crew pin */
+.pin{position:absolute;transform:translate(-50%,-50%);cursor:grab;z-index:5;transition:width .15s,height .15s}
+.pin-dot{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:all .15s}
+/* Input row */
+.irow{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.irow>*{flex:1;min-width:130px}
+/* Empty */
+.empty{text-align:center;padding:48px 20px;color:var(--ink3)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+.empty-title{font-size:17px;font-weight:300;color:var(--ink2);margin-bottom:6px}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const {useState,useEffect,useCallback,useRef} = React;
+const {useState,useEffect,useRef,useCallback}=React;
 
-// DATA
-const STORAGE_KEY='agmts_jobs_v1';
-const SETTINGS_KEY='agmts_settings_v1';
-const DEFAULT_SETTINGS={companyName:'A Good Morning Tree Service',phone:'(512) 555-0100',email:'office@agmts.com',isaNumber:'TX-XXXX',tdaNumber:'XXXXXXX',rateRemoval:65,ratePruning:28,rateTreatment:180,rateStump:12,rateDebrisHaul:150,multConfined:1.35,multCrane:1.6,taxRate:0.04};
-const WORK_TYPES=[{id:'removal',label:'Removal',badge:'removal'},{id:'pruning',label:'Crown Prune',badge:'pruning'},{id:'deadwood',label:'Deadwood',badge:'pruning'},{id:'clearance',label:'Utility Clearance',badge:'pruning'},{id:'stump',label:'Stump Grind',badge:'stump'},{id:'debris',label:'Debris Haul',badge:'stump'},{id:'crane',label:'Crane Required',badge:'removal'},{id:'treatment',label:'Trunk Injection',badge:'treatment'},{id:'spray',label:'Crown Spray',badge:'treatment'},{id:'drench',label:'Soil Drench',badge:'treatment'},{id:'cabling',label:'Cabling/Bracing',badge:'cabling'},{id:'assessment',label:'Risk Assessment',badge:'cabling'}];
-const BADGE_COLORS={removal:{bg:'#fdeaea',color:'#7a1f1f'},pruning:{bg:'#e8f0fc',color:'#1a3f7a'},treatment:{bg:'#fdf3dc',color:'#7a4a0a'},stump:{bg:'#f0f7ef',color:'#1a4a18'},cabling:{bg:'#ede8fc',color:'#3a1f7a'}};
-const PIN_COLORS={removal:'#b83232',pruning:'#2563a8',treatment:'#c8860a',stump:'#2d5a27',cabling:'#5b3fa8'};
-let _uid=0;
-function uid(){return`id_${Date.now()}_${++_uid}`}
-function createTree(n){return{id:uid(),tag:`T${n}`,species:'',commonName:'',dbh:'',height:'',condition:'fair',workTypes:[],notes:'',accessNotes:'',photos:[],mapX:.25+Math.random()*.5,mapY:.2+Math.random()*.5,difficulty:'standard'}}
-function createJob(){const now=new Date();return{id:uid(),jobNumber:`${now.getFullYear()}-${String(now.getTime()).slice(-4)}`,status:'draft',createdAt:now.toISOString(),updatedAt:now.toISOString(),clientName:'',clientPhone:'',clientEmail:'',address:'',city:'',state:'TX',zip:'',siteAccess:'open',siteNotes:'',trees:[createTree(1)],pricingOverrides:{},notes:''}}
-function loadJobs(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):[]}catch{return[]}}
-function saveJobs(j){localStorage.setItem(STORAGE_KEY,JSON.stringify(j));try{const bc=new BroadcastChannel('agmts');bc.postMessage({type:'upd'});bc.close()}catch{}}
-function loadSettings(){try{const r=localStorage.getItem(SETTINGS_KEY);return r?{...DEFAULT_SETTINGS,...JSON.parse(r)}:DEFAULT_SETTINGS}catch{return DEFAULT_SETTINGS}}
-function saveSettings(s){localStorage.setItem(SETTINGS_KEY,JSON.stringify(s))}
-function calcEstimate(job,settings){
-  const s={...settings,...(job.pricingOverrides||{})};
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const JK='agmts_j2',SK='agmts_s2';
+const DS={companyName:'A Good Morning Tree Service',phone:'(512) 555-0100',email:'office@agmts.com',isa:'TX-XXXX',tda:'XXXXXXX',rRem:65,rPru:28,rTre:180,rStu:12,rDeb:150,mCon:1.35,mCra:1.6,tax:0.04};
+const WORKS=[
+  {id:'removal',label:'Removal',cat:'r'},
+  {id:'pruning',label:'Crown Prune',cat:'p'},
+  {id:'deadwood',label:'Deadwood',cat:'p'},
+  {id:'clearance',label:'Utility Clearance',cat:'p'},
+  {id:'stump',label:'Stump Grind',cat:'s'},
+  {id:'debris',label:'Debris Haul',cat:'s'},
+  {id:'crane',label:'Crane Required',cat:'r'},
+  {id:'treatment',label:'Trunk Injection',cat:'t'},
+  {id:'spray',label:'Crown Spray',cat:'t'},
+  {id:'drench',label:'Soil Drench',cat:'t'},
+  {id:'cabling',label:'Cabling/Bracing',cat:'c'},
+  {id:'assessment',label:'Risk Assessment',cat:'c'},
+];
+const CATBADGE={r:'badge-r',p:'badge-p',t:'badge-t',s:'badge-s',c:'badge-c'};
+const CATPIN={r:'#c0392b',p:'#1a6fa8',t:'#b87a00',s:'#2d5a27',c:'#5b3fa8'};
+let _u=0;
+function uid(){return`u${Date.now()}${++_u}`}
+function newTree(n){return{id:uid(),tag:`T${n}`,name:'',dbh:'',height:'',cond:'fair',works:[],notes:'',access:'',photos:[],px:.3+Math.random()*.4,py:.2+Math.random()*.5,diff:'std'}}
+function newJob(){const d=new Date();return{id:uid(),num:`${d.getFullYear()}-${String(d.getTime()).slice(-4)}`,status:'draft',created:d.toISOString(),updated:d.toISOString(),client:'',phone:'',email:'',addr:'',city:'',zip:'',access:'open',siteNotes:'',trees:[newTree(1)],overrides:{},notes:''}}
+function loadJ(){try{const r=localStorage.getItem(JK);return r?JSON.parse(r):[]}catch{return[]}}
+function saveJ(j){localStorage.setItem(JK,JSON.stringify(j));try{const b=new BroadcastChannel('agmts');b.postMessage('u');b.close()}catch{}}
+function loadS(){try{const r=localStorage.getItem(SK);return r?{...DS,...JSON.parse(r)}:DS}catch{return DS}}
+function saveS(s){localStorage.setItem(SK,JSON.stringify(s))}
+function calcEst(job,s){
+  const m={...s,...(job.overrides||{})};
   const lines=[];let sub=0;
-  job.trees.forEach(tree=>{
-    const dbh=parseFloat(tree.dbh)||0;if(!dbh||!tree.workTypes.length)return;
-    const dm=tree.difficulty==='confined'?s.multConfined:tree.difficulty==='crane'?s.multCrane:1.0;
-    tree.workTypes.forEach(wt=>{
+  job.trees.forEach(t=>{
+    const d=parseFloat(t.dbh)||0;if(!d||!t.works.length)return;
+    const dm=t.diff==='con'?m.mCon:t.diff==='cra'?m.mCra:1;
+    t.works.forEach(w=>{
       let base=0,label='';
-      if(wt==='removal'){base=dbh*s.rateRemoval*dm;label='Removal';}
-      else if(['pruning','deadwood','clearance'].includes(wt)){base=dbh*s.ratePruning;label=WORK_TYPES.find(w=>w.id===wt)?.label||wt;}
-      else if(wt==='stump'){base=dbh*s.rateStump;label='Stump Grind';}
-      else if(wt==='debris'){base=s.rateDebrisHaul;label='Debris Haul';}
-      else if(['treatment','spray','drench'].includes(wt)){base=s.rateTreatment;label=WORK_TYPES.find(w=>w.id===wt)?.label||wt;}
-      else if(wt==='cabling'){base=200+dbh*10;label='Cabling/Bracing';}
-      else if(wt==='assessment'){base=175;label='Risk Assessment';}
-      if(base>0){const total=Math.round(base);sub+=total;lines.push({treeTag:tree.tag,treeName:tree.commonName||tree.species||tree.tag,work:label,dbh,total});}
+      if(w==='removal'){base=d*m.rRem*dm;label='Removal';}
+      else if(['pruning','deadwood','clearance'].includes(w)){base=d*m.rPru;label=WORKS.find(x=>x.id===w)?.label||w;}
+      else if(w==='stump'){base=d*m.rStu;label='Stump Grind';}
+      else if(w==='debris'){base=m.rDeb;label='Debris Haul';}
+      else if(['treatment','spray','drench'].includes(w)){base=m.rTre;label=WORKS.find(x=>x.id===w)?.label||w;}
+      else if(w==='cabling'){base=200+d*10;label='Cabling/Bracing';}
+      else if(w==='assessment'){base=175;label='Risk Assessment';}
+      if(base>0){const tot=Math.round(base);sub+=tot;lines.push({tag:t.tag,name:t.name||t.tag,work:label,dbh:d,tot});}
     });
   });
-  const tax=Math.round(sub*(s.taxRate||.04));
-  return{lines,subtotal:sub,tax,total:sub+tax};
+  const tax=Math.round(sub*(m.tax||.04));
+  return{lines,sub,tax,total:sub+tax};
 }
 
-// UI COMPONENTS
-function Btn({onClick,variant='outline',size='md',children,style={},disabled}){
-  const base={fontFamily:'var(--font-body)',fontWeight:400,borderRadius:'var(--radius-sm)',cursor:disabled?'not-allowed':'pointer',opacity:disabled?.5:1,display:'inline-flex',alignItems:'center',gap:6,transition:'all .15s',whiteSpace:'nowrap'};
-  const sz={sm:{fontSize:'.78rem',padding:'5px 12px'},md:{fontSize:'.85rem',padding:'8px 16px'},lg:{fontSize:'.95rem',padding:'11px 22px'}};
-  const vr={primary:{background:'var(--green-mid)',color:'#fff',border:'1px solid var(--green-mid)'},outline:{background:'transparent',color:'var(--ink)',border:'1px solid var(--border)'},ghost:{background:'transparent',color:'var(--ink-soft)',border:'1px solid transparent'},danger:{background:'transparent',color:'var(--red)',border:'1px solid var(--red)'}};
-  return <button onClick={disabled?undefined:onClick} style={{...base,...sz[size],...vr[variant],...style}}>{children}</button>;
-}
-function Card({children,style={},padding='18px 20px'}){return <div style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',padding,boxShadow:'0 1px 3px rgba(26,46,26,.08)',...style}}>{children}</div>}
-function SLabel({children,style={}}){return <div style={{fontSize:'.7rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:10,fontFamily:'var(--font-mono)',...style}}>{children}</div>}
-function Badge({type,children}){const c=BADGE_COLORS[type]||BADGE_COLORS.cabling;return <span style={{background:c.bg,color:c.color,fontSize:'.7rem',fontWeight:500,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{children}</span>}
-function StatusBadge({status}){const m={draft:{bg:'#f4f1eb',color:'#6b6b64',l:'Draft'},active:{bg:'#e8f0fc',color:'#1a3f7a',l:'Active'},scheduled:{bg:'#fdf3dc',color:'#7a4a0a',l:'Scheduled'},complete:{bg:'#f0f7ef',color:'#1a4a18',l:'Complete'}};const s=m[status]||m.draft;return <span style={{background:s.bg,color:s.color,fontSize:'.7rem',fontWeight:500,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{s.l}</span>}
+// ── ICONS ─────────────────────────────────────────────────────────────────────
+const Icon=({d,s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const icons={
+  menu:"M3 12h18M3 6h18M3 18h18",
+  x:"M18 6L6 18M6 6l12 12",
+  jobs:"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+  settings:"M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z",
+  plus:"M12 5v14M5 12h14",
+  chevdown:"M6 9l6 6 6-6",
+  chevup:"M18 15l-6-6-6 6",
+  print:"M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z",
+  trash:"M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2",
+  back:"M19 12H5M12 19l-7-7 7-7",
+  tree:"M12 22V12M12 12C12 8 9 4 4 4s8 8 8 8zM12 12c0-4 3-8 8-8s-8 8-8 8z",
+  cam:"M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 17a4 4 0 100-8 4 4 0 000 8z",
+  map:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 13a3 3 0 100-6 3 3 0 000 6z",
+};
 
-// APP
+// ── APP ───────────────────────────────────────────────────────────────────────
 function App(){
-  const [jobs,setJobs]=useState(()=>loadJobs());
-  const [settings,setSettings]=useState(()=>loadSettings());
-  const [route,setRoute]=useState(()=>window.location.hash||'#/');
+  const [jobs,setJobs]=useState(loadJ);
+  const [settings,setSettings]=useState(loadS);
+  const [route,setRoute]=useState(window.location.hash||'#/');
+  const [sidebarOpen,setSidebarOpen]=useState(window.innerWidth>=641);
 
   useEffect(()=>{
     const h=()=>setRoute(window.location.hash||'#/');
     window.addEventListener('hashchange',h);
-    let bc;try{bc=new BroadcastChannel('agmts');bc.onmessage=e=>{if(e.data?.type==='upd')setJobs(loadJobs())}}catch{}
-    return()=>{window.removeEventListener('hashchange',h);bc?.close()};
+    let b;try{b=new BroadcastChannel('agmts');b.onmessage=()=>setJobs(loadJ())}catch{}
+    return()=>{window.removeEventListener('hashchange',h);b?.close()};
   },[]);
 
-  function nav(hash){window.location.hash=hash;}
-  function updateJob(id,updater){setJobs(prev=>{const next=prev.map(j=>{if(j.id!==id)return j;const u=typeof updater==='function'?updater(j):{...j,...updater};return{...u,updatedAt:new Date().toISOString()}});saveJobs(next);return next});}
-  function addJob(job){setJobs(prev=>{const next=[...prev,job];saveJobs(next);return next})}
-  function deleteJob(id){setJobs(prev=>{const next=prev.filter(j=>j.id!==id);saveJobs(next);return next})}
-  function updateSettings(u){setSettings(prev=>{const next={...prev,...u};saveSettings(next);return next})}
+  // Close sidebar on mobile when navigating
+  const nav=useCallback(hash=>{
+    window.location.hash=hash;
+    if(window.innerWidth<641)setSidebarOpen(false);
+  },[]);
+
+  function updateJob(id,fn){
+    setJobs(p=>{const n=p.map(j=>{if(j.id!==id)return j;const u=typeof fn==='function'?fn(j):{...j,...fn};return{...u,updated:new Date().toISOString()}});saveJ(n);return n});
+  }
+  function addJob(j){setJobs(p=>{const n=[...p,j];saveJ(n);return n})}
+  function delJob(id){setJobs(p=>{const n=p.filter(j=>j.id!==id);saveJ(n);return n})}
+  function updSettings(u){setSettings(p=>{const n={...p,...u};saveS(n);return n})}
 
   const hash=route.replace('#','');
-  let page='list',jobId=null,tab='intake';
-  if(hash.startsWith('/job/')){const p=hash.split('/');jobId=p[2];tab=p[3]||'intake';page='job';}
+  let page='list',jid=null,tab='intake';
+  if(hash.startsWith('/job/')){const p=hash.split('/');jid=p[2];tab=p[3]||'intake';page='job';}
   else if(hash==='/settings'){page='settings';}
-  const currentJob=jobs.find(j=>j.id===jobId);
+  const curJob=jobs.find(j=>j.id===jid);
+  const isMobile=window.innerWidth<641;
 
   return(
-    <div style={{display:'flex',height:'100vh',overflow:'hidden'}}>
-      <aside style={{width:205,flexShrink:0,background:'var(--green-dark)',display:'flex',flexDirection:'column'}}>
-        <div style={{padding:'20px 16px 16px',borderBottom:'1px solid rgba(255,255,255,.08)'}}>
-          <div style={{display:'flex',alignItems:'center',gap:9}}>
-            <div style={{width:31,height:31,borderRadius:7,background:'var(--green-accent)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15}}>🌳</div>
-            <div>
-              <div style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'.88rem',color:'#fff',lineHeight:1.2}}>A Good Morning</div>
-              <div style={{fontSize:'.6rem',color:'rgba(255,255,255,.4)',letterSpacing:'.08em',fontFamily:'var(--font-mono)'}}>TREE SERVICE</div>
-            </div>
-          </div>
+    <div className="page">
+      {/* Sidebar backdrop (mobile) */}
+      {isMobile&&sidebarOpen&&<div className="sidebar-backdrop show" onClick={()=>setSidebarOpen(false)}/>}
+
+      {/* Sidebar */}
+      <aside className={`sidebar${isMobile?(sidebarOpen?' open':''):(sidebarOpen?'':' hidden')}`}>
+        <div className="sidebar-logo">
+          <div className="sidebar-icon">🌳</div>
+          <div><div className="sidebar-name">A Good Morning</div><div className="sidebar-sub">Tree Service</div></div>
         </div>
-        <nav style={{flex:1,padding:'10px 8px'}}>
-          {[{hash:'#/',label:'📋 Jobs'},{hash:'#/settings',label:'⚙️ Settings'}].map(({hash:h,label})=>{
-            const active=h==='#/'?hash==='/'||hash==='':hash.startsWith(h.replace('#',''));
-            return <button key={h} onClick={()=>nav(h)} style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'10px 12px',borderRadius:6,border:'none',cursor:'pointer',background:active?'rgba(255,255,255,.12)':'transparent',color:active?'#fff':'rgba(255,255,255,.5)',fontSize:'.86rem',fontFamily:'var(--font-body)',marginBottom:2}}>{label}</button>;
+        <nav className="sidebar-nav">
+          {[{h:'#/',label:'Jobs',icon:icons.jobs},{h:'#/settings',label:'Settings',icon:icons.settings}].map(({h,label,icon})=>{
+            const active=h==='#/'?(hash==='/'||hash===''):hash.startsWith(h.replace('#',''));
+            return <button key={h} onClick={()=>nav(h)} className={`nav-item${active?' active':''}`}><Icon d={icon} s={15}/>{label}</button>;
           })}
         </nav>
-        <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,.08)',fontSize:'.63rem',color:'rgba(255,255,255,.25)',fontFamily:'var(--font-mono)',lineHeight:1.8}}>Field Ops v1.0<br/>Kyle, TX</div>
+        <div className="sidebar-foot">Field Ops · Kyle TX</div>
       </aside>
-      <main style={{flex:1,overflow:'auto'}}>
-        {page==='list'&&<JobList jobs={jobs} addJob={addJob} deleteJob={deleteJob} nav={nav}/>}
-        {page==='job'&&currentJob&&<JobDetail job={currentJob} updateJob={updateJob} settings={settings} nav={nav} activeTab={tab}/>}
-        {page==='job'&&!currentJob&&<div style={{padding:40,textAlign:'center',color:'var(--ink-soft)'}}>Job not found. <Btn onClick={()=>nav('#/')}>Back to jobs</Btn></div>}
-        {page==='settings'&&<Settings settings={settings} updateSettings={updateSettings}/>}
-      </main>
+
+      {/* Main */}
+      <div className="main">
+        {/* Always-visible topbar with menu toggle */}
+        <div className="topbar">
+          <button className="menu-btn" onClick={()=>setSidebarOpen(o=>!o)}>
+            <Icon d={sidebarOpen&&!isMobile?icons.x:icons.menu} s={16}/>
+          </button>
+          {page==='job'&&curJob&&(
+            <>
+              <button onClick={()=>nav('#/')} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ink3)',display:'flex',alignItems:'center',gap:4,fontSize:13}}><Icon d={icons.back} s={14}/>Jobs</button>
+              <span style={{color:'var(--ink4)'}}>·</span>
+              <span style={{fontSize:13,fontWeight:500,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{curJob.client||'Unnamed job'}</span>
+              <select value={curJob.status} onChange={e=>updateJob(jid,{status:e.target.value})} style={{width:'auto',fontSize:12,padding:'4px 24px 4px 8px',flex:'none'}}>
+                <option value="draft">Draft</option><option value="active">Active</option>
+                <option value="scheduled">Scheduled</option><option value="complete">Complete</option>
+              </select>
+            </>
+          )}
+          {page==='list'&&<span style={{fontSize:14,fontWeight:500}}>Jobs</span>}
+          {page==='settings'&&<span style={{fontSize:14,fontWeight:500}}>Settings</span>}
+        </div>
+
+        <div className="scroll-area">
+          {page==='list'&&<JobList jobs={jobs} addJob={addJob} delJob={delJob} nav={nav}/>}
+          {page==='job'&&curJob&&<JobDetail job={curJob} updateJob={updateJob} settings={settings} nav={nav} tab={tab}/>}
+          {page==='job'&&!curJob&&<div className="empty"><p>Job not found.</p><br/><button className="btn" onClick={()=>nav('#/')}>← Back</button></div>}
+          {page==='settings'&&<Settings settings={settings} updSettings={updSettings}/>}
+        </div>
+      </div>
     </div>
   );
 }
 
-// JOB LIST
-function JobList({jobs,addJob,deleteJob,nav}){
-  const [search,setSearch]=useState('');
-  const [filter,setFilter]=useState('all');
-  function handleNew(){const job=createJob();addJob(job);nav(`#/job/${job.id}/intake`);}
-  const filtered=jobs.filter(j=>filter==='all'||j.status===filter).filter(j=>{if(!search)return true;const q=search.toLowerCase();return j.clientName?.toLowerCase().includes(q)||j.address?.toLowerCase().includes(q)||j.jobNumber?.includes(q)}).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
-  const stats={total:jobs.length,active:jobs.filter(j=>j.status==='active').length,scheduled:jobs.filter(j=>j.status==='scheduled').length,draft:jobs.filter(j=>j.status==='draft').length};
+// ── JOB LIST ──────────────────────────────────────────────────────────────────
+function JobList({jobs,addJob,delJob,nav}){
+  const [q,setQ]=useState('');
+  const [f,setF]=useState('all');
+  function handleNew(){const j=newJob();addJob(j);nav(`#/job/${j.id}/intake`)}
+  const list=jobs.filter(j=>f==='all'||j.status===f).filter(j=>{if(!q)return true;const s=q.toLowerCase();return j.client?.toLowerCase().includes(s)||j.addr?.toLowerCase().includes(s)||j.num?.includes(s)}).sort((a,b)=>new Date(b.updated)-new Date(a.updated));
+  const cnt={total:jobs.length,active:jobs.filter(j=>j.status==='active').length,scheduled:jobs.filter(j=>j.status==='scheduled').length,draft:jobs.filter(j=>j.status==='draft').length};
   return(
-    <div style={{padding:'26px 26px 40px',maxWidth:860,margin:'0 auto'}}>
-      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
-        <div>
-          <h1 style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.75rem',letterSpacing:'-.01em'}}>Job Board</h1>
-          <p style={{color:'var(--ink-soft)',fontSize:'.82rem',marginTop:3}}>Field assessments, estimates & crew assignments</p>
-        </div>
-        <Btn variant="primary" size="lg" onClick={handleNew}>+ New Job</Btn>
+    <div style={{padding:'20px 16px 40px',maxWidth:800,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+        <div><h1 style={{fontSize:22,fontWeight:300,letterSpacing:'-.02em'}}>Job Board</h1><p style={{fontSize:12,color:'var(--ink3)',marginTop:2}}>Assessments, estimates & crew assignments</p></div>
+        <button className="btn btn-primary" onClick={handleNew}><Icon d={icons.plus} s={14}/>New job</button>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:10,marginBottom:20}}>
-        {[{l:'Total',v:stats.total,c:'var(--ink)'},{l:'Active',v:stats.active,c:'var(--blue)'},{l:'Scheduled',v:stats.scheduled,c:'var(--amber)'},{l:'Drafts',v:stats.draft,c:'var(--ink-ghost)'}].map(s=>(
-          <div key={s.l} style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-md)',padding:'12px 14px'}}>
-            <div style={{fontSize:'.68rem',color:'var(--ink-soft)',fontFamily:'var(--font-mono)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:4}}>{s.l}</div>
-            <div style={{fontSize:'1.75rem',fontWeight:300,fontFamily:'var(--font-display)',color:s.c}}>{s.v}</div>
-          </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
+        {[{l:'Total',v:cnt.total},{l:'Active',v:cnt.active},{l:'Scheduled',v:cnt.scheduled},{l:'Drafts',v:cnt.draft}].map(s=>(
+          <div key={s.l} className="stat"><div className="stat-num">{s.v}</div><div className="stat-label">{s.l}</div></div>
         ))}
       </div>
-      <div style={{display:'flex',gap:10,marginBottom:15,flexWrap:'wrap',alignItems:'center'}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by client, address, job #…" style={{flex:1,minWidth:180}}/>
-        <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-          {['all','active','scheduled','draft','complete'].map(f=>(
-            <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 11px',borderRadius:'var(--radius-sm)',border:'1px solid '+(filter===f?'var(--green-accent)':'var(--border)'),background:filter===f?'var(--green-ghost)':'transparent',color:filter===f?'var(--green-mid)':'var(--ink-soft)',fontSize:'.77rem',cursor:'pointer',fontFamily:'var(--font-body)'}}>
-              {f.charAt(0).toUpperCase()+f.slice(1)}
-            </button>
-          ))}
-        </div>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search client, address, job #…" style={{marginBottom:10}}/>
+      <div style={{display:'flex',gap:6,marginBottom:16,flexWrap:'wrap'}}>
+        {['all','active','scheduled','draft','complete'].map(x=>(
+          <button key={x} onClick={()=>setF(x)} style={{padding:'5px 12px',border:'1px solid '+(f===x?'var(--g4)':'var(--border)'),borderRadius:99,background:f===x?'var(--g6)':'transparent',color:f===x?'var(--g3)':'var(--ink3)',fontSize:12,cursor:'pointer',fontFamily:'var(--font)'}}>
+            {x.charAt(0).toUpperCase()+x.slice(1)}
+          </button>
+        ))}
       </div>
-      {filtered.length===0?(
-        <div style={{textAlign:'center',padding:'50px 20px',color:'var(--ink-soft)'}}>
-          <div style={{fontSize:'2.2rem',marginBottom:12}}>🌳</div>
-          <div style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.15rem',color:'var(--ink-mid)',marginBottom:6}}>{jobs.length===0?'No jobs yet':'No results'}</div>
-          <div style={{fontSize:'.82rem',marginBottom:18}}>{jobs.length===0?'Create your first field assessment to get started.':'Try adjusting your search.'}</div>
-          {jobs.length===0&&<Btn variant="primary" onClick={handleNew}>+ Create First Job</Btn>}
+      {list.length===0?(
+        <div className="empty">
+          <div className="empty-icon">🌳</div>
+          <div className="empty-title">{jobs.length===0?'No jobs yet':'No results'}</div>
+          <p style={{fontSize:13,marginBottom:16}}>{jobs.length===0?'Start by creating a new field assessment.':'Try a different search.'}</p>
+          {jobs.length===0&&<button className="btn btn-primary" onClick={handleNew}><Icon d={icons.plus} s={14}/>Create first job</button>}
         </div>
       ):(
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {filtered.map(job=>{
-            const date=new Date(job.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+          {list.map(job=>{
+            const d=new Date(job.updated).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const statC={draft:'var(--ink3)',active:'var(--blue)',scheduled:'var(--amber)',complete:'var(--g3)'};
             return(
-              <div key={job.id} onClick={()=>nav(`#/job/${job.id}/intake`)} style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',padding:'13px 17px',cursor:'pointer',display:'flex',alignItems:'center',gap:13,flexWrap:'wrap'}}
-                onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 16px rgba(26,46,26,.1)'}
-                onMouseLeave={e=>e.currentTarget.style.boxShadow=''}>
-                <span style={{fontFamily:'var(--font-mono)',fontSize:'.72rem',color:'var(--ink-soft)',minWidth:78}}>#{job.jobNumber}</span>
-                <div style={{flex:1,minWidth:150}}>
-                  <div style={{fontWeight:500,fontSize:'.9rem',marginBottom:2}}>{job.clientName||<span style={{color:'var(--ink-ghost)',fontWeight:400}}>No client</span>}</div>
-                  {job.address&&<div style={{fontSize:'.77rem',color:'var(--ink-soft)'}}>📍 {job.address}{job.city?`, ${job.city}`:''}</div>}
+              <div key={job.id} className="job-row" onClick={()=>nav(`#/job/${job.id}/intake`)}>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',minWidth:76}}>#{job.num}</span>
+                <div style={{flex:1,minWidth:140}}>
+                  <div style={{fontWeight:500,fontSize:14,marginBottom:2}}>{job.client||<span style={{color:'var(--ink4)',fontWeight:300}}>No client</span>}</div>
+                  {job.addr&&<div style={{fontSize:12,color:'var(--ink3)'}}>📍 {job.addr}{job.city?`, ${job.city}`:''}</div>}
                 </div>
-                <div style={{fontSize:'.78rem',color:'var(--ink-soft)'}}>🌳 {job.trees?.length||0} trees</div>
-                <div style={{fontFamily:'var(--font-mono)',fontSize:'.73rem',color:'var(--ink-ghost)'}}>{date}</div>
-                <StatusBadge status={job.status}/>
-                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))deleteJob(job.id)}} style={{color:'var(--ink-ghost)',border:'none',background:'none',cursor:'pointer',fontSize:'.83rem',padding:'2px 5px'}}>✕</button>
+                <span style={{fontSize:12,color:'var(--ink3)'}}>🌳 {job.trees?.length||0}</span>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink4)'}}>{d}</span>
+                <span style={{fontSize:11,color:statC[job.status]||'var(--ink3)',fontWeight:500,textTransform:'uppercase',letterSpacing:'.03em'}}>{job.status}</span>
+                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))delJob(job.id)}} style={{color:'var(--ink4)',fontSize:16,padding:'2px 4px',background:'none',border:'none',cursor:'pointer'}}>×</button>
               </div>
             );
           })}
@@ -217,373 +343,394 @@ function JobList({jobs,addJob,deleteJob,nav}){
   );
 }
 
-// JOB DETAIL
-function JobDetail({job,updateJob,settings,nav,activeTab}){
-  const TABS=[{id:'intake',label:'Field Intake',icon:'📋'},{id:'estimate',label:'Estimate',icon:'💲'},{id:'scope',label:'Scope of Work',icon:'📄'},{id:'crew',label:'Crew Map',icon:'🗺️'}];
+// ── JOB DETAIL ────────────────────────────────────────────────────────────────
+function JobDetail({job,updateJob,settings,nav,tab}){
+  const TABS=[{id:'intake',label:'Intake'},{id:'estimate',label:'Estimate'},{id:'scope',label:'Scope'},{id:'crew',label:'Crew Map'}];
   return(
-    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
-      <div style={{background:'var(--white)',borderBottom:'1px solid var(--border-soft)',padding:'13px 20px',position:'sticky',top:0,zIndex:40}}>
-        <div style={{display:'flex',alignItems:'center',gap:11,flexWrap:'wrap',marginBottom:11}}>
-          <Btn variant="ghost" size="sm" onClick={()=>nav('#/')}>← Jobs</Btn>
-          <div style={{width:1,height:17,background:'var(--border)'}}/>
-          <span style={{fontFamily:'var(--font-mono)',fontSize:'.72rem',color:'var(--ink-soft)'}}>#{job.jobNumber}</span>
-          <span style={{fontWeight:500}}>{job.clientName||'Unnamed Client'}</span>
-          {job.address&&<span style={{fontSize:'.78rem',color:'var(--ink-soft)'}}>{job.address}{job.city?`, ${job.city}`:''}</span>}
-          <select value={job.status} onChange={e=>updateJob(job.id,{status:e.target.value})} style={{width:'auto',fontSize:'.77rem',padding:'5px 9px',marginLeft:'auto',fontFamily:'var(--font-mono)'}}>
-            <option value="draft">Draft</option><option value="active">Active</option>
-            <option value="scheduled">Scheduled</option><option value="complete">Complete</option>
-          </select>
-        </div>
-        <div style={{display:'flex',gap:2,overflowX:'auto'}}>
-          {TABS.map(({id,label,icon})=>(
-            <button key={id} onClick={()=>nav(`#/job/${job.id}/${id}`)} style={{display:'flex',alignItems:'center',gap:5,padding:'7px 12px',border:'none',cursor:'pointer',background:activeTab===id?'var(--green-ghost)':'transparent',color:activeTab===id?'var(--green-mid)':'var(--ink-soft)',borderBottom:activeTab===id?'2px solid var(--green-accent)':'2px solid transparent',fontFamily:'var(--font-body)',fontSize:'.82rem',fontWeight:activeTab===id?500:400,whiteSpace:'nowrap'}}>
-              {icon} {label}
-            </button>
-          ))}
-        </div>
+    <div>
+      <div className="tabs">
+        {TABS.map(({id,label})=>(
+          <button key={id} onClick={()=>nav(`#/job/${job.id}/${id}`)} className={`tab${tab===id?' active':''}`}>{label}</button>
+        ))}
       </div>
-      <div style={{flex:1,overflow:'auto'}}>
-        {activeTab==='intake'&&<IntakeTab job={job} updateJob={updateJob}/>}
-        {activeTab==='estimate'&&<EstimateTab job={job} updateJob={updateJob} settings={settings}/>}
-        {activeTab==='scope'&&<ScopeTab job={job} settings={settings}/>}
-        {activeTab==='crew'&&<CrewMapTab job={job} updateJob={updateJob}/>}
-      </div>
+      {tab==='intake'&&<IntakeTab job={job} updateJob={updateJob}/>}
+      {tab==='estimate'&&<EstimateTab job={job} updateJob={updateJob} settings={settings}/>}
+      {tab==='scope'&&<ScopeTab job={job} settings={settings}/>}
+      {tab==='crew'&&<CrewTab job={job} updateJob={updateJob}/>}
     </div>
   );
 }
 
-// INTAKE TAB
+// ── INTAKE TAB ────────────────────────────────────────────────────────────────
 function IntakeTab({job,updateJob}){
-  const [expanded,setExpanded]=useState(()=>job.trees.map(t=>t.id));
-  function update(f,v){updateJob(job.id,{[f]:v})}
-  function updateTree(tid,f,v){updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,[f]:v}:t)}))}
-  function toggleWork(tid,wid){updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{if(t.id!==tid)return t;const has=t.workTypes.includes(wid);return{...t,workTypes:has?t.workTypes.filter(w=>w!==wid):[...t.workTypes,wid]}})}))}
-  function addTree(){const t=createTree(job.trees.length+1);updateJob(job.id,j=>({...j,trees:[...j.trees,t]}));setExpanded(p=>[...p,t.id])}
-  function removeTree(tid){if(!confirm('Remove this tree?'))return;updateJob(job.id,j=>({...j,trees:j.trees.filter(t=>t.id!==tid)}))}
-  function toggleExpand(id){setExpanded(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])}
+  const [exp,setExp]=useState(()=>job.trees.map(t=>t.id));
+  const upd=(f,v)=>updateJob(job.id,{[f]:v});
+  const updT=(tid,f,v)=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,[f]:v}:t)}));
+  const togW=(tid,wid)=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{if(t.id!==tid)return t;const has=t.works.includes(wid);return{...t,works:has?t.works.filter(w=>w!==wid):[...t.works,wid]}})}));
+  function addTree(){const t=newTree(job.trees.length+1);updateJob(job.id,j=>({...j,trees:[...j.trees,t]}));setExp(p=>[...p,t.id])}
+  function remTree(tid){if(!confirm('Remove tree?'))return;updateJob(job.id,j=>({...j,trees:j.trees.filter(t=>t.id!==tid)}))}
+  const togExp=id=>setExp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+
   return(
-    <div style={{padding:'20px 20px 40px',maxWidth:860,margin:'0 auto'}}>
-      <Card style={{marginBottom:16}}>
-        <SLabel>Property & client</SLabel>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:11,marginBottom:11}}>
-          <div><label>Client name</label><input value={job.clientName} onChange={e=>update('clientName',e.target.value)} placeholder="Full name"/></div>
-          <div><label>Phone</label><input value={job.clientPhone} onChange={e=>update('clientPhone',e.target.value)} placeholder="(512) 000-0000"/></div>
-          <div><label>Email</label><input value={job.clientEmail} onChange={e=>update('clientEmail',e.target.value)} placeholder="email@example.com"/></div>
+    <div style={{padding:'16px 16px 40px',maxWidth:800,margin:'0 auto'}}>
+      {/* Client card */}
+      <div className="card" style={{marginBottom:12}}>
+        <div className="slabel" style={{marginBottom:12}}>Client & property</div>
+        <div className="irow">
+          <div><label>Client name</label><input value={job.client} onChange={e=>upd('client',e.target.value)} placeholder="Full name"/></div>
+          <div><label>Phone</label><input value={job.phone} onChange={e=>upd('phone',e.target.value)} placeholder="(512) 000-0000"/></div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 80px',gap:11,marginBottom:11}}>
-          <div><label>Street address</label><input value={job.address} onChange={e=>update('address',e.target.value)} placeholder="123 Main St"/></div>
-          <div><label>City</label><input value={job.city} onChange={e=>update('city',e.target.value)} placeholder="Kyle"/></div>
-          <div><label>Zip</label><input value={job.zip} onChange={e=>update('zip',e.target.value)} placeholder="78640"/></div>
+        <div className="irow">
+          <div style={{flex:2}}><label>Street address</label><input value={job.addr} onChange={e=>upd('addr',e.target.value)} placeholder="123 Main St"/></div>
+          <div><label>City</label><input value={job.city} onChange={e=>upd('city',e.target.value)} placeholder="Kyle"/></div>
+          <div style={{maxWidth:80}}><label>Zip</label><input value={job.zip} onChange={e=>upd('zip',e.target.value)} placeholder="78640"/></div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:11}}>
+        <div className="irow" style={{marginBottom:0}}>
           <div><label>Site access</label>
-            <select value={job.siteAccess} onChange={e=>update('siteAccess',e.target.value)}>
+            <select value={job.access} onChange={e=>upd('access',e.target.value)}>
               <option value="open">Open — easy access</option>
-              <option value="locked">Locked gate — key required</option>
+              <option value="locked">Locked gate</option>
               <option value="narrow">Narrow driveway</option>
               <option value="steep">Steep slope</option>
-              <option value="restricted">Restricted — call ahead</option>
             </select>
           </div>
-          <div><label>Site notes</label><input value={job.siteNotes} onChange={e=>update('siteNotes',e.target.value)} placeholder="Overhead lines, irrigation, fencing…"/></div>
+          <div style={{flex:2}}><label>Site notes</label><input value={job.siteNotes} onChange={e=>upd('siteNotes',e.target.value)} placeholder="Utilities, fencing, neighbor notes…"/></div>
         </div>
-      </Card>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:11}}>
-        <SLabel style={{margin:0}}>Tagged trees ({job.trees.length})</SLabel>
-        <Btn variant="outline" size="sm" onClick={addTree}>+ Add tree</Btn>
       </div>
+
+      {/* Trees header */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+        <span className="slabel" style={{margin:0}}>Trees / work zones ({job.trees.length})</span>
+        <button className="btn btn-sm" onClick={addTree}><Icon d={icons.plus} s={13}/>Add tree</button>
+      </div>
+
+      {/* Tree cards */}
       {job.trees.map((tree,idx)=>{
-        const isOpen=expanded.includes(tree.id);
-        const pw=WORK_TYPES.find(w=>w.id===tree.workTypes[0]);
+        const open=exp.includes(tree.id);
+        const pw=WORKS.find(w=>w.id===tree.works[0]);
         return(
-          <div key={tree.id} style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',marginBottom:9,overflow:'hidden'}}>
-            <div onClick={()=>toggleExpand(tree.id)} style={{display:'flex',alignItems:'center',gap:9,padding:'12px 15px',cursor:'pointer',background:isOpen?'var(--green-ghost)':'var(--white)',borderBottom:isOpen?'1px solid var(--border-soft)':'none'}}>
-              <span style={{background:'var(--green-mid)',color:'#fff',fontSize:'.71rem',fontWeight:500,padding:'2px 8px',borderRadius:99,fontFamily:'var(--font-mono)',flexShrink:0}}>{tree.tag||`T${idx+1}`}</span>
-              <span style={{fontWeight:500,flex:1,fontSize:'.88rem'}}>{tree.commonName||tree.species||<span style={{color:'var(--ink-ghost)',fontWeight:400}}>Untitled tree</span>}{tree.dbh&&<span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:'.78rem',marginLeft:7}}>{tree.dbh}" DBH</span>}</span>
-              {pw&&<Badge type={pw.badge}>{pw.label}</Badge>}
-              {tree.workTypes.length>1&&<span style={{fontSize:'.71rem',color:'var(--ink-ghost)',fontFamily:'var(--font-mono)'}}>+{tree.workTypes.length-1}</span>}
-              <span style={{color:'var(--ink-ghost)',fontSize:'.82rem'}}>{isOpen?'▲':'▼'}</span>
+          <div key={tree.id} className="tree-row">
+            <div className="tree-header" onClick={()=>togExp(tree.id)}>
+              <span className="tree-tag">{tree.tag||`T${idx+1}`}</span>
+              <span style={{flex:1,fontWeight:500,fontSize:14}}>{tree.name||<span style={{color:'var(--ink4)',fontWeight:300}}>Unnamed tree</span>}{tree.dbh?<span style={{color:'var(--ink3)',fontWeight:300,fontSize:12,marginLeft:6}}>{tree.dbh}"</span>:null}</span>
+              {pw&&<span className={`badge ${CATBADGE[pw.cat]}`}>{pw.label}</span>}
+              {tree.works.length>1&&<span style={{fontSize:11,color:'var(--ink4)'}}>+{tree.works.length-1}</span>}
+              <Icon d={open?icons.chevup:icons.chevdown} s={14} c="var(--ink4)"/>
             </div>
-            {isOpen&&(
-              <div style={{padding:'15px 15px 17px'}}>
-                <div style={{display:'grid',gridTemplateColumns:'58px 1fr 1fr',gap:9,marginBottom:9}}>
-                  <div><label>Tag</label><input value={tree.tag} onChange={e=>updateTree(tree.id,'tag',e.target.value)}/></div>
-                  <div><label>Common name</label><input value={tree.commonName} onChange={e=>updateTree(tree.id,'commonName',e.target.value)} placeholder="Live Oak"/></div>
-                  <div><label>Species</label><input value={tree.species} onChange={e=>updateTree(tree.id,'species',e.target.value)} placeholder="Quercus virginiana"/></div>
+            {open&&(
+              <div className="tree-body">
+                <div className="irow">
+                  <div style={{maxWidth:60}}><label>Tag</label><input value={tree.tag} onChange={e=>updT(tree.id,'tag',e.target.value)}/></div>
+                  <div style={{flex:3}}><label>Tree name (free text)</label><input value={tree.name} onChange={e=>updT(tree.id,'name',e.target.value)} placeholder="e.g. Live Oak, Cedar Elm, or custom description"/></div>
                 </div>
-                <div style={{display:'grid',gridTemplateColumns:'95px 95px 1fr 1fr',gap:9,marginBottom:9}}>
-                  <div><label>DBH (in)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updateTree(tree.id,'dbh',e.target.value)} placeholder="24"/></div>
-                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updateTree(tree.id,'height',e.target.value)} placeholder="48"/></div>
+                <div className="irow">
+                  <div><label>DBH (inches)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updT(tree.id,'dbh',e.target.value)} placeholder="24"/></div>
+                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updT(tree.id,'height',e.target.value)} placeholder="40"/></div>
                   <div><label>Condition</label>
-                    <select value={tree.condition} onChange={e=>updateTree(tree.id,'condition',e.target.value)}>
+                    <select value={tree.cond} onChange={e=>updT(tree.id,'cond',e.target.value)}>
                       {['excellent','good','fair','poor','critical'].map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
                     </select>
                   </div>
                   <div><label>Difficulty</label>
-                    <select value={tree.difficulty} onChange={e=>updateTree(tree.id,'difficulty',e.target.value)}>
-                      <option value="standard">Standard</option>
-                      <option value="confined">Confined (1.35×)</option>
-                      <option value="crane">Crane req. (1.6×)</option>
+                    <select value={tree.diff} onChange={e=>updT(tree.id,'diff',e.target.value)}>
+                      <option value="std">Standard</option>
+                      <option value="con">Confined (1.35×)</option>
+                      <option value="cra">Crane (1.6×)</option>
                     </select>
                   </div>
                 </div>
-                <div style={{marginBottom:9}}><label>Work type</label>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:5}}>
-                    {WORK_TYPES.map(wt=>{const sel=tree.workTypes.includes(wt.id);return<button key={wt.id} onClick={()=>toggleWork(tree.id,wt.id)} style={{padding:'4px 10px',borderRadius:99,cursor:'pointer',border:'1px solid '+(sel?'var(--green-accent)':'var(--border)'),background:sel?'var(--green-ghost)':'var(--paper)',color:sel?'var(--green-mid)':'var(--ink-soft)',fontSize:'.76rem',fontFamily:'var(--font-body)',fontWeight:sel?500:400}}>{wt.label}</button>})}
+                <div style={{marginBottom:11}}>
+                  <label>Work type</label>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:6}}>
+                    {WORKS.map(w=><button key={w.id} onClick={()=>togW(tree.id,w.id)} className={`pill${tree.works.includes(w.id)?' on':''}`}>{w.label}</button>)}
                   </div>
                 </div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginBottom:9}}>
-                  <div><label>Field notes</label><textarea rows={3} value={tree.notes} onChange={e=>updateTree(tree.id,'notes',e.target.value)} placeholder="Observations, hazards, disease signs…"/></div>
-                  <div><label>Access notes</label><textarea rows={3} value={tree.accessNotes} onChange={e=>updateTree(tree.id,'accessNotes',e.target.value)} placeholder="Equipment staging, utilities…"/></div>
+                <div className="irow">
+                  <div><label>Field notes</label><textarea value={tree.notes} onChange={e=>updT(tree.id,'notes',e.target.value)} placeholder="Observations, hazards, defects, disease signs…" rows={3}/></div>
+                  <div><label>Access notes</label><textarea value={tree.access} onChange={e=>updT(tree.id,'access',e.target.value)} placeholder="Equipment staging, utilities, obstructions…" rows={3}/></div>
                 </div>
-                <div style={{marginBottom:9}}><label>Photos</label>
-                  <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5,alignItems:'center'}}>
+                <div style={{marginBottom:11}}>
+                  <label>Photos</label>
+                  <div style={{display:'flex',gap:7,flexWrap:'wrap',marginTop:6,alignItems:'center'}}>
                     {tree.photos.map((p,pi)=>(
-                      <div key={pi} style={{width:60,height:60,borderRadius:'var(--radius-md)',overflow:'hidden',border:'1px solid var(--border)',position:'relative',flexShrink:0}}>
-                        <img src={p.url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                        <button onClick={()=>updateTree(tree.id,'photos',tree.photos.filter((_,i)=>i!==pi))} style={{position:'absolute',top:2,right:2,width:16,height:16,borderRadius:'50%',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                      <div key={pi} style={{position:'relative',flexShrink:0}}>
+                        <img src={p.url} className="photo-thumb" alt=""/>
+                        <button onClick={()=>updT(tree.id,'photos',tree.photos.filter((_,i)=>i!==pi))} style={{position:'absolute',top:2,right:2,width:16,height:16,borderRadius:'50%',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
                       </div>
                     ))}
-                    <label style={{width:60,height:60,borderRadius:'var(--radius-md)',border:'1.5px dashed var(--border)',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,color:'var(--ink-ghost)',fontSize:'.6rem',textTransform:'uppercase',letterSpacing:'.04em',background:'var(--paper)',flexShrink:0,margin:0}}>
-                      📷<span>Add</span>
-                      <input type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>{Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=ev=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tree.id?{...t,photos:[...t.photos,{url:ev.target.result,name:file.name}]}:t)}));r.readAsDataURL(file)})}}/>
+                    <label className="photo-add"><Icon d={icons.cam} s={15}/><span>Add</span>
+                      <input type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>{Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tree.id?{...t,photos:[...t.photos,{url:ev.target.result}]}:t)}));r.readAsDataURL(f)})}}/>
                     </label>
                   </div>
                 </div>
                 <div style={{display:'flex',justifyContent:'flex-end'}}>
-                  <Btn variant="danger" size="sm" onClick={()=>removeTree(tree.id)}>🗑 Remove tree</Btn>
+                  <button className="btn btn-sm btn-danger" onClick={()=>remTree(tree.id)}><Icon d={icons.trash} s={13}/>Remove</button>
                 </div>
               </div>
             )}
           </div>
         );
       })}
-      <button onClick={addTree} style={{width:'100%',padding:15,border:'1.5px dashed var(--border)',borderRadius:'var(--radius-lg)',background:'transparent',color:'var(--ink-soft)',cursor:'pointer',fontSize:'.86rem',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'var(--font-body)'}}
-        onMouseEnter={e=>e.currentTarget.style.background='var(--paper)'}
+      <button onClick={addTree} style={{width:'100%',padding:'14px',border:'1.5px dashed var(--border)',borderRadius:'var(--r8)',background:'transparent',color:'var(--ink3)',cursor:'pointer',fontSize:13,fontFamily:'var(--font)',marginTop:4}}
+        onMouseEnter={e=>e.currentTarget.style.background='var(--bg)'}
         onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-        + Tag another tree or work zone
+        <Icon d={icons.plus} s={13}/> Tag another tree or zone
       </button>
     </div>
   );
 }
 
-// ESTIMATE TAB
+// ── ESTIMATE TAB ──────────────────────────────────────────────────────────────
 function EstimateTab({job,updateJob,settings}){
-  const [showPricing,setShowPricing]=useState(false);
-  const overrides=job.pricingOverrides||{};
-  const merged={...settings,...overrides};
-  const est=calcEstimate(job,merged);
-  const noTrees=job.trees.every(t=>!t.dbh||!t.workTypes.length);
-  function setOverride(key,val){updateJob(job.id,j=>({...j,pricingOverrides:{...j.pricingOverrides,[key]:parseFloat(val)||val}}))}
-  function handlePrint(){
-    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-    const rows=est.lines.map(l=>`<tr><td>${l.treeTag}</td><td>${l.treeName}</td><td>${l.work}</td><td>${l.dbh}"</td><td style="text-align:right">$${l.total.toLocaleString()}</td></tr>`).join('');
-    const win=window.open('','_blank');
-    win.document.write(`<!DOCTYPE html><html><head><title>Estimate #${job.jobNumber}</title><style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;font-size:13px}h1{font-weight:300;font-size:21px}table{width:100%;border-collapse:collapse;margin-top:18px}th{font-size:11px;text-transform:uppercase;padding:8px;border-bottom:1px solid #ccc;text-align:left}td{padding:9px 8px;border-bottom:1px solid #eee}.tot{font-weight:600}@media print{body{margin:20px}}</style></head><body><h1>${settings.companyName||'Tree Service'}</h1><p style="color:#666">${date}</p><p><strong>Client:</strong> ${job.clientName||'—'} | <strong>Phone:</strong> ${job.clientPhone||'—'}<br><strong>Address:</strong> ${job.address||'—'}${job.city?', '+job.city:''}<br><strong>Job #:</strong> ${job.jobNumber}</p><table><thead><tr><th>Tag</th><th>Tree</th><th>Scope</th><th>DBH</th><th style="text-align:right">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="color:#888;padding:9px 8px">Subtotal</td><td style="text-align:right;padding:9px 8px">$${est.subtotal.toLocaleString()}</td></tr><tr><td colspan="4" style="color:#888;padding:6px 8px">Tax/permits</td><td style="text-align:right;padding:6px 8px">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="4" style="padding:10px 8px">Estimate Total</td><td style="text-align:right;padding:10px 8px">$${est.total.toLocaleString()}</td></tr></tfoot></table><p style="margin-top:28px;font-size:11px;color:#888">ISA Cert #: ${settings.isaNumber||'—'} | TDA License #: ${settings.tdaNumber||'—'}<br>${settings.companyName||''} · ${settings.phone||''} · ${settings.email||''}</p></body></html>`);
-    win.document.close();win.print();
+  const [showP,setShowP]=useState(false);
+  const ov=job.overrides||{};
+  const m={...settings,...ov};
+  const est=calcEst(job,m);
+  const empty=job.trees.every(t=>!t.dbh||!t.works.length);
+  function setOv(k,v){updateJob(job.id,j=>({...j,overrides:{...j.overrides,[k]:parseFloat(v)||v}}))}
+  function doPrint(){
+    const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    const rows=est.lines.map(l=>`<tr><td>${l.tag}</td><td>${l.name}</td><td>${l.work}</td><td>${l.dbh}"</td><td style="text-align:right">$${l.tot.toLocaleString()}</td></tr>`).join('');
+    const w=window.open('','_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Estimate #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.6}h1{font-weight:300;font-size:20px;color:#1a2e1a}table{width:100%;border-collapse:collapse;margin:18px 0}th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:7px;border-bottom:1px solid #ccc;text-align:left;color:#666}td{padding:9px 7px;border-bottom:1px solid #eee}td:last-child,th:last-child{text-align:right}.tot td{font-weight:600;font-size:14px;border-top:1px solid #ccc;border-bottom:none}@media print{body{margin:18px}}</style></head><body><h1>${settings.companyName||'Tree Service'}</h1><p style="color:#888;font-size:12px">${d}</p><p style="margin:12px 0"><strong>${job.client||'—'}</strong><br>${job.addr||''}${job.city?`, ${job.city}`:''} ${job.zip||''}<br>Job #${job.num}</p><table><thead><tr><th>Tag</th><th>Tree</th><th>Scope</th><th>DBH</th><th>Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="color:#888;padding:8px 7px">Subtotal</td><td style="text-align:right;padding:8px 7px">$${est.sub.toLocaleString()}</td></tr><tr><td colspan="4" style="color:#888;font-size:11px;padding:5px 7px">Tax/permits (${((m.tax||.04)*100).toFixed(0)}%)</td><td style="text-align:right;font-size:11px;padding:5px 7px">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="4" style="padding:10px 7px">Estimate Total</td><td style="text-align:right;padding:10px 7px">$${est.total.toLocaleString()}</td></tr></tfoot></table><p style="font-size:10px;color:#aaa;margin-top:24px">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.phone||''} · ${settings.email||''}</p></body></html>`);
+    w.document.close();w.print();
   }
   return(
-    <div style={{padding:'20px 20px 40px',maxWidth:800,margin:'0 auto'}}>
-      <div style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',marginBottom:16,overflow:'hidden'}}>
-        <button onClick={()=>setShowPricing(s=>!s)} style={{width:'100%',padding:'12px 16px',border:'none',background:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'var(--font-body)',fontSize:'.86rem',color:'var(--ink)'}}>
-          <span style={{fontWeight:500}}>Pricing rules {Object.keys(overrides).length>0&&<span style={{color:'var(--amber)',fontSize:'.72rem',fontFamily:'var(--font-mono)'}}>(job override active)</span>}</span>
-          <span>{showPricing?'▲':'▼'}</span>
+    <div style={{padding:'16px 16px 40px',maxWidth:800,margin:'0 auto'}}>
+      {/* Pricing accordion */}
+      <div className="card" style={{marginBottom:12}}>
+        <button onClick={()=>setShowP(s=>!s)} style={{width:'100%',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'var(--font)',fontSize:13,color:'var(--ink)',padding:0}}>
+          <span style={{fontWeight:500}}>Pricing rules {Object.keys(ov).length>0&&<span style={{fontSize:11,color:'var(--amber)',marginLeft:6}}>(job override)</span>}</span>
+          <Icon d={showP?icons.chevup:icons.chevdown} s={14} c="var(--ink3)"/>
         </button>
-        {showPricing&&(
-          <div style={{padding:'4px 16px 16px',borderTop:'1px solid var(--border-soft)'}}>
-            <p style={{fontSize:'.77rem',color:'var(--ink-soft)',margin:'9px 0 13px'}}>Overrides default settings for this job only.</p>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(175px,1fr))',gap:10}}>
-              {[{key:'rateRemoval',label:'Removal/DBH inch',pre:'$'},{key:'ratePruning',label:'Pruning/DBH inch',pre:'$'},{key:'rateTreatment',label:'Treatment flat',pre:'$'},{key:'rateStump',label:'Stump/DBH inch',pre:'$'},{key:'rateDebrisHaul',label:'Debris haul',pre:'$'},{key:'multConfined',label:'Confined mult.',pre:'×'},{key:'multCrane',label:'Crane mult.',pre:'×'},{key:'taxRate',label:'Tax rate',pre:''}].map(({key,label,pre})=>(
-                <div key={key} style={{background:'var(--paper)',borderRadius:'var(--radius-md)',padding:'9px 11px'}}>
-                  <label style={{marginBottom:5}}>{label}</label>
-                  <div style={{display:'flex',alignItems:'center',gap:5}}>{pre&&<span style={{fontSize:'.82rem',color:'var(--ink-soft)'}}>{pre}</span>}<input type="number" step={key.includes('mult')||key==='taxRate'?'.01':'1'} value={overrides[key]??settings[key]??DEFAULT_SETTINGS[key]} onChange={e=>setOverride(key,e.target.value)}/></div>
-                  {overrides[key]!==undefined&&<button onClick={()=>{const n={...overrides};delete n[key];updateJob(job.id,{pricingOverrides:n})}} style={{fontSize:'.7rem',color:'var(--ink-ghost)',background:'none',border:'none',cursor:'pointer',marginTop:3,padding:0,fontFamily:'var(--font-body)'}}>Reset</button>}
+        {showP&&(
+          <div style={{marginTop:14,paddingTop:14,borderTop:'1px solid var(--border)'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(155px,1fr))',gap:10}}>
+              {[{k:'rRem',l:'Removal/DBH in',p:'$'},{k:'rPru',l:'Pruning/DBH in',p:'$'},{k:'rTre',l:'Treatment flat',p:'$'},{k:'rStu',l:'Stump/DBH in',p:'$'},{k:'rDeb',l:'Debris haul',p:'$'},{k:'mCon',l:'Confined mult.',p:'×'},{k:'mCra',l:'Crane mult.',p:'×'},{k:'tax',l:'Tax rate',p:''}].map(({k,l,p})=>(
+                <div key={k}><label>{l}</label>
+                  <div style={{display:'flex',alignItems:'center',gap:5}}>{p&&<span style={{fontSize:12,color:'var(--ink3)'}}>{p}</span>}<input type="number" step={k==='mCon'||k==='mCra'||k==='tax'?'.01':'1'} value={ov[k]??settings[k]??DS[k]} onChange={e=>setOv(k,e.target.value)}/></div>
+                  {ov[k]!==undefined&&<button onClick={()=>{const n={...ov};delete n[k];updateJob(job.id,{overrides:n})}} style={{fontSize:11,color:'var(--ink4)',background:'none',border:'none',cursor:'pointer',marginTop:3,padding:0,fontFamily:'var(--font)'}}>Reset</button>}
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-      <Card style={{marginBottom:13,padding:0,overflow:'hidden'}}>
-        <div style={{padding:'12px 17px',borderBottom:'1px solid var(--border-soft)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div><SLabel style={{marginBottom:2}}>Itemized estimate</SLabel><div style={{fontSize:'.77rem',color:'var(--ink-soft)'}}>{job.clientName||'Client'} · {job.address||'No address'} · Job #{job.jobNumber}</div></div>
-          <Btn variant="outline" size="sm" onClick={handlePrint}>🖨 Print / PDF</Btn>
+
+      {/* Table */}
+      <div className="card" style={{padding:0,overflow:'hidden',marginBottom:12}}>
+        <div style={{padding:'13px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div><div className="slabel" style={{marginBottom:2}}>Itemized estimate</div><div style={{fontSize:12,color:'var(--ink3)'}}>{job.client||'Client'} · #{job.num}</div></div>
+          <button className="btn btn-sm" onClick={doPrint}><Icon d={icons.print} s={13}/>Print</button>
         </div>
-        {noTrees?(
-          <div style={{padding:'32px 17px',textAlign:'center',color:'var(--ink-ghost)',fontSize:'.86rem'}}>No trees with DBH and work types set. Complete Field Intake first.</div>
+        {empty?(
+          <div style={{padding:'32px 16px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>Add DBH and work types to trees in the Intake tab to generate an estimate.</div>
         ):(
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:'.82rem'}}>
-            <thead><tr style={{background:'var(--paper)'}}>
-              {['Tag','Tree','Scope','DBH','Amount'].map(h=><th key={h} style={{padding:'9px 13px',textAlign:h==='Amount'?'right':'left',fontFamily:'var(--font-mono)',fontSize:'.69rem',color:'var(--ink-soft)',fontWeight:500,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid var(--border-soft)',whiteSpace:'nowrap'}}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {est.lines.map((line,i)=>(
-                <tr key={i} style={{borderBottom:'1px solid var(--border-soft)'}}>
-                  <td style={{padding:'10px 13px'}}><span style={{background:'var(--green-mid)',color:'#fff',fontSize:'.69rem',fontWeight:500,padding:'2px 7px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{line.treeTag}</span></td>
-                  <td style={{padding:'10px 13px',color:'var(--ink-soft)',fontSize:'.79rem'}}>{line.treeName}</td>
-                  <td style={{padding:'10px 13px'}}>{line.work}</td>
-                  <td style={{padding:'10px 13px',fontFamily:'var(--font-mono)',fontSize:'.79rem',color:'var(--ink-soft)'}}>{line.dbh}"</td>
-                  <td style={{padding:'10px 13px',textAlign:'right',fontFamily:'var(--font-mono)',fontWeight:500}}>${line.total.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr style={{borderTop:'1px solid var(--border)'}}><td colSpan={4} style={{padding:'9px 13px',color:'var(--ink-soft)',fontSize:'.79rem'}}>Subtotal</td><td style={{padding:'9px 13px',textAlign:'right',fontFamily:'var(--font-mono)'}}>${est.subtotal.toLocaleString()}</td></tr>
-              <tr><td colSpan={4} style={{padding:'5px 13px',color:'var(--ink-soft)',fontSize:'.75rem'}}>Tax/permits ({((merged.taxRate||.04)*100).toFixed(0)}%)</td><td style={{padding:'5px 13px',textAlign:'right',fontFamily:'var(--font-mono)',fontSize:'.79rem',color:'var(--ink-soft)'}}>${est.tax.toLocaleString()}</td></tr>
-              <tr style={{background:'var(--green-ghost)',borderTop:'1px solid var(--green-pale)'}}><td colSpan={4} style={{padding:'12px 13px',fontWeight:500,fontSize:'.97rem',fontFamily:'var(--font-display)',fontStyle:'italic'}}>Estimate total</td><td style={{padding:'12px 13px',textAlign:'right',fontFamily:'var(--font-mono)',fontWeight:500,fontSize:'1.12rem',color:'var(--green-mid)'}}>${est.total.toLocaleString()}</td></tr>
-            </tfoot>
-          </table>
+          <div style={{overflowX:'auto'}}>
+            <table className="est-table">
+              <thead><tr>{['Tag','Tree','Scope','DBH','Amount'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+              <tbody>
+                {est.lines.map((l,i)=>(
+                  <tr key={i}>
+                    <td><span className="tree-tag" style={{fontSize:11}}>{l.tag}</span></td>
+                    <td style={{color:'var(--ink3)',fontSize:12}}>{l.name}</td>
+                    <td>{l.work}</td>
+                    <td style={{fontFamily:'monospace',fontSize:12,color:'var(--ink3)'}}>{l.dbh}"</td>
+                    <td style={{fontFamily:'monospace',fontWeight:500}}>${l.tot.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{background:'var(--bg)'}}><td colSpan={4} style={{color:'var(--ink3)',fontSize:12}}>Subtotal</td><td style={{fontFamily:'monospace'}}>${est.sub.toLocaleString()}</td></tr>
+                <tr style={{background:'var(--bg)'}}><td colSpan={4} style={{color:'var(--ink3)',fontSize:11}}>Tax/permits ({((m.tax||.04)*100).toFixed(0)}%)</td><td style={{fontFamily:'monospace',color:'var(--ink3)',fontSize:12}}>${est.tax.toLocaleString()}</td></tr>
+                <tr style={{background:'var(--g6)'}}><td colSpan={4} style={{fontWeight:500,fontSize:15,padding:'13px 12px'}}>Total</td><td style={{fontFamily:'monospace',fontWeight:600,fontSize:16,color:'var(--g3)',padding:'13px 12px'}}>${est.total.toLocaleString()}</td></tr>
+              </tfoot>
+            </table>
+          </div>
         )}
-      </Card>
-      <Card><SLabel>Internal notes</SLabel><textarea rows={4} value={job.notes} onChange={e=>updateJob(job.id,{notes:e.target.value})} placeholder="Scheduling, equipment, crew assignments, client communications…" style={{marginTop:4}}/></Card>
+      </div>
+      <div className="card"><div className="slabel">Internal notes</div><textarea rows={3} value={job.notes} onChange={e=>updateJob(job.id,{notes:e.target.value})} placeholder="Scheduling, equipment, crew assignments…" style={{marginTop:6}}/></div>
     </div>
   );
 }
 
-// SCOPE TAB
+// ── SCOPE TAB ─────────────────────────────────────────────────────────────────
 function ScopeTab({job,settings}){
-  const est=calcEstimate(job,settings);
+  const est=calcEst(job,settings);
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  const treesWithWork=job.trees.filter(t=>t.workTypes.length>0);
-  const addr=[job.address,job.city,job.state,job.zip].filter(Boolean).join(', ');
-  const condText={excellent:'is in excellent structural condition',good:'is in good condition with no significant defects observed',fair:'is in fair condition with some areas of concern noted',poor:'is in poor condition and exhibits significant structural deficiencies',critical:'is in critical condition and poses an elevated risk of failure'};
-  function handlePrint(){
-    const treeBlocks=treesWithWork.map(tree=>{const wl=tree.workTypes.map(wt=>WORK_TYPES.find(w=>w.id===wt)?.label||wt).join(', ');return `<h3 style="font-size:14px;margin:20px 0 8px">${tree.tag} — ${tree.commonName||tree.species||'Tree'}${tree.dbh?`, ${tree.dbh}" DBH`:''}</h3><div style="border-left:3px solid #c8e6c4;padding-left:14px;font-size:13px;line-height:1.8"><p><strong>Work:</strong> ${wl}.</p>${tree.notes?`<p><strong>Assessment:</strong> ${tree.notes}</p>`:''} ${tree.accessNotes?`<p><strong>Access:</strong> ${tree.accessNotes}</p>`:''}</div>`}).join('');
-    const estRows=est.lines.map(l=>`<tr><td>${l.treeTag}</td><td>${l.work}</td><td style="text-align:right">$${l.total.toLocaleString()}</td></tr>`).join('');
-    const win=window.open('','_blank');
-    win.document.write(`<!DOCTYPE html><html><head><title>Scope of Work #${job.jobNumber}</title><style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;font-size:13px;color:#222;line-height:1.7}h1{font-size:23px;font-weight:300;color:#1a2e1a}h2{font-size:14px;font-weight:400;color:#555;margin:20px 0 8px;border-bottom:1px solid #eee;padding-bottom:5px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #eee}.tot{font-weight:600}@media print{body{margin:20px}}</style></head><body><h1>Scope of Work</h1><p><strong>Job #:</strong> ${job.jobNumber} | <strong>Date:</strong> ${date}</p><p><strong>Client:</strong> ${job.clientName||'—'} | <strong>Phone:</strong> ${job.clientPhone||'—'}</p><p><strong>Address:</strong> ${addr||'—'}</p><h2>Overview</h2><p>${settings.companyName||'This company'} has assessed ${treesWithWork.length} tree(s) at the above property. All work per ANSI A300 standards and applicable TDA requirements.</p>${job.siteNotes?`<p><strong>Site notes:</strong> ${job.siteNotes}</p>`:''}<h2>Tree Scope</h2>${treeBlocks}${est.lines.length?`<h2>Estimate</h2><table><thead><tr><th>Tag</th><th>Work</th><th style="text-align:right">Amount</th></tr></thead><tbody>${estRows}</tbody><tfoot><tr><td colspan="2">Tax/permits</td><td style="text-align:right">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="2">Total</td><td style="text-align:right">$${est.total.toLocaleString()}</td></tr></tfoot></table>`:''}<p style="margin-top:32px;font-size:11px;color:#888">ISA Cert #: ${settings.isaNumber||'—'} | TDA License #: ${settings.tdaNumber||'—'}<br>${settings.companyName||''} · ${settings.phone||''} · ${settings.email||''}</p></body></html>`);
-    win.document.close();win.print();
+  const trees=job.trees.filter(t=>t.works.length>0);
+  const addr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
+  const condMap={excellent:'is in excellent structural condition',good:'is in good overall condition',fair:'is in fair condition with some concerns noted',poor:'is in poor condition with significant deficiencies',critical:'is in critical condition with elevated failure risk'};
+  function doPrint(){
+    const blocks=trees.map(t=>{
+      const wl=t.works.map(w=>WORKS.find(x=>x.id===w)?.label||w).join(', ');
+      return `<h3>${t.tag} — ${t.name||'Tree'}${t.dbh?`, ${t.dbh}" DBH`:''}</h3><div style="border-left:2px solid #c8e6c4;padding-left:12px;margin-top:6px"><p><strong>Work:</strong> ${wl}.</p>${t.notes?`<p><strong>Assessment:</strong> The specimen ${condMap[t.cond]||''}. ${t.notes}</p>`:''} ${t.access?`<p><strong>Access:</strong> ${t.access}</p>`:''} ${t.works.some(w=>['treatment','spray','drench'].includes(w))?'<p><strong>Regulatory:</strong> TDA Form Q527 required per 4 TAC §7.24.</p>':''}</div>`;
+    }).join('');
+    const er=est.lines.map(l=>`<tr><td>${l.tag}</td><td>${l.work}</td><td style="text-align:right">$${l.tot.toLocaleString()}</td></tr>`).join('');
+    const w=window.open('','_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Scope of Work</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.7;color:#222}h1{font-size:22px;font-weight:300;color:#1a2e1a}h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:22px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}h3{font-size:14px;font-weight:500;margin:18px 0 6px}table{width:100%;border-collapse:collapse}td,th{padding:7px;border-bottom:1px solid #eee}th{font-size:11px;color:#888;text-transform:uppercase}.tot{font-weight:600}@media print{body{margin:16px}}</style></head><body><h1>Scope of Work</h1><p><strong>${job.client||'—'}</strong> · Job #${job.num} · ${date}<br>${addr}</p><h2>Overview</h2><p>${settings.companyName||'This company'} has assessed ${trees.length} tree(s) at the above property following an on-site evaluation by a licensed arborist. All work per ANSI A300 standards.</p>${job.siteNotes?`<p><strong>Site notes:</strong> ${job.siteNotes}</p>`:''}<h2>Tree Scope</h2>${blocks}${est.lines.length?`<h2>Estimate Summary</h2><table><thead><tr><th>Tag</th><th>Work</th><th style="text-align:right">Amount</th></tr></thead><tbody>${er}</tbody><tfoot><tr><td colspan="2" style="color:#888">Tax/permits</td><td style="text-align:right">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="2">Total</td><td style="text-align:right">$${est.total.toLocaleString()}</td></tr></tfoot></table>`:''}<p style="margin-top:28px;font-size:10px;color:#aaa">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.companyName||''} · ${settings.phone||''}</p></body></html>`);
+    w.document.close();w.print();
   }
   return(
-    <div style={{padding:'20px 20px 40px',maxWidth:800,margin:'0 auto'}}>
-      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:13}}><Btn variant="outline" size="sm" onClick={handlePrint}>🖨 Print / export</Btn></div>
-      <Card>
-        <div style={{marginBottom:20,paddingBottom:17,borderBottom:'1px solid var(--border-soft)'}}>
-          <div style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.5rem',marginBottom:7,color:'var(--green-dark)'}}>Scope of Work</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'3px 16px',fontSize:'.82rem',color:'var(--ink-soft)'}}>
-            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Job #:</strong> {job.jobNumber}</div>
-            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Date:</strong> {date}</div>
-            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Client:</strong> {job.clientName||'—'}</div>
-            <div><strong style={{color:'var(--ink)',fontWeight:500}}>Phone:</strong> {job.clientPhone||'—'}</div>
-            <div style={{gridColumn:'1/-1'}}><strong style={{color:'var(--ink)',fontWeight:500}}>Address:</strong> {addr||'—'}</div>
+    <div style={{padding:'16px 16px 40px',maxWidth:800,margin:'0 auto'}}>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}><button className="btn btn-sm" onClick={doPrint}><Icon d={icons.print} s={13}/>Print / export</button></div>
+      <div className="card">
+        <div style={{marginBottom:18,paddingBottom:16,borderBottom:'1px solid var(--border)'}}>
+          <h2 style={{fontWeight:300,fontSize:20,marginBottom:8,color:'var(--ink)'}}>Scope of Work</h2>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'3px 16px',fontSize:13,color:'var(--ink2)'}}>
+            <div><span style={{color:'var(--ink3)'}}>Job # </span>{job.num}</div>
+            <div><span style={{color:'var(--ink3)'}}>Date </span>{date}</div>
+            <div><span style={{color:'var(--ink3)'}}>Client </span>{job.client||'—'}</div>
+            <div><span style={{color:'var(--ink3)'}}>Phone </span>{job.phone||'—'}</div>
+            <div style={{gridColumn:'1/-1'}}><span style={{color:'var(--ink3)'}}>Address </span>{addr||'—'}</div>
           </div>
         </div>
-        <div style={{marginBottom:20}}><SLabel>Overview</SLabel>
-          <p style={{fontSize:'.85rem',lineHeight:1.8,color:'var(--ink-mid)'}}>{settings.companyName||'This company'} has assessed {treesWithWork.length} {treesWithWork.length===1?'tree':'trees'} at the above-referenced property on behalf of {job.clientName||'the property owner'}. The following scope of work was prepared following an on-site evaluation conducted by a licensed arborist. All work shall be performed in accordance with ANSI A300 pruning standards, applicable municipal ordinances, and applicable TDA pesticide application requirements.</p>
-          {job.siteNotes&&<div style={{marginTop:9,padding:'8px 12px',background:'var(--amber-light)',borderRadius:'var(--radius-md)',fontSize:'.82rem',color:'var(--ink-mid)'}}><strong>Site notes:</strong> {job.siteNotes}</div>}
+        <div style={{marginBottom:18}}>
+          <div className="slabel">Overview</div>
+          <p style={{fontSize:13,lineHeight:1.8,color:'var(--ink2)'}}>{settings.companyName||'This company'} has assessed {trees.length} {trees.length===1?'tree':'trees'} at the above-referenced property on behalf of {job.client||'the property owner'}. All work shall be performed per ANSI A300 standards and applicable TDA requirements.</p>
+          {job.siteNotes&&<div style={{marginTop:10,padding:'9px 12px',background:'#fdf3dc',borderRadius:'var(--r4)',fontSize:13,color:'var(--ink2)',borderLeft:'3px solid var(--amber)'}}>{job.siteNotes}</div>}
         </div>
-        {treesWithWork.length===0?<div style={{padding:'28px 0',textAlign:'center',color:'var(--ink-ghost)',fontSize:'.85rem'}}>No trees with assigned work. Complete Field Intake to generate scope text.</div>
-        :treesWithWork.map((tree,i)=>{
-          const wl=tree.workTypes.map(wt=>WORK_TYPES.find(w=>w.id===wt)?.label||wt).join(', ');
-          const hasTreatment=tree.workTypes.some(w=>['treatment','spray','drench'].includes(w));
-          const hasCrane=tree.workTypes.includes('crane');
-          const hasStump=tree.workTypes.includes('stump');
+        {trees.length===0?<p style={{color:'var(--ink3)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No trees with assigned work yet.</p>
+        :trees.map((t,i)=>{
+          const wl=t.works.map(w=>WORKS.find(x=>x.id===w)?.label||w).join(', ');
+          const hasTx=t.works.some(w=>['treatment','spray','drench'].includes(w));
           return(
-            <div key={tree.id} style={{marginBottom:i<treesWithWork.length-1?22:0,paddingBottom:i<treesWithWork.length-1?22:0,borderBottom:i<treesWithWork.length-1?'1px solid var(--border-soft)':'none'}}>
-              <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:9}}>
-                <span style={{background:'var(--green-mid)',color:'#fff',fontSize:'.71rem',fontWeight:500,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{tree.tag}</span>
-                <span style={{fontWeight:500,fontSize:'.95rem'}}>{tree.commonName||tree.species||'Tree'}{tree.species&&tree.commonName?` (${tree.species})`:''}{tree.dbh&&<span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:'.82rem',marginLeft:7}}>{tree.dbh}" DBH</span>}{tree.height&&<span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:'.82rem',marginLeft:5}}>{tree.height}' ht.</span>}</span>
+            <div key={t.id} style={{marginBottom:i<trees.length-1?20:0,paddingBottom:i<trees.length-1?20:0,borderBottom:i<trees.length-1?'1px solid var(--border)':'none'}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9}}>
+                <span className="tree-tag">{t.tag}</span>
+                <span style={{fontWeight:500,fontSize:14}}>{t.name||'Tree'}{t.dbh?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:6}}>{t.dbh}" DBH</span>:null}{t.height?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:4}}>{t.height}' ht.</span>:null}</span>
               </div>
-              <div style={{borderLeft:'3px solid var(--green-pale)',paddingLeft:13}}>
-                <p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Recommended work:</strong> {wl}.</p>
-                {tree.notes&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Assessment:</strong> The specimen {condText[tree.condition]||'has been assessed on site'}. {tree.notes}</p>}
-                {(tree.accessNotes||hasCrane)&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Access & methodology:</strong> {tree.accessNotes||''}{hasCrane?' Crane access required.':''}</p>}
-                {hasStump&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)',marginBottom:7}}><strong>Stump:</strong> Stump grinding to grade is included in this scope.</p>}
-                {hasTreatment&&<p style={{fontSize:'.84rem',lineHeight:1.8,color:'var(--ink-mid)'}}><strong>Regulatory note:</strong> A TDA Pesticide Applicator Record (Form Q527) will be completed and retained per 4 TAC §7.24. Client copy available upon request.</p>}
+              <div style={{borderLeft:'2px solid var(--g5)',paddingLeft:12}}>
+                <p style={{fontSize:13,lineHeight:1.75,marginBottom:7,color:'var(--ink2)'}}><strong>Work:</strong> {wl}.</p>
+                {t.notes&&<p style={{fontSize:13,lineHeight:1.75,marginBottom:7,color:'var(--ink2)'}}><strong>Assessment:</strong> The specimen {condMap[t.cond]||''}. {t.notes}</p>}
+                {t.access&&<p style={{fontSize:13,lineHeight:1.75,marginBottom:7,color:'var(--ink2)'}}><strong>Access:</strong> {t.access}</p>}
+                {hasTx&&<p style={{fontSize:13,lineHeight:1.75,color:'var(--ink2)'}}><strong>Regulatory:</strong> A TDA Pesticide Applicator Record (Form Q527) will be completed per 4 TAC §7.24.</p>}
               </div>
             </div>
           );
         })}
         {est.lines.length>0&&(
-          <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid var(--border-soft)'}}>
-            <SLabel>Estimate summary</SLabel>
-            {est.lines.map((l,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'.83rem',color:'var(--ink-mid)',lineHeight:2}}><span>{l.treeTag} — {l.work}</span><span style={{fontFamily:'var(--font-mono)'}}>${l.total.toLocaleString()}</span></div>)}
-            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid var(--border-soft)',paddingTop:8,marginTop:5,fontWeight:500,fontSize:'.88rem'}}><span>Estimate total (incl. tax/permits)</span><span style={{fontFamily:'var(--font-mono)',color:'var(--green-mid)'}}>${est.total.toLocaleString()}</span></div>
+          <div style={{marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
+            <div className="slabel">Estimate</div>
+            {est.lines.map((l,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:13,lineHeight:2,color:'var(--ink2)'}}><span>{l.tag} — {l.work}</span><span style={{fontFamily:'monospace'}}>${l.tot.toLocaleString()}</span></div>)}
+            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid var(--border)',paddingTop:9,marginTop:5,fontWeight:500,fontSize:14}}><span>Total (incl. tax/permits)</span><span style={{fontFamily:'monospace',color:'var(--g3)'}}>${est.total.toLocaleString()}</span></div>
           </div>
         )}
-        <div style={{marginTop:22,paddingTop:17,borderTop:'1px solid var(--border-soft)',display:'flex',flexWrap:'wrap',gap:'5px 26px',fontSize:'.75rem',color:'var(--ink-soft)',fontFamily:'var(--font-mono)'}}>
-          <span>ISA Cert #: {settings.isaNumber||'—'}</span>
-          <span>TDA License #: {settings.tdaNumber||'—'}</span>
-          <span>{settings.companyName||''}</span>
-          <span>{settings.phone||''}</span>
+        <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid var(--border)',fontSize:11,color:'var(--ink4)',display:'flex',flexWrap:'wrap',gap:'4px 20px'}}>
+          <span>ISA: {settings.isa||'—'}</span><span>TDA: {settings.tda||'—'}</span><span>{settings.companyName}</span><span>{settings.phone}</span>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
-// CREW MAP TAB
-function CrewMapTab({job,updateJob}){
-  const [selected,setSelected]=useState(null);
-  const [dragging,setDragging]=useState(null);
+// ── CREW MAP TAB ──────────────────────────────────────────────────────────────
+function CrewTab({job,updateJob}){
+  const [sel,setSel]=useState(null);
+  const [drag,setDrag]=useState(null);
+  const [mapReady,setMapReady]=useState(false);
   const mapRef=useRef(null);
-  const selectedTree=job.trees.find(t=>t.id===selected);
-  function getCoords(e){const rect=mapRef.current.getBoundingClientRect();const cx=e.touches?e.touches[0].clientX:e.clientX;const cy=e.touches?e.touches[0].clientY:e.clientY;return{x:Math.max(.04,Math.min(.96,(cx-rect.left)/rect.width)),y:Math.max(.04,Math.min(.96,(cy-rect.top)/rect.height))}}
-  function onMove(e){if(!dragging)return;const c=getCoords(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===dragging?{...t,mapX:c.x,mapY:c.y}:t)}))}
-  function pinColor(tree){const wt=WORK_TYPES.find(w=>w.id===tree.workTypes[0]);return PIN_COLORS[wt?.badge]||'#4a8c3f'}
+  const iframeRef=useRef(null);
+  const selTree=job.trees.find(t=>t.id===sel);
+
+  // Build OSM/Google Maps embed URL from address
+  const fullAddr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
+  const mapSrc=fullAddr.length>5
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(fullAddr)}&t=k&z=19&output=embed&maptype=satellite`
+    : null;
+
+  function getCoords(e){
+    const rect=mapRef.current.getBoundingClientRect();
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    const cy=e.touches?e.touches[0].clientY:e.clientY;
+    return{x:Math.max(.02,Math.min(.98,(cx-rect.left)/rect.width)),y:Math.max(.02,Math.min(.98,(cy-rect.top)/rect.height))};
+  }
+  function onMove(e){if(!drag)return;e.preventDefault();const c=getCoords(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===drag?{...t,px:c.x,py:c.y}:t)}))}
+  function onUp(){setDrag(null)}
+  function pinCol(t){const w=WORKS.find(x=>x.id===t.works[0]);return CATPIN[w?.cat]||'#4a8c3f'}
+
   return(
-    <div style={{padding:'17px 20px 40px',maxWidth:900,margin:'0 auto'}}>
-      <div style={{display:'flex',alignItems:'flex-start',gap:16,flexWrap:'wrap'}}>
-        <div style={{flex:'1 1 360px'}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-            <SLabel style={{margin:0}}>Property map — drag pins to position</SLabel>
-            <span style={{fontSize:'.69rem',color:'var(--ink-ghost)',fontFamily:'var(--font-mono)'}}>Tap to view task</span>
+    <div style={{padding:'16px 16px 40px'}}>
+      <div style={{display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start'}}>
+        {/* Map area */}
+        <div style={{flex:'1 1 320px',minWidth:280}}>
+          <div className="slabel" style={{marginBottom:8}}>
+            {mapSrc?`Aerial — ${fullAddr}`:'Property map — drag pins to position'}
           </div>
-          <div ref={mapRef} style={{position:'relative',background:'#d4edda',borderRadius:'var(--radius-lg)',border:'1px solid var(--border-soft)',overflow:'hidden',cursor:dragging?'grabbing':'default',userSelect:'none',touchAction:'none'}}
-            onMouseMove={onMove} onMouseUp={()=>setDragging(null)} onMouseLeave={()=>setDragging(null)}
-            onTouchMove={onMove} onTouchEnd={()=>setDragging(null)}>
-            <svg viewBox="0 0 600 320" style={{width:'100%',display:'block'}}>
-              <rect width="600" height="320" fill="#c8e6c4"/>
-              <rect x="170" y="72" width="195" height="155" rx="6" fill="#e8d5b7" stroke="#c4a882" strokeWidth="1.5"/>
-              <rect x="193" y="92" width="148" height="108" rx="2" fill="#f5ecd7"/>
-              <text x="267" y="143" fill="#a07850" fontSize="10" textAnchor="middle" fontFamily="Georgia,serif">Residence</text>
-              <rect x="170" y="227" width="195" height="70" fill="#b8d9b4" opacity="0.5"/>
-              <rect x="0" y="290" width="600" height="30" fill="#bbb" opacity="0.4"/>
-              <text x="300" y="308" fill="#666" fontSize="9" textAnchor="middle" fontFamily="monospace">Street</text>
-              <text x="26" y="18" fill="#555" fontSize="9" fontFamily="monospace">↑ N</text>
-            </svg>
+          <div ref={mapRef} className="map-container" style={{borderRadius:'var(--r8)',overflow:'hidden',border:'1px solid var(--border)',position:'relative',background:'#d4edda',height:340,cursor:drag?'grabbing':'default',userSelect:'none',touchAction:'none'}}
+            onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+            onTouchMove={e=>{e.preventDefault();onMove(e)}} onTouchEnd={onUp}>
+            {/* Satellite map embed */}
+            {mapSrc&&(
+              <iframe ref={iframeRef} src={mapSrc} style={{width:'100%',height:'100%',border:'none',display:'block',pointerEvents:drag?'none':'auto'}} onLoad={()=>setMapReady(true)} title="Satellite map"/>
+            )}
+            {/* Fallback SVG */}
+            {!mapSrc&&(
+              <svg viewBox="0 0 600 340" style={{width:'100%',height:'100%',display:'block'}}>
+                <rect width="600" height="340" fill="#c8e6c4"/>
+                <rect x="175" y="70" width="200" height="160" rx="5" fill="#e8d5b7" stroke="#c4a882" strokeWidth="1.5"/>
+                <rect x="198" y="90" width="154" height="112" rx="2" fill="#f5ecd7"/>
+                <text x="275" y="145" fill="#a07850" fontSize="10" textAnchor="middle">Residence</text>
+                <rect x="175" y="230" width="200" height="80" fill="#b8d9b4" opacity=".5"/>
+                <rect x="0" y="300" width="600" height="40" fill="#bbb" opacity=".4"/>
+                <text x="300" y="323" fill="#666" fontSize="9" textAnchor="middle">Street</text>
+                <text x="24" y="17" fill="#555" fontSize="9">↑ N</text>
+              </svg>
+            )}
+            {/* Draggable pins overlaid */}
             {job.trees.map(tree=>{
-              const color=pinColor(tree);const isSel=selected===tree.id;
+              const col=pinCol(tree);const isSel=sel===tree.id;
+              const sz=isSel?32:26;
               return(
-                <div key={tree.id} style={{position:'absolute',left:(tree.mapX||.5)*100+'%',top:(tree.mapY||.4)*100+'%',transform:'translate(-50%,-50%)',zIndex:isSel?10:5,cursor:'grab'}}
-                  onMouseDown={e=>{e.preventDefault();setDragging(tree.id);setSelected(tree.id)}}
-                  onTouchStart={()=>{setDragging(tree.id);setSelected(tree.id)}}
-                  onClick={()=>setSelected(tree.id)}>
-                  <div style={{width:isSel?33:27,height:isSel?33:27,borderRadius:'50%',background:color,border:isSel?'3px solid white':'2px solid rgba(255,255,255,.7)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:isSel?'0 2px 10px rgba(0,0,0,.3)':'0 1px 4px rgba(0,0,0,.2)',transition:'all .15s'}}>
-                    <span style={{color:'white',fontSize:isSel?'.68rem':'.62rem',fontWeight:600,fontFamily:'var(--font-mono)'}}>{tree.tag}</span>
-                  </div>
+                <div key={tree.id} className="pin" style={{left:(tree.px||.5)*100+'%',top:(tree.py||.4)*100+'%',zIndex:isSel?20:10,width:sz,height:sz}}
+                  onMouseDown={e=>{e.stopPropagation();e.preventDefault();setDrag(tree.id);setSel(tree.id)}}
+                  onTouchStart={e=>{e.stopPropagation();setDrag(tree.id);setSel(tree.id)}}
+                  onClick={()=>setSel(tree.id)}>
+                  <div className="pin-dot" style={{width:sz,height:sz,background:col,fontSize:isSel?11:9,boxShadow:isSel?'0 2px 8px rgba(0,0,0,.35)':'0 1px 4px rgba(0,0,0,.25)',border:isSel?'2.5px solid #fff':'2px solid #fff'}}>{tree.tag}</div>
                 </div>
               );
             })}
+            {/* Address overlay if no address yet */}
+            {!mapSrc&&<div style={{position:'absolute',bottom:8,left:8,background:'rgba(255,255,255,.85)',borderRadius:4,padding:'4px 8px',fontSize:11,color:'var(--ink3)'}}>Enter address in Intake to load satellite view</div>}
           </div>
+          {/* Pin legend */}
           <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
-            {Object.entries(PIN_COLORS).map(([type,color])=>(
-              <div key={type} style={{display:'flex',alignItems:'center',gap:4,fontSize:'.71rem',color:'var(--ink-soft)'}}>
-                <div style={{width:9,height:9,borderRadius:'50%',background:color}}/>{type.charAt(0).toUpperCase()+type.slice(1)}
-              </div>
-            ))}
+            {Object.entries(CATPIN).map(([cat,col])=>{
+              const label={r:'Removal',p:'Pruning',t:'Treatment',s:'Stump',c:'Cabling'};
+              return<div key={cat} style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:'var(--ink3)'}}><div style={{width:8,height:8,borderRadius:'50%',background:col}}/>{label[cat]}</div>;
+            })}
           </div>
         </div>
-        <div style={{flex:'1 1 230px',minWidth:220}}>
-          <SLabel>Task detail</SLabel>
-          {!selectedTree?(
-            <div style={{background:'var(--paper)',borderRadius:'var(--radius-lg)',border:'1px dashed var(--border)',padding:'28px 16px',textAlign:'center',color:'var(--ink-ghost)',fontSize:'.83rem'}}>Tap a pin to view task details</div>
+
+        {/* Task detail */}
+        <div style={{flex:'1 1 230px',minWidth:210}}>
+          <div className="slabel" style={{marginBottom:8}}>Task detail</div>
+          {!selTree?(
+            <div style={{background:'var(--bg)',border:'1px dashed var(--border)',borderRadius:'var(--r8)',padding:'32px 16px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>Tap a pin to view task details</div>
           ):(
-            <div style={{background:'var(--white)',border:'1px solid var(--border-soft)',borderRadius:'var(--radius-lg)',padding:14}}>
+            <div className="card">
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-                <span style={{background:pinColor(selectedTree),color:'#fff',fontSize:'.74rem',fontWeight:600,padding:'3px 9px',borderRadius:99,fontFamily:'var(--font-mono)'}}>{selectedTree.tag}</span>
-                <div><div style={{fontWeight:500,fontSize:'.9rem'}}>{selectedTree.commonName||selectedTree.species||'Tree'}</div>
-                {selectedTree.dbh&&<div style={{fontSize:'.73rem',color:'var(--ink-soft)',fontFamily:'var(--font-mono)'}}>{selectedTree.dbh}" DBH · {selectedTree.condition}</div>}</div>
+                <span className="tree-tag" style={{background:pinCol(selTree)}}>{selTree.tag}</span>
+                <div>
+                  <div style={{fontWeight:500,fontSize:14}}>{selTree.name||'Tree'}</div>
+                  {selTree.dbh&&<div style={{fontSize:11,color:'var(--ink3)',fontFamily:'monospace'}}>{selTree.dbh}" DBH · {selTree.cond}</div>}
+                </div>
               </div>
-              <div style={{marginBottom:10}}>
-                <div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:4,fontFamily:'var(--font-mono)'}}>Work assigned</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>{selectedTree.workTypes.map(wt=>{const f=WORK_TYPES.find(w=>w.id===wt);const c=BADGE_COLORS[f?.badge]||{};return<span key={wt} style={{background:c.bg,color:c.color,fontSize:'.69rem',padding:'3px 8px',borderRadius:99,fontWeight:500}}>{f?.label||wt}</span>})}</div>
-              </div>
-              {selectedTree.notes&&<div style={{marginBottom:8}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:3,fontFamily:'var(--font-mono)'}}>Field notes</div><p style={{fontSize:'.79rem',lineHeight:1.65,color:'var(--ink-mid)'}}>{selectedTree.notes}</p></div>}
-              {selectedTree.accessNotes&&<div style={{marginBottom:8,padding:'7px 10px',background:'var(--amber-light)',borderRadius:'var(--radius-sm)'}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--amber)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:2,fontFamily:'var(--font-mono)'}}>Access / hazard</div><p style={{fontSize:'.78rem',lineHeight:1.6,color:'#7a4a0a'}}>{selectedTree.accessNotes}</p></div>}
-              {selectedTree.photos?.length>0&&<div style={{marginBottom:8}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:4,fontFamily:'var(--font-mono)'}}>Photos</div><div style={{display:'flex',gap:5,flexWrap:'wrap'}}>{selectedTree.photos.map((p,i)=><img key={i} src={p.url} alt="" style={{width:54,height:54,objectFit:'cover',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)'}}/>)}</div></div>}
-              <div style={{paddingTop:10,borderTop:'1px solid var(--border-soft)'}}><div style={{fontSize:'.69rem',fontWeight:500,color:'var(--ink-ghost)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6,fontFamily:'var(--font-mono)'}}>All tags</div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:5}}>{job.trees.map(tree=><button key={tree.id} onClick={()=>setSelected(tree.id)} style={{background:selected===tree.id?pinColor(tree):'var(--paper)',color:selected===tree.id?'#fff':'var(--ink-soft)',border:'1px solid '+(selected===tree.id?pinColor(tree):'var(--border)'),borderRadius:99,padding:'3px 9px',cursor:'pointer',fontSize:'.71rem',fontFamily:'var(--font-mono)',fontWeight:500}}>{tree.tag}</button>)}</div>
+              {selTree.works.length>0&&(
+                <div style={{marginBottom:10}}>
+                  <div className="slabel">Work</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                    {selTree.works.map(w=>{const f=WORKS.find(x=>x.id===w);return<span key={w} className={`badge ${CATBADGE[f?.cat]||''}`}>{f?.label||w}</span>})}
+                  </div>
+                </div>
+              )}
+              {selTree.notes&&<div style={{marginBottom:9}}><div className="slabel">Notes</div><p style={{fontSize:12,lineHeight:1.65,color:'var(--ink2)'}}>{selTree.notes}</p></div>}
+              {selTree.access&&<div style={{marginBottom:9,padding:'8px 10px',background:'#fdf3dc',borderRadius:'var(--r4)',borderLeft:'3px solid var(--amber)'}}><div className="slabel" style={{color:'var(--amber)',marginBottom:3}}>Access / hazard</div><p style={{fontSize:12,lineHeight:1.6,color:'#5a3800'}}>{selTree.access}</p></div>}
+              {selTree.photos?.length>0&&<div style={{marginBottom:9}}><div className="slabel">Photos</div><div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:4}}>{selTree.photos.map((p,i)=><img key={i} src={p.url} style={{width:52,height:52,objectFit:'cover',borderRadius:4,border:'1px solid var(--border)'}} alt=""/>)}</div></div>}
+              <div style={{paddingTop:10,borderTop:'1px solid var(--border)'}}><div className="slabel">All tags</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:4}}>
+                  {job.trees.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:'3px 9px',borderRadius:99,border:'1px solid '+(sel===t.id?pinCol(t):'var(--border)'),background:sel===t.id?pinCol(t):'transparent',color:sel===t.id?'#fff':'var(--ink3)',fontSize:11,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>{t.tag}</button>)}
+                </div>
               </div>
             </div>
           )}
@@ -593,50 +740,49 @@ function CrewMapTab({job,updateJob}){
   );
 }
 
-// SETTINGS
-function Settings({settings,updateSettings}){
-  function set(key,val){updateSettings({[key]:val})}
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function Settings({settings,updSettings}){
+  const s=k=>v=>updSettings({[k]:typeof v==='string'?v:parseFloat(v)||v});
   return(
-    <div style={{padding:'24px 24px 60px',maxWidth:700,margin:'0 auto'}}>
-      <h1 style={{fontFamily:'var(--font-display)',fontWeight:300,fontSize:'1.75rem',marginBottom:5}}>Settings</h1>
-      <p style={{color:'var(--ink-soft)',fontSize:'.82rem',marginBottom:24}}>Company info and default pricing. Applies to all new jobs.</p>
-      <Card style={{marginBottom:16}}>
-        <SLabel>Company information</SLabel>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:11}}>
-          <div style={{gridColumn:'1/-1'}}><label>Company name</label><input value={settings.companyName} onChange={e=>set('companyName',e.target.value)}/></div>
-          <div><label>Phone</label><input value={settings.phone} onChange={e=>set('phone',e.target.value)}/></div>
-          <div><label>Email</label><input value={settings.email} onChange={e=>set('email',e.target.value)}/></div>
-          <div><label>ISA Cert #</label><input value={settings.isaNumber} onChange={e=>set('isaNumber',e.target.value)}/></div>
-          <div><label>TDA License #</label><input value={settings.tdaNumber} onChange={e=>set('tdaNumber',e.target.value)}/></div>
+    <div style={{padding:'16px 16px 60px',maxWidth:680,margin:'0 auto'}}>
+      <h1 style={{fontSize:22,fontWeight:300,marginBottom:5}}>Settings</h1>
+      <p style={{fontSize:13,color:'var(--ink3)',marginBottom:20}}>Company info and default pricing for all new jobs.</p>
+      <div className="card" style={{marginBottom:12}}>
+        <div className="slabel">Company</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:11,marginTop:8}}>
+          <div style={{gridColumn:'1/-1'}}><label>Company name</label><input value={settings.companyName} onChange={e=>updSettings({companyName:e.target.value})}/></div>
+          <div><label>Phone</label><input value={settings.phone} onChange={e=>updSettings({phone:e.target.value})}/></div>
+          <div><label>Email</label><input value={settings.email} onChange={e=>updSettings({email:e.target.value})}/></div>
+          <div><label>ISA Cert #</label><input value={settings.isa} onChange={e=>updSettings({isa:e.target.value})}/></div>
+          <div><label>TDA License #</label><input value={settings.tda} onChange={e=>updSettings({tda:e.target.value})}/></div>
         </div>
-      </Card>
-      <Card style={{marginBottom:16}}>
-        <SLabel>Default pricing rules</SLabel>
-        <p style={{fontSize:'.77rem',color:'var(--ink-soft)',marginBottom:13}}>Used for all jobs. Override per-job on the Estimate tab.</p>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:11}}>
-          {[{key:'rateRemoval',label:'Removal per DBH inch',pre:'$'},{key:'ratePruning',label:'Pruning per DBH inch',pre:'$'},{key:'rateTreatment',label:'Treatment flat rate',pre:'$'},{key:'rateStump',label:'Stump grind per DBH inch',pre:'$'},{key:'rateDebrisHaul',label:'Debris haul flat',pre:'$'}].map(({key,label,pre})=>(
-            <div key={key}><label>{label}</label><div style={{display:'flex',alignItems:'center',gap:5}}><span style={{color:'var(--ink-soft)',fontSize:'.82rem'}}>{pre}</span><input type="number" min="0" value={settings[key]} onChange={e=>set(key,parseFloat(e.target.value)||0)}/></div></div>
+      </div>
+      <div className="card" style={{marginBottom:12}}>
+        <div className="slabel">Pricing defaults</div>
+        <p style={{fontSize:12,color:'var(--ink3)',marginBottom:12,marginTop:6}}>Per-job overrides available on the Estimate tab.</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:11}}>
+          {[{k:'rRem',l:'Removal per DBH inch',p:'$'},{k:'rPru',l:'Pruning per DBH inch',p:'$'},{k:'rTre',l:'Treatment flat rate',p:'$'},{k:'rStu',l:'Stump per DBH inch',p:'$'},{k:'rDeb',l:'Debris haul flat',p:'$'}].map(({k,l,p})=>(
+            <div key={k}><label>{l}</label><div style={{display:'flex',alignItems:'center',gap:5}}><span style={{fontSize:12,color:'var(--ink3)'}}>{p}</span><input type="number" min="0" value={settings[k]} onChange={e=>updSettings({[k]:parseFloat(e.target.value)||0})}/></div></div>
           ))}
         </div>
-      </Card>
-      <Card style={{marginBottom:16}}>
-        <SLabel>Difficulty multipliers</SLabel>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:13}}>
-          <div><label>Confined felling ({settings.multConfined}×)</label><input type="range" min="1" max="2.5" step="0.05" value={settings.multConfined} onChange={e=>set('multConfined',parseFloat(e.target.value))}/></div>
-          <div><label>Crane required ({settings.multCrane}×)</label><input type="range" min="1" max="3" step="0.05" value={settings.multCrane} onChange={e=>set('multCrane',parseFloat(e.target.value))}/></div>
-          <div><label>Tax / permit rate ({(settings.taxRate*100).toFixed(0)}%)</label><input type="range" min="0" max="0.15" step="0.005" value={settings.taxRate} onChange={e=>set('taxRate',parseFloat(e.target.value))}/></div>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="slabel">Multipliers</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:14,marginTop:10}}>
+          <div><label>Confined felling ({settings.mCon}×)</label><input type="range" min="1" max="2.5" step=".05" value={settings.mCon} onChange={e=>updSettings({mCon:parseFloat(e.target.value)})}/></div>
+          <div><label>Crane ({settings.mCra}×)</label><input type="range" min="1" max="3" step=".05" value={settings.mCra} onChange={e=>updSettings({mCra:parseFloat(e.target.value)})}/></div>
+          <div><label>Tax / permit ({(settings.tax*100).toFixed(0)}%)</label><input type="range" min="0" max=".15" step=".005" value={settings.tax} onChange={e=>updSettings({tax:parseFloat(e.target.value)})}/></div>
         </div>
-      </Card>
-      <div style={{background:'var(--green-ghost)',borderRadius:'var(--radius-md)',padding:'12px 16px',border:'1px solid var(--green-pale)',fontSize:'.81rem',color:'var(--green-mid)'}}>
-        <strong>Data storage:</strong> All jobs save to your browser automatically. To share across devices, see the README for Supabase integration instructions (free, ~30 min setup).
+      </div>
+      <div style={{padding:'13px 15px',background:'var(--g6)',borderRadius:'var(--r8)',border:'1px solid var(--g5)',fontSize:13,color:'var(--g3)'}}>
+        <strong>Data:</strong> Jobs save automatically to your browser. To sync across devices, connect a Supabase backend (see README — free, ~30 min).
       </div>
     </div>
   );
 }
 
 // BOOT
-const root=ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
