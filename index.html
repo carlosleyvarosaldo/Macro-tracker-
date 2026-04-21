@@ -198,7 +198,8 @@ const TREATMENTS={
      app:'Drench root zone; mix per label into water',
      dose:'1 oz/inch DBH, mixed in 1 gal water per application point',
      label:'https://www.domyown.com/imidacloprid-75wsp-p-5095.html',
-     notes:'Controls emerald ash borer, scale, whitefly. Avoid near water.'},
+     notes:'Controls emerald ash borer, scale, whitefly. Avoid near water.',
+     hasDoseCalc:true,calcType:'systemic'},
   ],
   Spring:[
     {id:'t_cambistat',name:'Cambistat (Growth Regulator)',img:'🌱',
@@ -213,7 +214,8 @@ const TREATMENTS={
      app:'Soil inject or drench drip line; 2 ft spacing per injection',
      dose:'Per product N-P-K label; typical 0.1–0.2 lb N/inch DBH/yr',
      label:'https://arbojet.com/product/tree-iv-4-2-2/',
-     notes:'Apply after bud break. Combine with biostimulants for stressed trees.'},
+     notes:'Apply after bud break. Combine with biostimulants for stressed trees.',
+     hasDoseCalc:true,calcType:'fertilizer'},
     {id:'t_aphid_spring',name:'Aphid / Soft Scale Control',img:'🐛',
      ppe:'Gloves, eye protection',
      app:'Foliar spray or soil drench',
@@ -251,7 +253,8 @@ const TREATMENTS={
      app:'Trunk injection (Arborjet) or basal bark spray',
      dose:'Injection: 0.1–1.0 ml per inch DBH depending on disease',
      label:'https://arbojet.com/product/propizol-fungicide/',
-     notes:'Gold standard for Oak Wilt, Dutch elm disease. Inject before or at onset.'},
+     notes:'Gold standard for Oak Wilt, Dutch elm disease. Inject before or at onset.',
+     hasDoseCalc:true,calcType:'fungicide'},
   ],
   Fall:[
     {id:'t_fall_fert',name:'Fall Root Zone Fertilizer',img:'🍂',
@@ -259,13 +262,15 @@ const TREATMENTS={
      app:'Soil inject after first frost; drip line 2–3 ft spacing',
      dose:'0.1–0.15 lb N / inch DBH; high-K formulation',
      label:'https://arbojet.com/product/tree-iv-4-2-2/',
-     notes:'Supports root storage for winter. High-K strengthens cell walls.'},
+     notes:'Supports root storage for winter. High-K strengthens cell walls.',
+     hasDoseCalc:true,calcType:'fertilizer'},
     {id:'t_oak_wilt_prev',name:'Oak Wilt Prevention (Propiconazole)',img:'🌳',
      ppe:'Nitrile gloves, long sleeves, face shield for injection',
      app:'Macro-infusion or Arborjet TREE I.V. injection',
      dose:'Preventive: 10–20 ml / inch DBH Propizol',
      label:'https://arbojet.com/product/propizol-fungicide/',
-     notes:'Critical window: avoid pruning oaks Feb–June TX. Fall injection for prevention.'},
+     notes:'Critical window: avoid pruning oaks Feb–June TX. Fall injection for prevention.',
+     hasDoseCalc:true,calcType:'fungicide'},
     {id:'t_scale_oil',name:'Horticultural Oil (Fall Scale)',img:'🛢️',
      ppe:'Gloves, eye protection',
      app:'Bark/branch spray after leaf drop begins',
@@ -537,10 +542,10 @@ function CalendarModal({user,onImport,onClose}){
             </div>
             {upcoming.length>0&&<><div className="gcal-section-hdr">Upcoming ({upcoming.length})</div>{upcoming.map(renderEvent)}</>}
             {past.length>0&&<><div className="gcal-section-hdr">Past — this year ({past.length})</div>{past.map(renderEvent)}</>}
-            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)',position:'sticky',bottom:-20,background:'var(--card)',paddingBottom:8}}>
               <button className="btn" onClick={onClose}>Cancel</button>
-              <button className="btn btn-p" onClick={doImport} disabled={!sel} style={{opacity:sel?1:.45}}>
-                <I d={ic.plus} s={14}/>Import
+              <button className="btn btn-p" onClick={doImport} disabled={!sel} style={{opacity:sel?1:.45,cursor:sel?'pointer':'not-allowed'}}>
+                <I d={ic.plus} s={14}/>Import as new job
               </button>
             </div>
           </>
@@ -688,10 +693,12 @@ function App(){
           </button>
           {page==='job'&&curJob&&(
             <>
-              <button onClick={()=>nav('#/')} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ink3)',display:'flex',alignItems:'center',gap:4,fontSize:13,padding:0,flexShrink:0}}><I d={ic.back} s={13}/>Jobs</button>
-              <span style={{color:'var(--ink4)',flexShrink:0}}>·</span>
-              <span style={{fontSize:13,fontWeight:500,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{curJob.client||'Unnamed job'}</span>
-              <select value={curJob.status} onChange={e=>updateJob(jid,{status:e.target.value})} style={{width:'auto',fontSize:12,padding:'5px 24px 5px 8px',flex:'none'}}>
+              <button className="btn btn-sm" onClick={()=>nav('#/')} style={{flexShrink:0}}>
+                <I d={ic.back} s={13}/>Dashboard
+              </button>
+              <span style={{color:'var(--ink4)',flexShrink:0,display:window.innerWidth>480?'inline':'none'}}>·</span>
+              <span style={{fontSize:13,fontWeight:500,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',minWidth:0}}>{curJob.client||'Unnamed job'}</span>
+              <select value={curJob.status} onChange={e=>updateJob(jid,{status:e.target.value})} style={{width:'auto',fontSize:12,padding:'5px 24px 5px 8px',flexShrink:0}}>
                 <option value="draft">Draft</option><option value="active">Active</option>
                 <option value="scheduled">Scheduled</option><option value="complete">Complete</option>
               </select>
@@ -1022,7 +1029,7 @@ function IntakeTab({job,updateJob,settings}){
 }
 
 // ─── TREATMENTS TAB ───────────────────────────────────────────────────────
-// Cambistat DBH dose lookup — defined outside component so it's stable
+// Dose calculators — defined outside component so they're stable across re-renders
 function cambistatDose(dbh){
   const d=parseFloat(dbh);
   if(!d||d<4)return null;
@@ -1036,11 +1043,50 @@ function cambistatDose(dbh){
   return{vol:'See label',method:'DBH > 47" — consult label'};
 }
 
+function systemicInsecticideDose(dbh){
+  const d=parseFloat(dbh);
+  if(!d||d<1)return null;
+  const oz=d*1.0; // 1 oz per inch DBH
+  return{vol:`${oz.toFixed(1)} oz`,method:`Mix in ${Math.ceil(oz/4)} gallon${Math.ceil(oz/4)>1?'s':''} water, drench root zone`};
+}
+
+function fertilizerDose(dbh){
+  const d=parseFloat(dbh);
+  if(!d||d<1)return null;
+  const lbsN=(d*0.15).toFixed(2); // 0.1-0.2 lb N per inch DBH
+  return{vol:`${lbsN} lbs N`,method:'Soil inject at drip line, 2 ft spacing'};
+}
+
+function fungicideDose(dbh){
+  const d=parseFloat(dbh);
+  if(!d||d<1)return null;
+  if(d<=10)return{vol:'0.1-0.5 ml/inch DBH',method:'Trunk injection (Arborjet)'};
+  return{vol:`${(d*0.1).toFixed(1)}-${(d*1.0).toFixed(1)} ml`,method:'Trunk injection — see label for disease type'};
+}
+
+function genericDose(dbh){
+  const d=parseFloat(dbh);
+  if(!d||d<1)return null;
+  return{vol:'See product label',method:`For ${d}" DBH tree — consult dosage table`};
+}
+
+// Route to the right calculator based on treatment calcType
+function getDoseResult(calcType,dbh){
+  if(!dbh)return null;
+  switch(calcType){
+    case 'cambistat': return cambistatDose(dbh);
+    case 'systemic': return systemicInsecticideDose(dbh);
+    case 'fertilizer': return fertilizerDose(dbh);
+    case 'fungicide': return fungicideDose(dbh);
+    default: return genericDose(dbh);
+  }
+}
+
 // Separate card component so each has its own isolated dbhInput state —
 // this prevents the input from losing focus when the parent re-renders.
 function TreatCard({t, isSel, onToggle, job, selTree, setSelTree, addTreatmentToTree}){
   const [dbhInput,setDbhInput]=useState('');
-  const doseResult=dbhInput?cambistatDose(dbhInput):null;
+  const doseResult=dbhInput?getDoseResult(t.calcType,dbhInput):null;
   return(
     <div className={`treat-card${isSel?' sel':''}`} onClick={()=>onToggle(t.id)}>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:isSel?10:0}}>
@@ -1058,28 +1104,31 @@ function TreatCard({t, isSel, onToggle, job, selTree, setSelTree, addTreatmentTo
             <div style={{fontWeight:500,color:'var(--teal)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>💉 Dose</div>
             <div style={{lineHeight:1.6}}>{t.dose}</div>
           </div>
-          {t.hasDoseCalc&&t.calcType==='cambistat'&&(
+          {t.hasDoseCalc&&(
             <div style={{background:'#fff7dc',border:'1px solid #e9b84e',borderRadius:'var(--r4)',padding:'10px 12px'}}>
-              <div style={{fontWeight:500,color:'var(--amber)',marginBottom:8,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>📐 Cambistat Dose Calculator</div>
-              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-                <input
-                  type="number" min="4" max="47"
-                  value={dbhInput}
-                  onChange={e=>{e.stopPropagation();setDbhInput(e.target.value);}}
-                  onClick={e=>e.stopPropagation()}
-                  onKeyDown={e=>e.stopPropagation()}
-                  placeholder="Enter DBH (in.)"
-                  style={{width:140,padding:'6px 10px',fontSize:13,flexShrink:0}}
-                  autoComplete="off"
-                />
-                {doseResult&&(
-                  <div style={{flex:1,fontSize:14,fontWeight:500,color:'#7a5000',background:'#fff',borderRadius:'var(--r4)',padding:'6px 10px',border:'1px solid #e9b84e'}}>
-                    <span style={{fontSize:17,fontWeight:700}}>{doseResult.vol}</span>
-                    <div style={{fontSize:11,color:'var(--ink3)',fontWeight:400,marginTop:2}}>{doseResult.method}</div>
+              <div style={{fontWeight:500,color:'var(--amber)',marginBottom:8,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>📐 Dose Calculator</div>
+              <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
+                <div style={{flex:'1 1 140px',minWidth:140}}>
+                  <label style={{fontSize:10,color:'var(--ink3)',marginBottom:4}}>DBH (inches)</label>
+                  <input
+                    type="number" min="1"
+                    value={dbhInput}
+                    onChange={e=>{e.stopPropagation();setDbhInput(e.target.value);}}
+                    onClick={e=>e.stopPropagation()}
+                    onKeyDown={e=>e.stopPropagation()}
+                    placeholder="e.g. 24"
+                    style={{width:'100%',padding:'6px 10px',fontSize:13}}
+                    autoComplete="off"
+                  />
+                </div>
+                {dbhInput&&doseResult&&(
+                  <div style={{flex:'1 1 200px',fontSize:13,fontWeight:500,color:'#7a5000',background:'#fff',borderRadius:'var(--r4)',padding:'8px 11px',border:'1px solid #e9b84e'}}>
+                    <div style={{fontSize:16,fontWeight:700,marginBottom:3}}>{doseResult.vol}</div>
+                    <div style={{fontSize:11,color:'var(--ink3)',fontWeight:400,lineHeight:1.4}}>{doseResult.method}</div>
                   </div>
                 )}
-                {dbhInput&&!doseResult&&(
-                  <div style={{fontSize:12,color:'var(--red)'}}>DBH must be 4–47 inches</div>
+                {dbhInput&&!doseResult&&t.calcType==='cambistat'&&(
+                  <div style={{fontSize:12,color:'var(--red)',padding:'8px 11px'}}>DBH must be 4–47 inches for Cambistat</div>
                 )}
               </div>
             </div>
@@ -1256,7 +1305,7 @@ function EstimateTab({job,settings}){
 <style>
 @page{margin:.6in}
 *{box-sizing:border-box}
-body{font-family:Georgia,serif;max-width:7in;margin:0 auto;font-size:13px;line-height:1.6;color:#222}
+body{font-family:Georgia,serif;max-width:7in;margin:0 auto;font-size:13px;line-height:1.6;color:#222;padding-bottom:60px}
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d5a27;padding-bottom:14px;margin-bottom:18px}
 h1{font-weight:300;font-size:22px;color:#1a2e1a;margin:0 0 3px}
 .meta{font-size:11px;color:#666;line-height:1.6}
@@ -1271,11 +1320,16 @@ td{padding:10px 10px;border-bottom:1px solid #eee;vertical-align:top}
 .total-row td{padding:13px 10px;font-size:16px;font-weight:600;background:#f4f8f2;border-top:2px solid #2d5a27;border-bottom:none}
 .total-row .ra{color:#2d5a27}
 .footer{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
-.print-btn{position:fixed;top:14px;right:14px;background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;z-index:10}
-@media print{.print-btn{display:none}body{padding:0}}
+.btn-bar{position:fixed;top:14px;right:14px;display:flex;gap:8px;z-index:10}
+.btn-bar button{background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;font-family:Arial,sans-serif}
+.btn-bar .close-btn{background:#555}
+@media print{.btn-bar{display:none}body{padding-bottom:0}}
 </style></head>
 <body>
-  <button class="print-btn" onclick="window.print()">🖨 Save as PDF</button>
+  <div class="btn-bar">
+    <button onclick="window.print()">🖨 Save as PDF</button>
+    <button class="close-btn" onclick="window.close()">✕ Close</button>
+  </div>
   <div class="hdr">
     <div>
       <h1>${settings?.companyName||'A Good Morning Tree Service'}</h1>
@@ -1557,7 +1611,7 @@ function CrewTab({job,updateJob,settings}){
         const lng=tree.lng??center.lng+(i*.0003 -.0004);
         const makeIcon=()=>window.L.divIcon({
           className:'',
-          html:`<div style="background:${col};width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:Arial,sans-serif;box-shadow:0 2px 7px rgba(0,0,0,.5);cursor:grab;">${tree.tag}</div>`,
+          html:`<div style="background:${col};width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:Arial,sans-serif;box-shadow:0 2px 7px rgba(0,0,0,.5);cursor:grab;pointer-events:auto;">${tree.tag}</div>`,
           iconSize:[34,34],iconAnchor:[17,17],
         });
         if(markersRef.current[tree.id]){
@@ -1686,11 +1740,16 @@ body{font-family:Arial,Helvetica,sans-serif;max-width:7.5in;margin:0 auto;paddin
 .check{font-size:18px;line-height:1;color:#2d5a27;flex-shrink:0}
 .scope-num-s{font-family:monospace;font-size:11px;color:#2d5a27;font-weight:700;min-width:26px;flex-shrink:0}
 .footer{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
-.print-btn{position:fixed;top:14px;right:14px;background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;z-index:10}
-@media print{.print-btn{display:none}body{padding:0}}
+.btn-bar{position:fixed;top:14px;right:14px;display:flex;gap:8px;z-index:10}
+.btn-bar button{background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;font-family:Arial,sans-serif}
+.btn-bar .close-btn{background:#555}
+@media print{.btn-bar{display:none}body{padding:0}}
 </style></head>
 <body>
-  <button class="print-btn" onclick="window.print()">🖨 Save as PDF</button>
+  <div class="btn-bar">
+    <button onclick="window.print()">🖨 Save as PDF</button>
+    <button class="close-btn" onclick="window.close()">✕ Close</button>
+  </div>
   <div class="hdr">
     <div>
       <h1>Crew Map &amp; Task Brief</h1>
