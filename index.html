@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>AGMTS Field Ops</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<!-- Leaflet for free satellite maps — no billing needed -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -15,7 +18,7 @@
   --g1:#0d1a0d;--g2:#1a3018;--g3:#2d5a27;--g4:#4a8c3f;--g5:#c8e6c4;--g6:#f0f7ef;
   --ink:#111;--ink2:#3a3a3a;--ink3:#777;--ink4:#bbb;
   --bg:#f8f8f6;--card:#fff;--border:#e5e5e0;
-  --amber:#b87a00;--red:#c0392b;--blue:#1a6fa8;
+  --amber:#b87a00;--red:#c0392b;--blue:#1a6fa8;--teal:#0a7a6a;
   --r4:4px;--r8:8px;--r12:12px;
   --font:'Inter',system-ui,sans-serif;
 }
@@ -26,15 +29,11 @@ textarea{resize:vertical;line-height:1.5;min-height:66px}
 select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
-input[type=range]{-webkit-appearance:none;padding:0;background:transparent;cursor:pointer;width:100%}
-input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--border);border-radius:2px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--g3);border-radius:50%;margin-top:-6.5px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 label{display:block;font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
 button{font-family:var(--font);cursor:pointer;border:none;background:none}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
 
-/* Layout */
 .page{display:flex;height:100vh;overflow:hidden}
 .sidebar{width:210px;background:var(--g1);display:flex;flex-direction:column;flex-shrink:0;transition:transform .22s;z-index:200}
 @media(max-width:640px){
@@ -45,7 +44,6 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--border);min-height:50px;position:sticky;top:0;z-index:100}
 .scroll{flex:1;overflow-y:auto;overflow-x:hidden}
 
-/* Sidebar pieces */
 .sb-logo{padding:18px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:9px;flex-shrink:0}
 .sb-icon{width:28px;height:28px;border-radius:6px;background:var(--g4);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
 .sb-nav{flex:1;padding:8px 6px;overflow-y:auto}
@@ -56,16 +54,15 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:500;color:#fff;flex-shrink:0;overflow:hidden}
 .sb-foot{padding:9px 14px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.18);flex-shrink:0}
 
-/* Buttons */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r4);font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s;border:1px solid var(--border);background:transparent;color:var(--ink);white-space:nowrap}
 .btn:hover{background:var(--bg)}
 .btn-p{background:var(--g3);color:#fff;border-color:var(--g3)}.btn-p:hover{background:var(--g2);border-color:var(--g2)}
 .btn-sm{padding:5px 10px;font-size:12px}
 .btn-d{color:var(--red);border-color:#f5c6c6}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal)}.btn-teal:hover{background:#085f53;border-color:#085f53}
 .mbtn{width:32px;height:32px;border-radius:var(--r4);border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2)}
 .mbtn:hover{background:var(--bg)}
 
-/* Cards & structure */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:15px}
 .tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--card);padding:0 14px;flex-shrink:0}
 .tab{padding:10px 13px;border:none;background:transparent;color:var(--ink3);font-size:13px;font-family:var(--font);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
@@ -74,20 +71,20 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .irow{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .irow>*{flex:1;min-width:120px}
 
-/* Tree rows */
 .trow{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);overflow:hidden;margin-bottom:8px}
 .thead{display:flex;align-items:center;gap:9px;padding:12px 13px;cursor:pointer;user-select:none}
 .tbody{padding:14px 13px 16px;border-top:1px solid var(--border);background:var(--bg)}
 .ttag{background:var(--g3);color:#fff;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;flex-shrink:0}
 
 /* Scope items */
-.scope-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--r4);border:1px solid var(--border);background:var(--card);cursor:pointer;transition:all .12s;margin-bottom:6px}
-.scope-item.on{border-color:var(--g4);background:var(--g6)}
+.scope-item{border:1px solid var(--border);border-radius:var(--r4);background:var(--card);margin-bottom:6px;transition:all .12s;overflow:hidden}
+.scope-item-header{display:flex;align-items:center;gap:10px;padding:9px 11px;cursor:pointer}
+.scope-item.on{border-color:var(--g4)}
+.scope-item.on .scope-item-header{background:var(--g6)}
 .scope-num{width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;color:var(--ink3)}
 .scope-item.on .scope-num{background:var(--g3);border-color:var(--g3);color:#fff}
 .scope-label{font-size:13px;flex:1;line-height:1.3}
-.scope-price{font-size:12px;color:var(--ink3);font-family:monospace;flex-shrink:0}
-.scope-item.on .scope-price{color:var(--g3)}
+.scope-expanded{padding:10px 11px 12px;border-top:1px solid var(--g5);background:var(--g6);display:flex;flex-direction:column;gap:8px}
 
 /* Photo thumbs */
 .photo-thumb{width:58px;height:58px;object-fit:cover;border-radius:var(--r4);border:1px solid var(--border);display:block;flex-shrink:0}
@@ -100,7 +97,6 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .etbl tr:last-child td{border-bottom:none}
 .etbl .ra{text-align:right}
 
-/* Job list row — bigger, more scannable */
 .jrow{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:15px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .jrow:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
 .jrow-date{font-family:monospace;font-size:15px;font-weight:600;color:var(--ink2);min-width:78px;flex-shrink:0;line-height:1.2}
@@ -108,22 +104,29 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .jrow-client{font-weight:500;font-size:15px;margin-bottom:2px}
 .jrow-addr{font-size:13px;color:var(--ink3)}
 
-/* Stat */
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:13px;text-align:center}
 
-/* Crew map pin */
-.pin{position:absolute;transform:translate(-50%,-50%);cursor:grab;z-index:10}
-.pdot{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.3);transition:all .15s}
+/* Crew map */
+.pin{position:absolute;transform:translate(-50%,-100%);cursor:grab;z-index:10}
+.pdot{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:all .15s;position:relative}
+.pdot::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:inherit;width:0;height:0}
+#leaflet-map{width:100%;height:320px;border-radius:var(--r8);overflow:hidden;border:1px solid var(--border)}
+.leaflet-container{font-family:var(--font)}
 
-/* Login screen */
+/* Treatments tab */
+.treat-frame{width:100%;border:none;flex:1;min-height:500px}
+.treat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:14px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+.treat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.treat-card.sel{border-color:var(--teal);background:#f0faf8}
+.treat-season-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em}
+
+/* Login */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px}
 .login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:32px 26px;width:100%;max-width:340px;text-align:center}
 
-/* Mobile overlay */
 .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:190}
 .backdrop.show{display:block}
 
-/* Calendar modal — bigger text for field scanning */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal{background:var(--card);border-radius:var(--r12);padding:20px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
 .gcal-ev{border:1px solid var(--border);border-radius:var(--r8);padding:14px 15px;margin-bottom:8px;cursor:pointer;transition:all .12s}
@@ -143,63 +146,161 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const {useState,useEffect,useRef,useCallback}=React;
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
-// ─── CONFIG ────────────────────────────────────────────────────────────────
-// IMPORTANT: Replace with your Google OAuth Client ID
-// Get one free at: console.cloud.google.com → APIs & Services → Credentials
-const GOOGLE_CLIENT_ID = '657009740603-kja3p5pllhp903lnatq26pogull7q0k7.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID='657009740603-kja3p5pllhp903lnatq26pogull7q0k7.apps.googleusercontent.com';
 
 // ─── SCOPE OF WORK ITEMS ──────────────────────────────────────────────────
-const SCOPE_ITEMS = [
-  {id:'s1',  num:'1',   label:'Prune Dead Wood',                    price:0},
-  {id:'s2',  num:'2',   label:'Remove Ball Moss / Mistletoe',       price:0},
-  {id:'s3',  num:'3',   label:'Remove Sprouts',                     price:0},
-  {id:'s4',  num:'4',   label:'Remove Broken Limbs',                price:0},
-  {id:'s5',  num:'5',   label:'Remove Vines / Cut Vines',           price:0},
-  {id:'s6',  num:'6',   label:'Take Weight Off',                    price:0},
-  {id:'s7a', num:'7A',  label:'Thin Out Canopy / Limbs',            price:0},
-  {id:'s7b', num:'7B',  label:'Top Tree(s)',                        price:0},
-  {id:'s8',  num:'8',   label:'Raise Canopy',                       price:0},
-  {id:'s9',  num:'9',   label:'Clear Roof — Remove Property Line',  price:0},
-  {id:'s10', num:'10',  label:'Shape Shrubs',                       price:0},
-  {id:'s11', num:'11',  label:'Remove Tree(s) to Ground',           price:0},
-  {id:'s11x',num:'11X', label:'Permit Required',                    price:0},
-  {id:'s11r',num:'11R', label:'Reason for Removal (Dev/Dead/Diseased)', price:0},
-  {id:'s12', num:'12',  label:'Remove Shrub(s) to Ground Level',    price:0},
-  {id:'s13', num:'13',  label:'Leave Firewood / Stack',             price:0},
-  {id:'s14', num:'14',  label:'Haul Away Piles of Debris',          price:0},
-  {id:'s15', num:'15',  label:'Leave Wood Curbside',                price:0},
-  {id:'s16', num:'16',  label:'Cut and Drop Wood',                  price:0},
-  {id:'s17', num:'17',  label:'Foam',                               price:0, extra:'cans'},
-  {id:'s18', num:'18',  label:'Extra Trailers',                     price:0, extra:'qty'},
-  {id:'s19', num:'19',  label:'Cable',                              price:0},
+const SCOPE_ITEMS=[
+  {id:'s1',  num:'1',   label:'Prune Dead Wood'},
+  {id:'s2',  num:'2',   label:'Remove Ball Moss / Mistletoe'},
+  {id:'s3',  num:'3',   label:'Remove Sprouts'},
+  {id:'s4',  num:'4',   label:'Remove Broken Limbs'},
+  {id:'s5',  num:'5',   label:'Remove Vines / Cut Vines'},
+  {id:'s6',  num:'6',   label:'Take Weight Off'},
+  {id:'s7a', num:'7A',  label:'Thin Out Canopy / Limbs'},
+  {id:'s7b', num:'7B',  label:'Top Tree(s)'},
+  {id:'s8',  num:'8',   label:'Raise Canopy'},
+  {id:'s9',  num:'9',   label:'Clear Roof — Remove Property Line'},
+  {id:'s10', num:'10',  label:'Shape Shrubs'},
+  {id:'s11', num:'11',  label:'Remove Tree(s) to Ground'},
+  {id:'s11x',num:'11X', label:'Permit Required'},
+  {id:'s11r',num:'11R', label:'Reason for Removal (Dev/Dead/Diseased)'},
+  {id:'s12', num:'12',  label:'Remove Shrub(s) to Ground Level'},
+  {id:'s13', num:'13',  label:'Leave Firewood / Stack'},
+  {id:'s14', num:'14',  label:'Haul Away Piles of Debris'},
+  {id:'s15', num:'15',  label:'Leave Wood Curbside'},
+  {id:'s16', num:'16',  label:'Cut and Drop Wood'},
+  {id:'s17', num:'17',  label:'Foam',extra:'cans'},
+  {id:'s18', num:'18',  label:'Extra Trailers',extra:'qty'},
+  {id:'s19', num:'19',  label:'Cable'},
 ];
 
+// ─── TREATMENTS DATA (from Treatment-Guide) ───────────────────────────────
+// Products from carlosleyvarosaldo.github.io/Treatment-Guide/
+// Organized by season with dosage, PPE, application notes, and label links
+const TREATMENTS={
+  Winter:[
+    {id:'t_dormant_oil',name:'Dormant Oil',img:'🪴',
+     ppe:'Chemical resistant gloves, eye protection',
+     app:'Dilute per label; spray bark and branches while dormant',
+     dose:'2–5% solution; ~1 gal/100 sqft canopy',
+     label:'https://www.domyown.com/neem-oil-concentrate-p-1543.html',
+     notes:'Apply when temps > 32°F. Good for scale, mites, aphid eggs.'},
+    {id:'t_copper_fung',name:'Copper Fungicide (Winter)',img:'🟤',
+     ppe:'Gloves, eye protection, long sleeves',
+     app:'Spray dormant bark/buds; coat thoroughly',
+     dose:'Variable per product; see label',
+     label:'https://www.domyown.com/bonide-copper-fungicide-p-6098.html',
+     notes:'Controls bacterial canker, fire blight, leaf curl.'},
+    {id:'t_systemic_insect',name:'Systemic Insecticide Soil Drench',img:'💧',
+     ppe:'Nitrile gloves, long sleeves, avoid skin contact',
+     app:'Drench root zone; mix per label into water',
+     dose:'1 oz/inch DBH, mixed in 1 gal water per application point',
+     label:'https://www.domyown.com/imidacloprid-75wsp-p-5095.html',
+     notes:'Controls emerald ash borer, scale, whitefly. Avoid near water.'},
+  ],
+  Spring:[
+    {id:'t_cambistat',name:'Cambistat (Growth Regulator)',img:'🌱',
+     ppe:'Gloves, long sleeves, avoid inhalation of concentrate',
+     app:'Soil drench around root zone per DBH table',
+     dose:'Use DBH table: 4–47 in. See label chart',
+     label:'https://www.rainbirdtree.com/cambistat.html',
+     notes:'Reduces shoot growth 40–70%. Enhances root mass. Apply spring before flush.',
+     hasDoseCalc:true,calcType:'cambistat'},
+    {id:'t_fert_spring',name:'Spring Root Zone Fertilizer',img:'🌿',
+     ppe:'Gloves recommended',
+     app:'Soil inject or drench drip line; 2 ft spacing per injection',
+     dose:'Per product N-P-K label; typical 0.1–0.2 lb N/inch DBH/yr',
+     label:'https://arbojet.com/product/tree-iv-4-2-2/',
+     notes:'Apply after bud break. Combine with biostimulants for stressed trees.'},
+    {id:'t_aphid_spring',name:'Aphid / Soft Scale Control',img:'🐛',
+     ppe:'Gloves, eye protection',
+     app:'Foliar spray or soil drench',
+     dose:'Foliar: 1–2% solution. Drench: 1 oz imidacloprid / inch DBH',
+     label:'https://www.domyown.com/imidacloprid-75wsp-p-5095.html',
+     notes:'Target early spring before populations explode.'},
+    {id:'t_fire_blight',name:'Fire Blight (Copper + Myclobutanil)',img:'🔥',
+     ppe:'Chemical resistant gloves, respirator during mixing',
+     app:'Preventive foliar spray at blossom through petal fall',
+     dose:'See product label; 7–10 day intervals',
+     label:'https://www.domyown.com/bonide-copper-fungicide-p-6098.html',
+     notes:'Critical timing: apply at bud break for pears, apples, crabapples.'},
+  ],
+  Summer:[
+    {id:'t_heat_fert',name:'Summer Slow-Release Fertilizer',img:'☀️',
+     ppe:'Gloves',
+     app:'Soil injection or granular broadcast',
+     dose:'0.1 lb N / inch DBH; slow-release only',
+     label:'https://arbojet.com/product/propizol-fungicide/',
+     notes:'Avoid high-N fast-release in summer — promotes lush growth susceptible to disease.'},
+    {id:'t_bordo_fung',name:'Bordeaux Mixture / Fungicide',img:'🍇',
+     ppe:'Gloves, eye protection, respirator',
+     app:'Foliar spray; coat both sides of leaves',
+     dose:'Per label; typically 1–2 lb copper sulfate + 1–2 lb lime / 10 gal',
+     label:'https://www.domyown.com/bonide-copper-fungicide-p-6098.html',
+     notes:'Controls anthracnose, rust, downy mildew. Avoid in wet weather.'},
+    {id:'t_mite_control',name:'Spider Mite / Lace Bug Control',img:'🕷️',
+     ppe:'Gloves, eye protection',
+     app:'Foliar spray; coat undersides of leaves',
+     dose:'Bifenazate: 1–2 fl oz / gal; or neem 2% spray',
+     label:'https://www.domyown.com/floramite-sc-miticide-p-5197.html',
+     notes:'Best applied in early morning. Populations peak July–August TX.'},
+    {id:'t_propiconazole',name:'Propiconazole (Alamo / Propizol)',img:'💊',
+     ppe:'Nitrile gloves, long sleeves, eye protection',
+     app:'Trunk injection (Arborjet) or basal bark spray',
+     dose:'Injection: 0.1–1.0 ml per inch DBH depending on disease',
+     label:'https://arbojet.com/product/propizol-fungicide/',
+     notes:'Gold standard for Oak Wilt, Dutch elm disease. Inject before or at onset.'},
+  ],
+  Fall:[
+    {id:'t_fall_fert',name:'Fall Root Zone Fertilizer',img:'🍂',
+     ppe:'Gloves',
+     app:'Soil inject after first frost; drip line 2–3 ft spacing',
+     dose:'0.1–0.15 lb N / inch DBH; high-K formulation',
+     label:'https://arbojet.com/product/tree-iv-4-2-2/',
+     notes:'Supports root storage for winter. High-K strengthens cell walls.'},
+    {id:'t_oak_wilt_prev',name:'Oak Wilt Prevention (Propiconazole)',img:'🌳',
+     ppe:'Nitrile gloves, long sleeves, face shield for injection',
+     app:'Macro-infusion or Arborjet TREE I.V. injection',
+     dose:'Preventive: 10–20 ml / inch DBH Propizol',
+     label:'https://arbojet.com/product/propizol-fungicide/',
+     notes:'Critical window: avoid pruning oaks Feb–June TX. Fall injection for prevention.'},
+    {id:'t_scale_oil',name:'Horticultural Oil (Fall Scale)',img:'🛢️',
+     ppe:'Gloves, eye protection',
+     app:'Bark/branch spray after leaf drop begins',
+     dose:'2% solution; coat all surfaces thoroughly',
+     label:'https://www.domyown.com/neem-oil-concentrate-p-1543.html',
+     notes:'Smothers overwintering scale crawlers and mite eggs.'},
+    {id:'t_trunk_wound',name:'Wound Treatment / Pruning Seal',img:'🩹',
+     ppe:'Gloves',
+     app:'Apply to fresh cuts > 2 inch on oaks May–Oct',
+     dose:'Light coat; do not over-apply',
+     label:'https://www.domyown.com/bonide-pruning-sealer-p-2047.html',
+     notes:'Oak Wilt prevention on fresh wounds. Use spray can for quick coverage.'},
+  ],
+};
+
+const SEASON_COLORS={Winter:'#1a6fa8',Spring:'#2d8a3e',Summer:'#b87a00',Fall:'#8a4a1a'};
 const PIN_COLORS=['#2d5a27','#1a6fa8','#b87a00','#7b3fa8','#c0392b','#0a7a6a'];
 
 // ─── DATA HELPERS ─────────────────────────────────────────────────────────
-const SK='agmts_settings_v4';
+const SK='agmts_settings_v5';
 const DEFAULT_SETTINGS={
   companyName:'A Good Morning Tree Service',
   phone:'(512) 555-0100',email:'office@agmts.com',
   isa:'TX-XXXX',tda:'XXXXXXX',
-  // Optional Google Static Maps API key. When present, the Crew Map PDF
-  // export fetches a real satellite aerial of the job address instead of
-  // drawing the generic schematic. Key lives only on this device; not
-  // synced anywhere. See: developers.google.com/maps/documentation/maps-static
-  mapsApiKey:'',
 };
 
 let _uid=0;
 function uid(){return`u${Date.now()}${++_uid}`}
 
 function newTree(n){
-  // prices: {scopeId: dollarAmount} — per-tree pricing lets the arborist
-  // charge different rates for the same scope item on different trees.
   return{id:uid(),tag:`T${n}`,species:'',dbh:'',height:'',cond:'fair',
-    scopeItems:[],scopeExtras:{},prices:{},notes:'',photos:[],
-    px:.25+Math.random()*.5,py:.2+Math.random()*.55};
+    scopeItems:[],scopeExtras:{},prices:{},scopeDescs:{},
+    treatments:[],notes:'',photos:[],
+    px:.25+Math.random()*.5,py:.2+Math.random()*.55,
+    lat:null,lng:null};
 }
 function newJob(user){
   const d=new Date();
@@ -219,10 +320,7 @@ function loadSession(){try{return JSON.parse(sessionStorage.getItem('agmts_sess'
 function saveSession(u){sessionStorage.setItem('agmts_sess',JSON.stringify(u))}
 function clearSession(){sessionStorage.removeItem('agmts_sess')}
 
-function calcJobTotal(job,settings){
-  // Pricing is per-tree now (job.trees[].prices[scopeId]) so the same
-  // scope item can run $200 on a small tree and $900 on a big one.
-  // settings is kept as an arg for backward-compat with call sites.
+function calcJobTotal(job){
   let total=0;
   const lines=[];
   job.trees.forEach(tree=>{
@@ -231,13 +329,17 @@ function calcJobTotal(job,settings){
       const item=SCOPE_ITEMS.find(s=>s.id===sid);
       if(!item)return;
       const price=parseFloat(prices[sid])||0;
-      if(price>0){total+=price;lines.push({tag:tree.tag,species:tree.species||tree.tag,item:item.label,num:item.num,price});}
+      const desc=(tree.scopeDescs||{})[sid]||'';
+      const extra=(tree.scopeExtras||{})[sid]||'';
+      if(price>0||desc){
+        total+=price;
+        lines.push({tag:tree.tag,species:tree.species||tree.tag,item:item.label,num:item.num,price,desc,extra});
+      }
     });
   });
   return{total,lines};
 }
 
-// ─── PHOTO COMPRESS ───────────────────────────────────────────────────────
 function compressPhoto(file,maxPx=900,quality=0.75){
   return new Promise(resolve=>{
     const img=new Image();
@@ -256,18 +358,27 @@ function compressPhoto(file,maxPx=900,quality=0.75){
   });
 }
 
-// ─── SVG ICONS ────────────────────────────────────────────────────────────
+// ─── GEOCODE (free Nominatim) ─────────────────────────────────────────────
+async function geocodeAddress(addr){
+  if(!addr||addr.length<5)return null;
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`,
+      {headers:{'Accept-Language':'en'}});
+    const d=await r.json();
+    if(d.length)return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch{}
+  return null;
+}
+
+// ─── ICONS ────────────────────────────────────────────────────────────────
 const I=({d,s=16,c='currentColor',sw=1.75})=>(
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
     <path d={d}/>
   </svg>
 );
 const ic={
-  menu:'M3 12h18M3 6h18M3 18h18',
-  x:'M18 6L6 18M6 6l12 12',
-  back:'M19 12H5M12 19l-7-7 7-7',
-  plus:'M12 5v14M5 12h14',
-  trash:'M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2',
+  menu:'M3 12h18M3 6h18M3 18h18',x:'M18 6L6 18M6 6l12 12',back:'M19 12H5M12 19l-7-7 7-7',
+  plus:'M12 5v14M5 12h14',trash:'M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2',
   chevd:'M6 9l6 6 6-6',chevu:'M18 15l-6-6-6 6',
   print:'M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z',
   cam:'M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 17a4 4 0 100-8 4 4 0 000 8z',
@@ -277,12 +388,14 @@ const ic={
   cal:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   check:'M20 6L9 17l-5-5',
   search:'M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z',
+  mail:'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6',
+  flask:'M9 3h6M9 3v8l-4 9h14L21 11V3M9 3H3',
+  link:'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71',
+  map:'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 10a1 1 0 100-2 1 1 0 000 2z',
+  tag:'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
 };
 
 // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
-// Uses the same OAuth token from Google Sign-In via a fresh token client
-// Pulls events from Jan 1 of current year through 45 days in the future
-// so past leads from this year are included for bid sheet backfill.
 async function fetchCalendarEvents(){
   return new Promise((resolve,reject)=>{
     if(!window.google?.accounts?.oauth2){reject(new Error('Google not loaded'));return;}
@@ -293,20 +406,13 @@ async function fetchCalendarEvents(){
         if(resp.error){reject(new Error(resp.error));return;}
         try{
           const now=new Date();
-          // Full current year: Jan 1 00:00:00 through Dec 31 23:59:59.
-          // Using calendar-year bounds (not "now+45d") so the import list
-          // holds an apples-to-apples year of leads every time it opens.
           const y=now.getFullYear();
           const yearStart=new Date(y,0,1,0,0,0,0);
           const yearEnd=new Date(y,11,31,23,59,59,999);
           const min=encodeURIComponent(yearStart.toISOString());
           const max=encodeURIComponent(yearEnd.toISOString());
-
-          // Paginate — a busy arborist calendar can exceed any single page.
-          // Keep looping on pageToken until Google stops returning one.
           const base=`https://www.googleapis.com/calendar/v3/calendars/primary/events`
-            +`?timeMin=${min}&timeMax=${max}`
-            +`&singleEvents=true&orderBy=startTime&showDeleted=false&maxResults=250`;
+            +`?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&showDeleted=false&maxResults=250`;
           const headers={Authorization:`Bearer ${resp.access_token}`};
           const all=[];
           let pageToken='',safety=0;
@@ -318,24 +424,17 @@ async function fetchCalendarEvents(){
             (data.items||[]).forEach(e=>all.push(e));
             pageToken=data.nextPageToken||'';
             safety++;
-          }while(pageToken&&safety<20); // hard cap ~5000 events
-
-          // Filter out cancellations and events the user declined.
-          // (Accepted, tentative, and "needsAction" all stay — arborists
-          //  sometimes forget to accept their own holds.)
+          }while(pageToken&&safety<20);
           const filtered=all.filter(e=>{
             if(e.status==='cancelled')return false;
             const me=(e.attendees||[]).find(a=>a.self);
             if(me&&me.responseStatus==='declined')return false;
             return true;
           });
-
           resolve(filtered.map(e=>({
-            id:e.id,
-            title:e.summary||'Untitled',
+            id:e.id,title:e.summary||'Untitled',
             start:e.start?.dateTime||e.start?.date||'',
-            desc:e.description||'',
-            location:e.location||'',
+            desc:e.description||'',location:e.location||'',
           })));
         }catch(e){reject(e);}
       },
@@ -346,9 +445,7 @@ async function fetchCalendarEvents(){
 
 function parseEventToJob(ev,user){
   const job=newJob(user);
-  // Strip common prefixes from title to get client name
   job.client=ev.title.replace(/^(estimate|assessment|job|site visit|consult|quote)[:\s\-]*/i,'').trim();
-  // Parse location into address fields
   if(ev.location){
     const parts=ev.location.split(',').map(s=>s.trim());
     job.addr=parts[0]||'';
@@ -356,7 +453,6 @@ function parseEventToJob(ev,user){
     const zipMatch=ev.location.match(/\b(\d{5})\b/);
     if(zipMatch)job.zip=zipMatch[1];
   }
-  // Pull phone, email, notes from description
   const desc=ev.desc||'';
   const phoneMatch=desc.match(/(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/);
   if(phoneMatch)job.phone=phoneMatch[1];
@@ -366,18 +462,15 @@ function parseEventToJob(ev,user){
   return job;
 }
 
-// Format event date/time for the import list.
-// Big, scannable — shows day-of-week, month/day, and time if available.
 function formatEventDate(startIso){
   if(!startIso)return{main:'',sub:'',isPast:false};
   const d=new Date(startIso);
   const now=new Date();
   const isPast=d<now;
-  // Date-only events (no time) have length 10, e.g. "2026-03-14"
   const hasTime=startIso.length>10;
   const main=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const sub=hasTime?d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'All day';
-  return{main,sub,isPast,dateObj:d};
+  return{main,sub,isPast};
 }
 
 // ─── CALENDAR MODAL ───────────────────────────────────────────────────────
@@ -385,13 +478,12 @@ function CalendarModal({user,onImport,onClose}){
   const [state,setState]=useState('loading');
   const [events,setEvents]=useState([]);
   const [sel,setSel]=useState(null);
-  const [err,setErr]=useState('');
   const [query,setQuery]=useState('');
 
   useEffect(()=>{
     fetchCalendarEvents()
       .then(evs=>{setEvents(evs);setState(evs.length?'list':'empty');})
-      .catch(e=>{setErr(e.message||'Could not load calendar.');setState('error');});
+      .catch(e=>{setState('error');});
   },[]);
 
   function doImport(){
@@ -401,16 +493,12 @@ function CalendarModal({user,onImport,onClose}){
     onClose();
   }
 
-  // Filter by search query, then split into upcoming vs past for easier scanning.
-  // Upcoming shown first (ascending), then past (most-recent first).
+  const now=new Date();
   const filtered=events.filter(ev=>{
     if(!query)return true;
     const q=query.toLowerCase();
-    return ev.title.toLowerCase().includes(q)||
-           ev.location.toLowerCase().includes(q)||
-           ev.desc.toLowerCase().includes(q);
+    return ev.title.toLowerCase().includes(q)||ev.location.toLowerCase().includes(q)||ev.desc.toLowerCase().includes(q);
   });
-  const now=new Date();
   const upcoming=filtered.filter(e=>new Date(e.start)>=now);
   const past=filtered.filter(e=>new Date(e.start)<now).reverse();
 
@@ -438,60 +526,21 @@ function CalendarModal({user,onImport,onClose}){
           <h3 style={{fontWeight:500,fontSize:17,display:'flex',alignItems:'center',gap:8}}><I d={ic.cal} s={18} c="var(--blue)"/>Import from Google Calendar</h3>
           <button onClick={onClose} style={{color:'var(--ink3)',padding:4}}><I d={ic.x} s={19}/></button>
         </div>
-
-        {state==='loading'&&(
-          <div style={{textAlign:'center',padding:'32px 0',color:'var(--ink3)',fontSize:14}}>
-            <div style={{fontSize:26,marginBottom:10}}>📅</div>Loading your calendar…
-          </div>
-        )}
-        {state==='error'&&(
-          <div style={{padding:'13px',background:'#fdeaea',borderRadius:'var(--r8)',color:'var(--red)',fontSize:13,marginBottom:12,lineHeight:1.5}}>
-            {err}<br/><span style={{fontSize:11,opacity:.8}}>Make sure your Google Cloud project has the Calendar API enabled.</span>
-          </div>
-        )}
-        {state==='empty'&&(
-          <div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)',fontSize:14}}>No events found this year.</div>
-        )}
+        {state==='loading'&&<div style={{textAlign:'center',padding:'32px 0',color:'var(--ink3)'}}>Loading…</div>}
+        {state==='error'&&<div style={{padding:'13px',background:'#fdeaea',borderRadius:'var(--r8)',color:'var(--red)',fontSize:13}}>Could not load calendar. Enable Calendar API in Google Cloud Console.</div>}
+        {state==='empty'&&<div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)'}}>No events found this year.</div>}
         {state==='list'&&(
           <>
-            <p style={{fontSize:13,color:'var(--ink3)',marginBottom:12,lineHeight:1.5}}>
-              Showing events from <strong>{now.getFullYear()}</strong> — tap one to pre-fill a new job with client name, address, phone, and notes.
-            </p>
-
-            {/* Search box — helps when there are lots of events */}
             <div style={{position:'relative',marginBottom:14}}>
-              <input
-                value={query}
-                onChange={e=>setQuery(e.target.value)}
-                placeholder="Search by name, address, or notes…"
-                style={{paddingLeft:36,fontSize:14}}
-              />
-              <div style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',color:'var(--ink4)',pointerEvents:'none'}}>
-                <I d={ic.search} s={15}/>
-              </div>
+              <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search events…" style={{paddingLeft:36}}/>
+              <div style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',color:'var(--ink4)',pointerEvents:'none'}}><I d={ic.search} s={15}/></div>
             </div>
-
-            {filtered.length===0&&(
-              <div style={{textAlign:'center',padding:'24px 0',color:'var(--ink3)',fontSize:14}}>No events match "{query}".</div>
-            )}
-
-            {upcoming.length>0&&(
-              <>
-                <div className="gcal-section-hdr">Upcoming ({upcoming.length})</div>
-                {upcoming.map(renderEvent)}
-              </>
-            )}
-            {past.length>0&&(
-              <>
-                <div className="gcal-section-hdr">Past — this year ({past.length})</div>
-                {past.map(renderEvent)}
-              </>
-            )}
-
-            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)',position:'sticky',bottom:-20,background:'var(--card)'}}>
+            {upcoming.length>0&&<><div className="gcal-section-hdr">Upcoming ({upcoming.length})</div>{upcoming.map(renderEvent)}</>}
+            {past.length>0&&<><div className="gcal-section-hdr">Past — this year ({past.length})</div>{past.map(renderEvent)}</>}
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
               <button className="btn" onClick={onClose}>Cancel</button>
-              <button className="btn btn-p" onClick={doImport} style={{opacity:sel?1:.45,cursor:sel?'pointer':'not-allowed'}} disabled={!sel}>
-                <I d={ic.plus} s={14}/>Import as new job
+              <button className="btn btn-p" onClick={doImport} disabled={!sel} style={{opacity:sel?1:.45}}>
+                <I d={ic.plus} s={14}/>Import
               </button>
             </div>
           </>
@@ -503,36 +552,26 @@ function CalendarModal({user,onImport,onClose}){
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────
 function LoginScreen({onLogin}){
-  const [loading,setLoading]=useState(false);
   const [err,setErr]=useState('');
   const btnRef=useRef(null);
 
   useEffect(()=>{
-    // Wait for GSI to load then render button
     const tryRender=()=>{
       if(!window.google?.accounts?.id)return setTimeout(tryRender,200);
       window.google.accounts.id.initialize({
         client_id:GOOGLE_CLIENT_ID,
         callback:(resp)=>{
           try{
-            // Decode JWT
             const payload=JSON.parse(atob(resp.credential.split('.')[1]));
-            const user={
-              id:payload.sub,
-              name:payload.name||payload.email,
-              email:payload.email,
-              picture:payload.picture||'',
-            };
-            saveSession(user);
-            onLogin(user);
-          }catch(e){setErr('Sign-in failed. Try again.');setLoading(false);}
+            const user={id:payload.sub,name:payload.name||payload.email,email:payload.email,picture:payload.picture||''};
+            saveSession(user);onLogin(user);
+          }catch(e){setErr('Sign-in failed.');}
         },
         auto_select:false,
       });
       if(btnRef.current){
         window.google.accounts.id.renderButton(btnRef.current,{
-          type:'standard',theme:'outline',size:'large',
-          text:'signin_with',shape:'rectangular',width:260,
+          type:'standard',theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:260,
         });
       }
     };
@@ -543,15 +582,11 @@ function LoginScreen({onLogin}){
     <div className="login-wrap">
       <div className="login-box">
         <div style={{fontSize:28,marginBottom:6}}>🌳</div>
-        <h1 style={{fontWeight:300,fontSize:21,marginBottom:4,letterSpacing:'-.02em'}}>A Good Morning</h1>
+        <h1 style={{fontWeight:300,fontSize:21,marginBottom:4}}>A Good Morning</h1>
         <p style={{fontSize:13,color:'var(--ink3)',marginBottom:6}}>Tree Service Field Ops</p>
         <p style={{fontSize:12,color:'var(--ink4)',marginBottom:24}}>Sign in with your Google account</p>
         <div ref={btnRef} style={{display:'flex',justifyContent:'center',minHeight:44}}/>
-        {loading&&<p style={{fontSize:12,color:'var(--ink3)',marginTop:12}}>Signing in…</p>}
         {err&&<p style={{fontSize:12,color:'var(--red)',marginTop:8}}>{err}</p>}
-        <p style={{fontSize:11,color:'var(--ink4)',marginTop:20,lineHeight:1.6}}>
-          Each arborist signs in with their own Google account. Jobs are saved per user.
-        </p>
       </div>
     </div>
   );
@@ -599,6 +634,7 @@ function App(){
   function delJob(id){setJobs(p=>{const n=p.filter(j=>j.id!==id);saveJ(n);return n;});}
   function updSettings(u){setSettings(p=>{const n={...p,...u};saveSettings(n);return n;});}
   function handleCalImport(job){addJob(job);nav(`#/job/${job.id}/intake`);}
+
   if(!user)return <LoginScreen onLogin={handleLogin}/>;
 
   const hash=route.replace('#','');
@@ -613,7 +649,6 @@ function App(){
       {isMobile&&sidebarOpen&&<div className="backdrop show" onClick={()=>setSidebarOpen(false)}/>}
       {calModal&&<CalendarModal user={user} onImport={handleCalImport} onClose={()=>setCalModal(false)}/>}
 
-      {/* Sidebar */}
       <aside className={`sidebar${isMobile&&sidebarOpen?' open':''}`}
         style={!isMobile&&!sidebarOpen?{transform:'translateX(-215px)',position:'absolute',height:'100%'}:{}}>
         <div className="sb-logo">
@@ -646,7 +681,6 @@ function App(){
         <div className="sb-foot">Field Ops · Kyle TX</div>
       </aside>
 
-      {/* Main */}
       <div className="main">
         <div className="topbar">
           <button className="mbtn" onClick={()=>setSidebarOpen(o=>!o)}>
@@ -729,7 +763,6 @@ function JobList({jobs,addJob,delJob,nav,user}){
         <div style={{textAlign:'center',padding:'44px 20px',color:'var(--ink3)'}}>
           <div style={{fontSize:30,marginBottom:10}}>🌳</div>
           <div style={{fontSize:17,fontWeight:300,color:'var(--ink2)',marginBottom:6}}>{jobs.length===0?'No jobs yet':'No results'}</div>
-          <p style={{fontSize:13,marginBottom:16}}>{jobs.length===0?'Tap New Job to start a field assessment.':'Try a different search.'}</p>
           {jobs.length===0&&<button className="btn btn-p" onClick={mkNew}><I d={ic.plus} s={14}/>Create first job</button>}
         </div>
       ):(
@@ -741,10 +774,7 @@ function JobList({jobs,addJob,delJob,nav,user}){
             const sc={draft:'var(--ink3)',active:'var(--blue)',scheduled:'var(--amber)',complete:'var(--g3)'};
             return(
               <div key={job.id} className="jrow" onClick={()=>nav(`#/job/${job.id}/intake`)}>
-                <div className="jrow-date">
-                  {dateMain}
-                  <div className="jrow-date-sub">{dateSub}</div>
-                </div>
+                <div className="jrow-date">{dateMain}<div className="jrow-date-sub">{dateSub}</div></div>
                 <div style={{flex:1,minWidth:140}}>
                   <div className="jrow-client">{job.client||<span style={{color:'var(--ink4)',fontWeight:300}}>No client</span>}</div>
                   {job.addr&&<div className="jrow-addr">📍 {job.addr}{job.city?`, ${job.city}`:''}</div>}
@@ -763,11 +793,18 @@ function JobList({jobs,addJob,delJob,nav,user}){
 
 // ─── JOB DETAIL ───────────────────────────────────────────────────────────
 function JobDetail({job,updateJob,settings,nav,tab}){
-  const T=[{id:'intake',l:'Intake'},{id:'estimate',l:'Estimate'},{id:'scope',l:'Scope'},{id:'crew',l:'Crew Map'}];
+  const T=[
+    {id:'intake',l:'Intake'},
+    {id:'treatments',l:'💊 Treatments'},
+    {id:'estimate',l:'Estimate'},
+    {id:'scope',l:'Scope'},
+    {id:'crew',l:'Crew Map'},
+  ];
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
       <div className="tabs">{T.map(({id,l})=><button key={id} onClick={()=>nav(`#/job/${job.id}/${id}`)} className={`tab${tab===id?' on':''}`}>{l}</button>)}</div>
       {tab==='intake'&&<IntakeTab job={job} updateJob={updateJob} settings={settings}/>}
+      {tab==='treatments'&&<TreatmentsTab job={job} updateJob={updateJob}/>}
       {tab==='estimate'&&<EstimateTab job={job} settings={settings}/>}
       {tab==='scope'&&<ScopeTab job={job} settings={settings}/>}
       {tab==='crew'&&<CrewTab job={job} updateJob={updateJob} settings={settings}/>}
@@ -792,8 +829,6 @@ function IntakeTab({job,updateJob,settings}){
     updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,scopeExtras:{...t.scopeExtras,[sid]:val}}:t)}));
   }
   function setPrice(tid,sid,val){
-    // Per-tree, per-scope-item pricing. Empty string clears the price
-    // rather than storing 0, so the total line doesn't include it.
     const num=val===''?'':parseFloat(val);
     updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{
       if(t.id!==tid)return t;
@@ -801,6 +836,13 @@ function IntakeTab({job,updateJob,settings}){
       if(val===''||isNaN(num))delete prices[sid];
       else prices[sid]=num;
       return{...t,prices};
+    })}));
+  }
+  function setScopeDesc(tid,sid,val){
+    updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{
+      if(t.id!==tid)return t;
+      const scopeDescs={...(t.scopeDescs||{}),[sid]:val};
+      return{...t,scopeDescs};
     })}));
   }
   function addTree(){
@@ -823,7 +865,6 @@ function IntakeTab({job,updateJob,settings}){
 
   return(
     <div style={{padding:'15px 15px 40px',maxWidth:820,margin:'0 auto'}}>
-      {/* Client info */}
       <div className="card" style={{marginBottom:11}}>
         <div className="slabel" style={{marginBottom:10}}>Client & property</div>
         <div className="irow">
@@ -848,7 +889,6 @@ function IntakeTab({job,updateJob,settings}){
         </div>
       </div>
 
-      {/* Trees */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:9}}>
         <span className="slabel" style={{margin:0}}>Trees / work zones ({job.trees.length})</span>
         <button className="btn btn-sm" onClick={addTree}><I d={ic.plus} s={13}/>Add tree</button>
@@ -865,19 +905,19 @@ function IntakeTab({job,updateJob,settings}){
                 {tree.species||<span style={{color:'var(--ink4)',fontWeight:300}}>No species</span>}
                 {tree.dbh?<span style={{color:'var(--ink3)',fontWeight:300,fontSize:12,marginLeft:5}}>{tree.dbh}"</span>:null}
               </span>
-              {count>0&&<span style={{fontSize:11,color:'var(--g3)',fontWeight:500}}>{count} item{count>1?'s':''}</span>}
+              {count>0&&<span style={{fontSize:11,color:'var(--g3)',fontWeight:500}}>{count} scope{count>1?'s':''}</span>}
+              {(tree.treatments||[]).length>0&&<span style={{fontSize:11,color:'var(--teal)',fontWeight:500,marginLeft:6}}>{tree.treatments.length} Rx</span>}
               <I d={open?ic.chevu:ic.chevd} s={13} c="var(--ink4)"/>
             </div>
             {open&&(
               <div className="tbody">
-                {/* Basic info */}
                 <div className="irow">
                   <div style={{maxWidth:56}}><label>Tag</label><input value={tree.tag} onChange={e=>updT(tree.id,'tag',e.target.value)}/></div>
-                  <div style={{flex:2,minWidth:150}}><label>Tree species (free text)</label><input value={tree.species} onChange={e=>updT(tree.id,'species',e.target.value)} placeholder="Live Oak, Cedar Elm, Pecan, Hackberry…"/></div>
+                  <div style={{flex:2,minWidth:150}}><label>Tree species</label><input value={tree.species} onChange={e=>updT(tree.id,'species',e.target.value)} placeholder="Live Oak, Cedar Elm, Pecan…"/></div>
                 </div>
                 <div className="irow">
-                  <div><label>DBH (inches)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updT(tree.id,'dbh',e.target.value)} placeholder="e.g. 24"/></div>
-                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updT(tree.id,'height',e.target.value)} placeholder="e.g. 40"/></div>
+                  <div><label>DBH (in)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updT(tree.id,'dbh',e.target.value)} placeholder="24"/></div>
+                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updT(tree.id,'height',e.target.value)} placeholder="40"/></div>
                   <div><label>Condition</label>
                     <select value={tree.cond} onChange={e=>updT(tree.id,'cond',e.target.value)}>
                       {['excellent','good','fair','poor','critical'].map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
@@ -885,41 +925,56 @@ function IntakeTab({job,updateJob,settings}){
                   </div>
                 </div>
 
-                {/* Scope items */}
+                {/* Scope items with description */}
                 <div style={{marginBottom:11}}>
-                  <label>Scope of work items</label>
+                  <label>Scope of work</label>
                   <div style={{marginTop:7}}>
                     {SCOPE_ITEMS.map(item=>{
                       const on=tree.scopeItems.includes(item.id);
-                      const treePrice=tree.prices?.[item.id];
-                      const priceVal=treePrice===undefined||treePrice===''?'':String(treePrice);
+                      const priceVal=(tree.prices?.[item.id]===undefined||tree.prices?.[item.id]==='')? '' : String(tree.prices?.[item.id]||'');
+                      const descVal=(tree.scopeDescs||{})[item.id]||'';
                       return(
-                        <div key={item.id} className={`scope-item${on?' on':''}`} onClick={()=>togScope(tree.id,item.id)}>
-                          <div className="scope-num">{item.num}</div>
-                          <span className="scope-label">{item.label}</span>
-                          {on&&(
-                            // Per-tree price input — only appears when the
-                            // item is selected, so the intake list stays calm
-                            <div onClick={e=>e.stopPropagation()} style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
-                              <span style={{fontSize:12,color:'var(--g3)',fontWeight:500}}>$</span>
+                        <div key={item.id} className={`scope-item${on?' on':''}`}>
+                          <div className="scope-item-header" onClick={()=>togScope(tree.id,item.id)}>
+                            <div className="scope-num">{item.num}</div>
+                            <span className="scope-label">{item.label}</span>
+                            {on&&(
+                              <div onClick={e=>e.stopPropagation()} style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
+                                <span style={{fontSize:12,color:'var(--g3)',fontWeight:500}}>$</span>
+                                <input
+                                  type="number" min="0" step="1" inputMode="decimal"
+                                  value={priceVal}
+                                  onChange={e=>setPrice(tree.id,item.id,e.target.value)}
+                                  placeholder="price"
+                                  style={{width:72,padding:'4px 7px',fontSize:12,textAlign:'right'}}
+                                />
+                              </div>
+                            )}
+                            {on&&item.extra&&(
                               <input
-                                type="number" min="0" step="1" inputMode="decimal"
-                                value={priceVal}
-                                onChange={e=>setPrice(tree.id,item.id,e.target.value)}
-                                placeholder="price"
-                                style={{width:72,padding:'4px 7px',fontSize:12,textAlign:'right'}}
+                                type="number" min="1"
+                                value={tree.scopeExtras?.[item.id]||''}
+                                onClick={e=>e.stopPropagation()}
+                                onChange={e=>setExtra(tree.id,item.id,e.target.value)}
+                                placeholder={item.extra==='cans'?'# cans':'qty'}
+                                style={{width:70,padding:'4px 8px',fontSize:12}}
                               />
+                            )}
+                          </div>
+                          {on&&(
+                            <div className="scope-expanded">
+                              <div>
+                                <label style={{marginBottom:4}}>Description / notes for this item</label>
+                                <textarea
+                                  value={descVal}
+                                  onChange={e=>setScopeDesc(tree.id,item.id,e.target.value)}
+                                  placeholder={`Additional details for ${item.label}…`}
+                                  rows={2}
+                                  style={{minHeight:'auto'}}
+                                  onClick={e=>e.stopPropagation()}
+                                />
+                              </div>
                             </div>
-                          )}
-                          {on&&item.extra&&(
-                            <input
-                              type="number" min="1"
-                              value={tree.scopeExtras?.[item.id]||''}
-                              onClick={e=>e.stopPropagation()}
-                              onChange={e=>setExtra(tree.id,item.id,e.target.value)}
-                              placeholder={item.extra==='cans'?'# cans':'qty'}
-                              style={{width:70,padding:'4px 8px',fontSize:12}}
-                            />
                           )}
                         </div>
                       );
@@ -927,13 +982,11 @@ function IntakeTab({job,updateJob,settings}){
                   </div>
                 </div>
 
-                {/* Notes */}
                 <div style={{marginBottom:11}}>
                   <label>Field notes</label>
-                  <textarea value={tree.notes} onChange={e=>updT(tree.id,'notes',e.target.value)} placeholder="Additional observations, access constraints, hazards…" rows={3}/>
+                  <textarea value={tree.notes} onChange={e=>updT(tree.id,'notes',e.target.value)} placeholder="Access constraints, hazards, observations…" rows={3}/>
                 </div>
 
-                {/* Photos */}
                 <div style={{marginBottom:11}}>
                   <label>Photos</label>
                   <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6,alignItems:'center'}}>
@@ -941,7 +994,7 @@ function IntakeTab({job,updateJob,settings}){
                       <div key={pi} style={{position:'relative',flexShrink:0}}>
                         <img src={p.url} className="photo-thumb" alt=""/>
                         <button onClick={()=>updT(tree.id,'photos',tree.photos.filter((_,i)=>i!==pi))}
-                          style={{position:'absolute',top:2,right:2,width:17,height:17,borderRadius:'50%',background:'rgba(0,0,0,.58)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}>×</button>
+                          style={{position:'absolute',top:2,right:2,width:17,height:17,borderRadius:'50%',background:'rgba(0,0,0,.58)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
                       </div>
                     ))}
                     <label className="photo-add">
@@ -961,47 +1014,332 @@ function IntakeTab({job,updateJob,settings}){
       })}
 
       <button onClick={addTree}
-        style={{width:'100%',padding:13,border:'1.5px dashed var(--border)',borderRadius:'var(--r8)',background:'transparent',color:'var(--ink3)',cursor:'pointer',fontSize:13,fontFamily:'var(--font)',marginTop:3}}
-        onMouseEnter={e=>e.currentTarget.style.background='var(--bg)'}
-        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+        style={{width:'100%',padding:13,border:'1.5px dashed var(--border)',borderRadius:'var(--r8)',background:'transparent',color:'var(--ink3)',cursor:'pointer',fontSize:13,fontFamily:'var(--font)',marginTop:3}}>
         + Tag another tree or work zone
       </button>
     </div>
   );
 }
 
+// ─── TREATMENTS TAB ───────────────────────────────────────────────────────
+function TreatmentsTab({job,updateJob}){
+  const [season,setSeason]=useState('Spring');
+  const [selTreat,setSelTreat]=useState(null);
+  const [selTree,setSelTree]=useState(job.trees[0]?.id||null);
+  const [dbhInput,setDbhInput]=useState('');
+
+  const currentTree=job.trees.find(t=>t.id===selTree);
+  const treat=selTreat?Object.values(TREATMENTS).flat().find(t=>t.id===selTreat):null;
+
+  function addTreatmentToTree(treatId){
+    if(!selTree)return;
+    updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{
+      if(t.id!==selTree)return t;
+      const already=(t.treatments||[]).some(x=>x.id===treatId);
+      if(already)return t;
+      const tInfo=Object.values(TREATMENTS).flat().find(x=>x.id===treatId);
+      return{...t,treatments:[...(t.treatments||[]),{id:treatId,name:tInfo.name,dose:'',notes:''}]};
+    })}));
+  }
+
+  function removeTreatment(treeId,treatId){
+    updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
+      t.id===treeId?{...t,treatments:(t.treatments||[]).filter(x=>x.id!==treatId)}:t
+    )}));
+  }
+
+  function updateTreatmentNote(treeId,treatId,notes){
+    updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
+      t.id===treeId?{...t,treatments:(t.treatments||[]).map(x=>x.id===treatId?{...x,notes}:x)}:t
+    )}));
+  }
+
+  // Cambistat DBH dose lookup table (simplified)
+  function cambistatDose(dbh){
+    const d=parseFloat(dbh);
+    if(!d||d<4)return null;
+    if(d<=6)return{vol:'1 oz',method:'Basal bark drench'};
+    if(d<=10)return{vol:'2 oz',method:'Basal bark drench'};
+    if(d<=14)return{vol:'3 oz',method:'Basal bark drench'};
+    if(d<=20)return{vol:'4.5 oz',method:'Soil application'};
+    if(d<=28)return{vol:'6.5 oz',method:'Soil application'};
+    if(d<=36)return{vol:'8.5 oz',method:'Soil application'};
+    if(d<=47)return{vol:'11 oz',method:'Soil application'};
+    return{vol:'See label',method:'DBH > 47" — consult label'};
+  }
+
+  const seasons=Object.keys(TREATMENTS);
+
+  return(
+    <div style={{padding:'15px 15px 40px',maxWidth:900,margin:'0 auto'}}>
+      <div style={{marginBottom:14,padding:'11px 14px',background:'#f0faf8',border:'1px solid #a8d5cc',borderRadius:'var(--r8)',fontSize:13,color:'#0a5a4a'}}>
+        <strong>💊 Treatment Guide</strong> — Select a season, browse products, tap a treatment to see dosage/PPE, then assign to a tree. Data pulled from <a href="https://carlosleyvarosaldo.github.io/Treatment-Guide/" target="_blank" rel="noopener" style={{color:'var(--teal)'}}>Treatment-Guide</a>.
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,alignItems:'start'}}>
+        {/* Left: Browse treatments */}
+        <div>
+          {/* Season selector */}
+          <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
+            {seasons.map(s=>(
+              <button key={s} onClick={()=>{setSeason(s);setSelTreat(null);}}
+                style={{padding:'6px 14px',borderRadius:99,border:'1px solid '+(season===s?SEASON_COLORS[s]:'var(--border)'),background:season===s?SEASON_COLORS[s]:'transparent',color:season===s?'#fff':'var(--ink3)',fontSize:13,cursor:'pointer',fontFamily:'var(--font)',fontWeight:season===s?500:400}}>
+                {s==='Winter'?'❄️':s==='Spring'?'🌱':s==='Summer'?'☀️':'🍂'} {s}
+              </button>
+            ))}
+          </div>
+
+          {/* Product cards */}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {TREATMENTS[season].map(t=>{
+              const isSel=selTreat===t.id;
+              return(
+                <div key={t.id} className={`treat-card${isSel?' sel':''}`} onClick={()=>setSelTreat(isSel?null:t.id)}>
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:isSel?10:0}}>
+                    <span style={{fontSize:22}}>{t.img}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:500,fontSize:14}}>{t.name}</div>
+                      <div style={{fontSize:11,color:'var(--ink3)',marginTop:2}}>{t.notes.slice(0,60)}…</div>
+                    </div>
+                    {isSel&&<I d={ic.chevu} s={14} c="var(--teal)"/>}
+                    {!isSel&&<I d={ic.chevd} s={14} c="var(--ink4)"/>}
+                  </div>
+                  {isSel&&(
+                    <div style={{display:'flex',flexDirection:'column',gap:8,fontSize:13}}>
+                      <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
+                        <div style={{fontWeight:500,color:'var(--teal)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>💉 Dose</div>
+                        <div style={{lineHeight:1.6}}>{t.dose}</div>
+                      </div>
+                      {t.hasDoseCalc&&t.calcType==='cambistat'&&(
+                        <div style={{background:'#fff7dc',border:'1px solid #e9b84e',borderRadius:'var(--r4)',padding:'10px 12px'}}>
+                          <div style={{fontWeight:500,color:'var(--amber)',marginBottom:8,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>📐 Cambistat Dose Calculator</div>
+                          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                            <input type="number" min="4" max="47" value={dbhInput} onChange={e=>setDbhInput(e.target.value)} placeholder="DBH in." style={{width:90,padding:'5px 8px',fontSize:13}}/>
+                            {dbhInput&&cambistatDose(dbhInput)&&(
+                              <div style={{flex:1,fontSize:13}}>
+                                <strong>{cambistatDose(dbhInput).vol}</strong>
+                                <div style={{fontSize:11,color:'var(--ink3)'}}>{cambistatDose(dbhInput).method}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
+                        <div style={{fontWeight:500,color:'var(--amber)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>⚠️ PPE</div>
+                        <div style={{lineHeight:1.6}}>{t.ppe}</div>
+                      </div>
+                      <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
+                        <div style={{fontWeight:500,color:'var(--blue)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>🔧 Application</div>
+                        <div style={{lineHeight:1.6}}>{t.app}</div>
+                        <div style={{marginTop:8,fontSize:11,color:'var(--ink3)',borderTop:'1px solid var(--border)',paddingTop:7}}>{t.notes}</div>
+                      </div>
+                      <a href={t.label} target="_blank" rel="noopener"
+                        style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--blue)',padding:'7px 10px',border:'1px solid var(--border)',borderRadius:'var(--r4)',background:'var(--card)',textDecoration:'none'}}>
+                        <I d={ic.link} s={13}/>View full product label
+                      </a>
+
+                      {/* Assign to tree */}
+                      {job.trees.length>0&&(
+                        <div style={{borderTop:'1px solid var(--border)',paddingTop:10}}>
+                          <div style={{fontSize:11,fontWeight:500,color:'var(--ink3)',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:7}}>Assign to tree</div>
+                          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                            {job.trees.map((tr,i)=>{
+                              const already=(tr.treatments||[]).some(x=>x.id===t.id);
+                              return(
+                                <button key={tr.id}
+                                  onClick={e=>{e.stopPropagation();setSelTree(tr.id);if(!already)addTreatmentToTree(t.id);}}
+                                  style={{padding:'4px 10px',borderRadius:99,border:'1px solid '+(already?'var(--teal)':'var(--border)'),background:already?'var(--teal)':'transparent',color:already?'#fff':'var(--ink3)',fontSize:12,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>
+                                  {tr.tag}{already?' ✓':''}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{marginTop:12,padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'var(--r8)',fontSize:12,color:'var(--ink3)'}}>
+            View the full interactive guide: <a href="https://carlosleyvarosaldo.github.io/Treatment-Guide/" target="_blank" rel="noopener" style={{color:'var(--blue)'}}>carlosleyvarosaldo.github.io/Treatment-Guide</a>
+          </div>
+        </div>
+
+        {/* Right: Assigned treatments per tree */}
+        <div>
+          <div className="slabel" style={{marginBottom:10}}>Assigned treatments by tree</div>
+          {job.trees.map((tree,i)=>{
+            const treeTreatments=tree.treatments||[];
+            return(
+              <div key={tree.id} className="card" style={{marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:treeTreatments.length?10:0}}>
+                  <span className="ttag" style={{background:PIN_COLORS[i%PIN_COLORS.length]}}>{tree.tag}</span>
+                  <span style={{fontSize:13,fontWeight:500}}>{tree.species||'Tree'}</span>
+                  {tree.dbh&&<span style={{fontSize:11,color:'var(--ink3)',fontFamily:'monospace'}}>{tree.dbh}"</span>}
+                </div>
+                {treeTreatments.length===0?(
+                  <div style={{fontSize:12,color:'var(--ink4)',fontStyle:'italic'}}>No treatments assigned</div>
+                ):(
+                  treeTreatments.map(tx=>{
+                    const tInfo=Object.values(TREATMENTS).flat().find(x=>x.id===tx.id);
+                    return(
+                      <div key={tx.id} style={{borderTop:'1px solid var(--border)',paddingTop:8,marginTop:8}}>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                          <span style={{fontSize:13,fontWeight:500}}>{tInfo?.img} {tx.name}</span>
+                          <button onClick={()=>removeTreatment(tree.id,tx.id)} style={{color:'var(--red)',fontSize:11,fontFamily:'var(--font)',cursor:'pointer',background:'none',border:'none'}}>Remove</button>
+                        </div>
+                        <textarea
+                          value={tx.notes||''}
+                          onChange={e=>updateTreatmentNote(tree.id,tx.id,e.target.value)}
+                          placeholder={`Dose / notes for ${tree.tag}…`}
+                          rows={2}
+                          style={{fontSize:12,minHeight:'auto'}}
+                        />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ESTIMATE TAB ─────────────────────────────────────────────────────────
 function EstimateTab({job,settings}){
-  const {total,lines}=calcJobTotal(job,settings);
-  // Check whether any tree has at least one priced scope item.
+  const {total,lines}=calcJobTotal(job);
   const hasPrices=job.trees.some(t=>Object.values(t.prices||{}).some(v=>parseFloat(v)>0));
+  const [shareMsg,setShareMsg]=useState('');
+
+  function buildPDFHtml(){
+    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    const rows=lines.map(l=>`
+      <tr>
+        <td><span class="tag">${l.tag}</span></td>
+        <td style="color:#555;font-size:12px">${l.species}</td>
+        <td>
+          <span class="num">${l.num}.</span>${l.item}
+          ${l.desc?`<div class="desc">${l.desc}</div>`:''}
+          ${l.extra?`<div class="desc">Qty/Extra: ${l.extra}</div>`:''}
+        </td>
+        <td class="ra" style="font-family:monospace;font-weight:600">$${l.price.toLocaleString()}</td>
+      </tr>`).join('');
+    return`<!DOCTYPE html><html><head><title>Estimate #${job.num}</title>
+<style>
+@page{margin:.6in}
+*{box-sizing:border-box}
+body{font-family:Georgia,serif;max-width:7in;margin:0 auto;font-size:13px;line-height:1.6;color:#222}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d5a27;padding-bottom:14px;margin-bottom:18px}
+h1{font-weight:300;font-size:22px;color:#1a2e1a;margin:0 0 3px}
+.meta{font-size:11px;color:#666;line-height:1.6}
+.client-box{background:#f4f8f2;border:1px solid #c8e6c4;border-radius:4px;padding:11px 14px;margin-bottom:18px}
+table{width:100%;border-collapse:collapse;margin:0}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:2px solid #ddd;text-align:left;color:#666}
+td{padding:10px 10px;border-bottom:1px solid #eee;vertical-align:top}
+.ra{text-align:right}
+.tag{display:inline-block;background:#2d5a27;color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;font-family:Arial,sans-serif}
+.num{font-family:monospace;font-size:11px;color:#2d5a27;font-weight:700;margin-right:5px}
+.desc{font-size:11px;color:#666;margin-top:3px;font-style:italic;line-height:1.5}
+.total-row td{padding:13px 10px;font-size:16px;font-weight:600;background:#f4f8f2;border-top:2px solid #2d5a27;border-bottom:none}
+.total-row .ra{color:#2d5a27}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+.print-btn{position:fixed;top:14px;right:14px;background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;z-index:10}
+@media print{.print-btn{display:none}body{padding:0}}
+</style></head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Save as PDF</button>
+  <div class="hdr">
+    <div>
+      <h1>${settings?.companyName||'A Good Morning Tree Service'}</h1>
+      <div class="meta">${date} · Estimate #${job.num}<br>${settings?.phone||''} · ${settings?.email||''}<br>ISA: ${settings?.isa||'—'} · TDA: ${settings?.tda||'—'}</div>
+    </div>
+  </div>
+  <div class="client-box">
+    <strong style="font-size:15px">${job.client||'—'}</strong>
+    ${job.phone?`<span style="color:#555;font-size:13px"> · ${job.phone}</span>`:''}
+    ${job.email?`<br><span style="font-size:12px;color:#666">${job.email}</span>`:''}
+    <br><span style="font-size:12px;color:#555">${job.addr||''}${job.city?`, ${job.city}`:''} ${job.zip||''}</span>
+  </div>
+  <table>
+    <thead><tr><th>Tag</th><th>Species</th><th>Scope item</th><th class="ra">Price</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="3">Estimate Total</td>
+        <td class="ra">$${total.toLocaleString()}</td>
+      </tr>
+    </tfoot>
+  </table>
+  ${job.notes?`<p style="margin-top:18px;font-size:12px;color:#555;border-left:3px solid #c8e6c4;padding-left:10px">${job.notes}</p>`:''}
+  <div class="footer">
+    <span>${settings?.companyName||''}</span>
+    <span>ISA: ${settings?.isa||'—'} · TDA: ${settings?.tda||'—'}</span>
+    <span>This is not a contract. Subject to change upon site inspection.</span>
+  </div>
+</body></html>`;
+  }
 
   function doPrint(){
-    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-    const rows=lines.map(l=>`<tr><td>${l.tag}</td><td>${l.species}</td><td>${l.num}. ${l.item}</td><td class="ra">$${l.price.toLocaleString()}</td></tr>`).join('');
     const w=window.open('','_blank');
-    w.document.write(`<!DOCTYPE html><html><head><title>Estimate #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.6}h1{font-weight:300;font-size:20px;color:#1a2e1a}table{width:100%;border-collapse:collapse;margin:16px 0}th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:7px;border-bottom:1px solid #ccc;text-align:left;color:#666}td{padding:9px 7px;border-bottom:1px solid #eee}.ra{text-align:right}.tot{font-weight:600;font-size:14px}@media print{body{margin:16px}}</style></head><body><h1>${settings.companyName||'Tree Service'}</h1><p style="color:#888;font-size:12px">${date}</p><p style="margin:10px 0"><strong>${job.client||'—'}</strong><br>${job.addr||''}${job.city?`, ${job.city}`:''} ${job.zip||''}<br>Job #${job.num}</p><table><thead><tr><th>Tag</th><th>Species</th><th>Scope item</th><th class="ra">Price</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="tot"><td colspan="3" style="padding:10px 7px">Estimate Total</td><td class="ra" style="padding:10px 7px">$${total.toLocaleString()}</td></tr></tfoot></table><p style="font-size:10px;color:#aaa;margin-top:20px">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.phone||''}</p></body></html>`);
-    w.document.close();w.print();
+    if(!w){alert('Popup blocked. Allow popups and retry.');return;}
+    w.document.write(buildPDFHtml());
+    w.document.close();
+  }
+
+  function shareViaGmail(){
+    // Build a mailto: link that opens Gmail / mail client with a text summary.
+    // For richer sharing, the arborist prints to PDF and attaches manually.
+    const subject=encodeURIComponent(`Estimate #${job.num} — ${job.client||'Property'}`);
+    const lineItems=lines.map(l=>`  ${l.tag} · ${l.num}. ${l.item}${l.desc?` — ${l.desc}`:''}: $${l.price.toLocaleString()}`).join('\n');
+    const body=encodeURIComponent(
+      `Hi ${job.client||'there'},\n\nPlease find your tree service estimate below.\n\n`+
+      `Estimate #${job.num}\n${job.addr||''}${job.city?`, ${job.city}`:''} ${job.zip||''}\n\n`+
+      `SCOPE OF WORK & PRICING\n${lineItems||'  No priced items yet.'}\n\n`+
+      `TOTAL: $${total.toLocaleString()}\n\n`+
+      `This estimate is valid for 30 days. Reply to schedule or ask questions.\n\n`+
+      `${settings?.companyName||''}\n${settings?.phone||''}`
+    );
+    window.open(`mailto:${job.email||''}?subject=${subject}&body=${body}`,'_blank');
+    setShareMsg('Email client opened. For a PDF attachment, use Print → Save as PDF above.');
   }
 
   return(
     <div style={{padding:'15px 15px 40px',maxWidth:800,margin:'0 auto'}}>
       {!hasPrices&&(
         <div style={{padding:'12px 14px',background:'#fdf3dc',borderRadius:'var(--r8)',border:'1px solid #f0d090',fontSize:13,color:'#7a5000',marginBottom:14}}>
-          💡 Prices are set per tree in the <strong>Intake tab</strong>. Select scope items on each tree and enter prices — the totals here will update automatically.
+          💡 Enter prices on scope items in the <strong>Intake tab</strong>. Each tree's selected items will appear here with a running total.
         </div>
       )}
+
       <div className="card" style={{padding:0,overflow:'hidden',marginBottom:12}}>
-        <div style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
           <div>
-            <div className="slabel" style={{marginBottom:1}}>Estimate</div>
+            <div className="slabel" style={{marginBottom:1}}>Line-item estimate</div>
             <div style={{fontSize:12,color:'var(--ink3)'}}>{job.client||'Client'} · #{job.num}</div>
           </div>
-          <button className="btn btn-sm" onClick={doPrint}><I d={ic.print} s={13}/>Print</button>
+          <div style={{display:'flex',gap:7}}>
+            <button className="btn btn-sm" onClick={doPrint}><I d={ic.print} s={13}/>Print / PDF</button>
+            <button className="btn btn-sm" onClick={shareViaGmail} style={{background:'#ea4335',color:'#fff',borderColor:'#ea4335'}}>
+              <I d={ic.mail} s={13}/>Email estimate
+            </button>
+          </div>
         </div>
+
+        {shareMsg&&(
+          <div style={{padding:'10px 14px',background:'var(--g6)',fontSize:12,color:'var(--g3)',borderBottom:'1px solid var(--g5)'}}>
+            ✅ {shareMsg}
+          </div>
+        )}
+
         {lines.length===0?(
           <div style={{padding:'28px 14px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>
-            {job.trees.every(t=>!t.scopeItems.length)?'Select scope items on trees in the Intake tab.':'Enter prices for the selected scope items on each tree in the Intake tab.'}
+            No priced scope items yet. Assign scope items and prices in the Intake tab.
           </div>
         ):(
           <div style={{overflowX:'auto'}}>
@@ -1014,7 +1352,11 @@ function EstimateTab({job,settings}){
                   <tr key={i}>
                     <td><span className="ttag" style={{fontSize:11}}>{l.tag}</span></td>
                     <td style={{color:'var(--ink3)',fontSize:12}}>{l.species}</td>
-                    <td><span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',marginRight:5}}>{l.num}.</span>{l.item}</td>
+                    <td>
+                      <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',marginRight:5}}>{l.num}.</span>{l.item}
+                      {l.desc&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:2,fontStyle:'italic'}}>{l.desc}</div>}
+                      {l.extra&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:1}}>Qty: {l.extra}</div>}
+                    </td>
                     <td className="ra" style={{fontFamily:'monospace',fontWeight:500}}>${l.price.toLocaleString()}</td>
                   </tr>
                 ))}
@@ -1029,6 +1371,7 @@ function EstimateTab({job,settings}){
           </div>
         )}
       </div>
+
       <div className="card">
         <div className="slabel">Internal notes</div>
         <textarea rows={3} value={job.notes} onChange={()=>{}} placeholder="Scheduling, equipment, crew notes…" style={{marginTop:6}} readOnly/>
@@ -1042,20 +1385,21 @@ function ScopeTab({job,settings}){
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   const treesWithWork=job.trees.filter(t=>t.scopeItems.length>0);
   const addr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
-  const {total}=calcJobTotal(job,settings);
+  const {total}=calcJobTotal(job);
 
   function doPrint(){
     const treeBlocks=treesWithWork.map(tree=>{
       const items=tree.scopeItems.map(sid=>{
         const item=SCOPE_ITEMS.find(s=>s.id===sid);
-        if(!item)return '';
+        if(!item)return'';
         const extra=tree.scopeExtras?.[sid]?` (${tree.scopeExtras[sid]} ${SCOPE_ITEMS.find(s=>s.id===sid)?.extra||''})`:'' ;
-        return `<li>${item.num}. ${item.label}${extra}</li>`;
+        const desc=(tree.scopeDescs||{})[sid]||'';
+        return `<li>${item.num}. ${item.label}${extra}${desc?`<div style="font-size:11px;color:#666;font-style:italic;margin-top:2px">${desc}</div>`:''}</li>`;
       }).join('');
-      return`<h3>${tree.tag} — ${tree.species||'Tree'}${tree.dbh?` ${tree.dbh}" DBH`:''}</h3><ul style="margin:6px 0 10px 18px;line-height:1.9">${items}</ul>${tree.notes?`<p style="font-size:12px;color:#555;margin-bottom:10px">${tree.notes}</p>`:''}`;
+      return`<h3>${tree.tag} — ${tree.species||'Tree'}${tree.dbh?` ${tree.dbh}" DBH`:''}</h3><ul style="margin:6px 0 10px 18px;line-height:2">${items}</ul>${tree.notes?`<p style="font-size:12px;color:#555;margin-bottom:10px">${tree.notes}</p>`:''}`;
     }).join('');
     const w=window.open('','_blank');
-    w.document.write(`<!DOCTYPE html><html><head><title>Scope of Work — Job #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.7;color:#222}h1{font-size:21px;font-weight:300;color:#1a2e1a;margin-bottom:2px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:20px 0 6px;border-bottom:1px solid #eee;padding-bottom:3px}h3{font-size:14px;font-weight:500;margin:16px 0 4px}ul{list-style:disc}li{margin-bottom:2px}@media print{body{margin:16px}}</style></head><body><h1>Scope of Work</h1><p style="font-size:12px;color:#888">${date} · Job #${job.num}</p><p style="margin:12px 0"><strong>${job.client||'—'}</strong> · ${job.phone||''}<br>${addr||'—'}</p>${job.siteNotes?`<p style="font-style:italic;color:#555;font-size:12px">Site notes: ${job.siteNotes}</p>`:''}<h2>Tree Scope</h2>${treeBlocks}${total>0?`<p style="margin-top:20px;font-weight:600">Estimate Total: $${total.toLocaleString()}</p>`:''}<p style="margin-top:28px;font-size:10px;color:#aaa">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.companyName||''} · ${settings.phone||''}</p></body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><title>Scope — Job #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.7;color:#222}h1{font-size:21px;font-weight:300;color:#1a2e1a;margin-bottom:2px}h3{font-size:14px;font-weight:500;margin:16px 0 4px}ul{list-style:disc}li{margin-bottom:2px}@media print{body{margin:16px}}</style></head><body><h1>Scope of Work</h1><p style="font-size:12px;color:#888">${date} · Job #${job.num}</p><p style="margin:12px 0"><strong>${job.client||'—'}</strong> · ${job.phone||''}<br>${addr||'—'}</p>${treeBlocks}${total>0?`<p style="margin-top:20px;font-weight:600">Total: $${total.toLocaleString()}</p>`:''}<p style="margin-top:28px;font-size:10px;color:#aaa">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.companyName||''} · ${settings.phone||''}</p></body></html>`);
     w.document.close();w.print();
   }
 
@@ -1078,22 +1422,26 @@ function ScopeTab({job,settings}){
         </div>
 
         {treesWithWork.length===0
-          ?<p style={{color:'var(--ink3)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No scope items selected. Go to Intake tab to assign work.</p>
+          ?<p style={{color:'var(--ink3)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No scope items selected. Use Intake tab to assign work.</p>
           :treesWithWork.map((tree,i)=>{
             const items=tree.scopeItems.map(sid=>SCOPE_ITEMS.find(s=>s.id===sid)).filter(Boolean);
             return(
               <div key={tree.id} style={{marginBottom:i<treesWithWork.length-1?18:0,paddingBottom:i<treesWithWork.length-1?18:0,borderBottom:i<treesWithWork.length-1?'1px solid var(--border)':'none'}}>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
                   <span className="ttag">{tree.tag}</span>
-                  <span style={{fontWeight:500,fontSize:14}}>{tree.species||'Tree'}{tree.dbh?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:5}}>{tree.dbh}"</span>:null}{tree.height?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:4}}>{tree.height}'</span>:null}</span>
+                  <span style={{fontWeight:500,fontSize:14}}>{tree.species||'Tree'}{tree.dbh?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:5}}>{tree.dbh}"</span>:null}</span>
                 </div>
                 <div style={{borderLeft:'2px solid var(--g5)',paddingLeft:12}}>
                   {items.map(item=>{
                     const extra=tree.scopeExtras?.[item.id];
+                    const desc=(tree.scopeDescs||{})[item.id]||'';
                     return(
-                      <div key={item.id} style={{display:'flex',alignItems:'baseline',gap:8,marginBottom:5,fontSize:13,color:'var(--ink2)'}}>
-                        <span style={{fontFamily:'monospace',fontSize:11,color:'var(--g3)',fontWeight:600,minWidth:28,flexShrink:0}}>{item.num}.</span>
-                        <span>{item.label}{extra?<span style={{color:'var(--ink3)',fontSize:12}}> — {extra} {item.extra}</span>:null}</span>
+                      <div key={item.id} style={{marginBottom:8,fontSize:13,color:'var(--ink2)'}}>
+                        <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                          <span style={{fontFamily:'monospace',fontSize:11,color:'var(--g3)',fontWeight:600,minWidth:28,flexShrink:0}}>{item.num}.</span>
+                          <span>{item.label}{extra?<span style={{color:'var(--ink3)',fontSize:12}}> — {extra} {item.extra}</span>:null}</span>
+                        </div>
+                        {desc&&<div style={{fontSize:12,color:'var(--ink3)',marginLeft:36,marginTop:2,fontStyle:'italic',lineHeight:1.5}}>{desc}</div>}
                       </div>
                     );
                   })}
@@ -1119,139 +1467,171 @@ function ScopeTab({job,settings}){
   );
 }
 
-// ─── CREW MAP TAB ─────────────────────────────────────────────────────────
+// ─── CREW MAP TAB (Leaflet / OpenStreetMap — no billing) ──────────────────
 function CrewTab({job,updateJob,settings}){
-  const [sel,setSel]=useState(null);
-  const [drag,setDrag]=useState(null);
+  const mapContainerRef=useRef(null);
   const mapRef=useRef(null);
+  const markersRef=useRef({});
+  const [sel,setSel]=useState(null);
+  const [geocoding,setGeocoding]=useState(false);
+  const [mapCenter,setMapCenter]=useState([30.018,-97.879]); // Kyle TX default
   const selTree=job.trees.find(t=>t.id===sel);
   const addr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
-  const mapSrc=addr.length>5?`https://maps.google.com/maps?q=${encodeURIComponent(addr)}&t=k&z=19&output=embed`:null;
 
-  function getXY(e){
-    const r=mapRef.current.getBoundingClientRect();
-    const cx=e.touches?e.touches[0].clientX:e.clientX;
-    const cy=e.touches?e.touches[0].clientY:e.clientY;
-    return{x:Math.max(.02,Math.min(.98,(cx-r.left)/r.width)),y:Math.max(.02,Math.min(.98,(cy-r.top)/r.height))};
+  // Init Leaflet map once
+  useEffect(()=>{
+    if(!window.L||mapRef.current)return;
+    const map=window.L.map(mapContainerRef.current,{
+      center:mapCenter,zoom:17,
+      // Use ESRI World Imagery for free satellite tiles (no API key needed)
+      preferCanvas:false,
+    });
+
+    // Satellite layer: ESRI World Imagery — free, no key
+    window.L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {attribution:'© Esri, Maxar, Earthstar Geographics','maxZoom':20}
+    ).addTo(map);
+
+    // Labels overlay (so street names show on satellite)
+    window.L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      {attribution:'',opacity:.7,'maxZoom':20}
+    ).addTo(map);
+
+    mapRef.current=map;
+    return()=>{map.remove();mapRef.current=null;};
+  },[]);
+
+  // Geocode address and pan map when address changes
+  useEffect(()=>{
+    if(!addr||addr.length<5||!mapRef.current)return;
+    setGeocoding(true);
+    geocodeAddress(addr).then(ll=>{
+      if(ll&&mapRef.current){
+        mapRef.current.setView([ll.lat,ll.lng],19);
+        setMapCenter([ll.lat,ll.lng]);
+      }
+      setGeocoding(false);
+    });
+  },[addr]);
+
+  // Render/update draggable pins
+  useEffect(()=>{
+    if(!mapRef.current||!window.L)return;
+    const map=mapRef.current;
+    const currentIds=new Set(job.trees.map(t=>t.id));
+
+    // Remove old markers
+    Object.keys(markersRef.current).forEach(id=>{
+      if(!currentIds.has(id)){markersRef.current[id].remove();delete markersRef.current[id];}
+    });
+
+    // Add/update markers
+    job.trees.forEach((tree,i)=>{
+      const col=PIN_COLORS[i%PIN_COLORS.length];
+      const mapBounds=map.getBounds();
+      const center=map.getCenter();
+
+      // Default lat/lng: scatter around map center if not set
+      let lat=tree.lat??center.lat+(Math.random()-.5)*.001;
+      let lng=tree.lng??center.lng+(Math.random()-.5)*.001;
+
+      const icon=window.L.divIcon({
+        className:'',
+        html:`<div style="
+          background:${col};width:32px;height:32px;border-radius:50%;border:2.5px solid #fff;
+          display:flex;align-items:center;justify-content:center;
+          font-size:10px;font-weight:700;color:#fff;font-family:Arial,sans-serif;
+          box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:grab;
+          transform:translate(-50%,-50%);position:relative;
+        ">${tree.tag}</div>`,
+        iconSize:[0,0],
+        iconAnchor:[0,0],
+      });
+
+      if(markersRef.current[tree.id]){
+        // Update icon and position if tag changed
+        markersRef.current[tree.id].setIcon(icon);
+        if(tree.lat!==null&&tree.lng!==null){
+          markersRef.current[tree.id].setLatLng([tree.lat,tree.lng]);
+        }
+      }else{
+        const marker=window.L.marker([lat,lng],{icon,draggable:true});
+        marker.addTo(map);
+        marker.on('click',()=>setSel(tree.id));
+        marker.on('dragend',e=>{
+          const{lat:newLat,lng:newLng}=e.target.getLatLng();
+          updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
+            t.id===tree.id?{...t,lat:newLat,lng:newLng}:t
+          )}));
+          setSel(tree.id);
+        });
+        marker.on('dragstart',()=>setSel(tree.id));
+        markersRef.current[tree.id]=marker;
+
+        // If tree has saved lat/lng use those, else save initial position
+        if(tree.lat!==null&&tree.lng!==null){
+          marker.setLatLng([tree.lat,tree.lng]);
+        }else{
+          updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
+            t.id===tree.id?{...t,lat,lng}:t
+          )}));
+        }
+      }
+    });
+  },[job.trees]);
+
+  function recenterOnTree(tree){
+    if(tree.lat&&tree.lng&&mapRef.current){
+      mapRef.current.setView([tree.lat,tree.lng],19);
+    }
+    setSel(tree.id);
   }
-  function onMove(e){if(!drag)return;e.preventDefault();const c=getXY(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===drag?{...t,px:c.x,py:c.y}:t)}));}
-  function onUp(){setDrag(null);}
 
-  // ─── Crew Map PDF export ─────────────────────────────────────────────
-  // The live Google Maps iframe can't be captured to canvas due to
-  // cross-origin rules, so instead we generate a printable brief with:
-  //   1) An SVG schematic of pin layout (same relative positions the
-  //      arborist placed on the satellite view)
-  //   2) A tappable link to the live satellite map so the crew can
-  //      pull up the aerial on their phone from the PDF
-  //   3) Full per-tree task list: tag, species, DBH, condition, scope
-  //      items + numbers, extras (cans/qty), field notes
-  //   4) Photo thumbnails embedded as data URLs
-  // Everything renders in a new window — the browser's print dialog
-  // lets the user Save As PDF. No API keys, no CORS, no backend.
+  // Export crew map PDF (uses Leaflet tile URL for reference link)
   function exportCrewPDF(){
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
     const mapLink=addr?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`:'';
-    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-    // ─── Map section ────────────────────────────────────────────────────
-    // Two paths:
-    //  A) User has a Google Static Maps API key in Settings → fetch a real
-    //     satellite aerial of the address and overlay pins on top using
-    //     absolute-positioned HTML at each tree's px/py. This sidesteps
-    //     the lat/lng problem (we only have relative screen coords) while
-    //     still matching what the arborist placed on the live map.
-    //  B) No key → fall back to the SVG schematic (generic property outline
-    //     with pins at their relative positions).
-    const key=(settings?.mapsApiKey||'').trim();
-    const MAP_W=640,MAP_H=400;
-    let mapSection='';
-    if(addr&&key){
-      // Request @ 2x retina scale for crisp PDF output. Note: the embed
-      // uses zoom=19; Static Maps at z=19 shows roughly the same area.
-      const staticUrl=`https://maps.googleapis.com/maps/api/staticmap`
-        +`?center=${encodeURIComponent(addr)}`
-        +`&zoom=19&size=${MAP_W}x${MAP_H}&scale=2&maptype=satellite`
-        +`&key=${encodeURIComponent(key)}`;
-      const pinsHtml=job.trees.map((t,i)=>{
+    // Build pin schematic SVG (fallback always shown in PDF; for printed use)
+    const pinSvg=`<svg viewBox="0 0 600 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-height:400px;display:block;border:1px solid #d0d0d0;border-radius:6px;background:#eaf3e6">
+      <rect width="600" height="380" fill="#d8ebd2"/>
+      <rect x="160" y="75" width="280" height="175" rx="4" fill="#e8d5b7" stroke="#b89866" stroke-width="1.5"/>
+      <rect x="185" y="98" width="230" height="130" rx="2" fill="#f5ecd7"/>
+      <text x="300" y="168" fill="#a07850" font-family="Arial" font-size="11" text-anchor="middle" font-weight="600">RESIDENCE</text>
+      <rect x="0" y="335" width="600" height="45" fill="#bdbdbd" opacity="0.45"/>
+      <text x="300" y="363" fill="#555" font-family="Arial" font-size="10" text-anchor="middle">— STREET —</text>
+      <text x="18" y="22" fill="#2a5a22" font-family="Arial" font-size="11" font-weight="700">↑ N</text>
+      ${job.trees.map((t,i)=>{
+        // Use saved GPS coords to compute relative position within a bounding box
+        // Fallback to random scatter if no GPS
+        const px=t.lat?0.5:((t.px||.4));
+        const py=t.lng?0.4:((t.py||.4));
+        const cx=px*600, cy=py*380;
         const col=PIN_COLORS[i%PIN_COLORS.length];
-        const left=((t.px||.5)*100).toFixed(2);
-        const top=((t.py||.4)*100).toFixed(2);
-        return`<div class="sat-pin" style="left:${left}%;top:${top}%;background:${col}">${esc(t.tag||`T${i+1}`)}</div>`;
-      }).join('');
-      mapSection=`<div class="map-section">
-        <div class="section-title">Property · Satellite View with Tree Pins</div>
-        <div class="sat-wrap">
-          <img src="${staticUrl}" alt="Satellite view" class="sat-img"
-               onerror="this.parentNode.classList.add('sat-err')"/>
-          <div class="sat-err-msg">Satellite image could not load. Check that the Maps Static API is enabled for your key and that billing is active on the Google Cloud project.</div>
-          ${pinsHtml}
-        </div>
-        <p class="sat-caption">Zoom 19 · Imagery © Google · Pins placed by arborist</p>
-      </div>`;
-    }else{
-      // Fallback SVG schematic
-      const pinSvg=`<svg viewBox="0 0 600 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-height:420px;display:block;border:1px solid #d0d0d0;border-radius:6px;background:#eaf3e6">
-        <rect width="600" height="380" fill="#d8ebd2"/>
-        <rect x="160" y="75" width="280" height="175" rx="4" fill="#e8d5b7" stroke="#b89866" stroke-width="1.5"/>
-        <rect x="185" y="98" width="230" height="130" rx="2" fill="#f5ecd7"/>
-        <text x="300" y="168" fill="#a07850" font-family="Arial" font-size="11" text-anchor="middle" font-weight="600">RESIDENCE</text>
-        <rect x="0" y="335" width="600" height="45" fill="#bdbdbd" opacity="0.45"/>
-        <text x="300" y="363" fill="#555" font-family="Arial" font-size="10" text-anchor="middle">— STREET —</text>
-        <text x="18" y="22" fill="#2a5a22" font-family="Arial" font-size="11" font-weight="700">↑ N</text>
-        <text x="580" y="22" fill="#555" font-family="Arial" font-size="9" text-anchor="end">Pin schematic · not to scale</text>
-        ${job.trees.map((t,i)=>{
-          const cx=(t.px||.5)*600, cy=(t.py||.4)*380;
-          const col=PIN_COLORS[i%PIN_COLORS.length];
-          return `<g>
-            <circle cx="${cx}" cy="${cy}" r="17" fill="${col}" stroke="#fff" stroke-width="2.5"/>
-            <text x="${cx}" y="${cy+4}" fill="#fff" font-family="Arial" font-size="11" font-weight="700" text-anchor="middle">${esc(t.tag||'')}</text>
-          </g>`;
-        }).join('')}
-      </svg>`;
-      mapSection=`<div class="map-section">
-        <div class="section-title">Pin Layout — Tree Locations on Property</div>
-        ${pinSvg}
-        <p class="sat-caption">Schematic showing relative tree positions. <strong>Add a Google Static Maps API key in Settings</strong> to include the real aerial view in future exports.</p>
-      </div>`;
-    }
+        return`<g><circle cx="${cx}" cy="${cy}" r="17" fill="${col}" stroke="#fff" stroke-width="2.5"/><text x="${cx}" y="${cy+4}" fill="#fff" font-family="Arial" font-size="11" font-weight="700" text-anchor="middle">${esc(t.tag||'')}</text></g>`;
+      }).join('')}
+    </svg>`;
 
-    // ─── Per-tree task cards ─────────────────────────────────────────────
-    // Two-column layout: task content on the left, enlarged photos stacked
-    // on the right next to the tree ID. Scope items render as checkboxes
-    // for crew check-off on the printed sheet.
     const treeBlocks=job.trees.map((tree,i)=>{
       const col=PIN_COLORS[i%PIN_COLORS.length];
-      const prices=tree.prices||{};
       const items=tree.scopeItems.map(sid=>{
         const item=SCOPE_ITEMS.find(s=>s.id===sid);
         if(!item)return'';
         const ex=tree.scopeExtras?.[sid];
-        const extra=ex?` <em style="color:#666">(${esc(ex)} ${esc(item.extra||'')})</em>`:'';
-        const p=parseFloat(prices[sid])||0;
-        // Price is omitted from the crew brief by default (this is an
-        // ops document, not an invoice) — but if it's useful, uncomment:
-        // const priceTxt=p>0?` <span class="price">$${p.toLocaleString()}</span>`:'';
+        const desc=(tree.scopeDescs||{})[sid]||'';
         return`<li class="scope-li">
           <span class="check">☐</span>
           <span class="scope-num-s">${esc(item.num)}.</span>
-          <span class="scope-txt">${esc(item.label)}${extra}</span>
+          <span class="scope-txt">${esc(item.label)}${ex?` <em style="color:#666">(${esc(ex)} ${esc(item.extra||'')})</em>`:''}
+          ${desc?`<div style="font-size:11px;color:#666;font-style:italic;margin-top:2px">${esc(desc)}</div>`:''}</span>
         </li>`;
       }).join('');
-      const photoCount=(tree.photos||[]).length;
-      // Bigger photos, right column, stacked. Show up to 3 at 140px so a
-      // crew member can actually see what the arborist saw.
-      const photos=(tree.photos||[]).slice(0,3).map(p=>
-        `<img src="${esc(p.url)}" class="tree-photo"/>`
-      ).join('');
-      const photosExtra=photoCount>3?`<div class="photo-more">+${photoCount-3} more</div>`:'';
-      const meta=[
-        tree.species||'Unidentified',
-        tree.dbh?`${tree.dbh}" DBH`:'',
-        tree.height?`${tree.height}' tall`:'',
-        tree.cond?tree.cond.charAt(0).toUpperCase()+tree.cond.slice(1):'',
-      ].filter(Boolean).join(' · ');
-
+      const treeTreatments=(tree.treatments||[]).map(tx=>`<li style="color:#0a5a4a;margin-bottom:4px">💊 ${esc(tx.name)}${tx.notes?` — ${esc(tx.notes)}`:''}</li>`).join('');
+      const photos=(tree.photos||[]).slice(0,3).map(p=>`<img src="${esc(p.url)}" class="tree-photo"/>`).join('');
+      const meta=[tree.species||'Unidentified',tree.dbh?`${tree.dbh}" DBH`:'',tree.height?`${tree.height}' tall`:'',tree.cond?tree.cond.charAt(0).toUpperCase()+tree.cond.slice(1):''].filter(Boolean).join(' · ');
       return`<div class="tree-block">
         <div class="tree-grid">
           <div class="tree-main">
@@ -1259,111 +1639,83 @@ function CrewTab({job,updateJob,settings}){
               <span class="tree-pin" style="background:${col}">${esc(tree.tag||`T${i+1}`)}</span>
               <span class="tree-meta">${esc(meta)}</span>
             </div>
-            ${tree.notes?`<div class="field-notes"><span class="fn-lbl">⚠ Field notes:</span> ${esc(tree.notes).replace(/\n/g,'<br>')}</div>`:''}
-            ${items
-              ?`<div class="tree-section"><div class="section-lbl">Scope of Work — check off as completed</div><ul class="scope-ul">${items}</ul></div>`
-              :'<div class="no-scope">No scope items assigned</div>'}
+            ${tree.notes?`<div class="field-notes"><span class="fn-lbl">⚠ Field notes:</span> ${esc(tree.notes)}</div>`:''}
+            ${items?`<div class="tree-section"><div class="section-lbl">Scope of Work — check off as completed</div><ul class="scope-ul">${items}</ul></div>`:''}
+            ${treeTreatments?`<div class="tree-section" style="margin-top:8px"><div class="section-lbl">Treatments</div><ul style="list-style:none;padding:0;margin:0">${treeTreatments}</ul></div>`:''}
           </div>
-          ${photos?`<div class="tree-photos">
-            <div class="section-lbl" style="margin-bottom:5px">Photos</div>
-            ${photos}${photosExtra}
-          </div>`:''}
+          ${photos?`<div class="tree-photos">${photos}</div>`:''}
         </div>
       </div>`;
     }).join('');
 
-    // ─── HTML shell ─────────────────────────────────────────────────────
     const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Crew Map — Job #${esc(job.num)}</title>
 <style>
-  @page{margin:0.5in}
-  *{box-sizing:border-box}
-  body{font-family:Arial,Helvetica,sans-serif;max-width:7.5in;margin:0 auto;padding:24px 18px;font-size:12px;line-height:1.55;color:#222}
-  .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d5a27;padding-bottom:10px;margin-bottom:14px}
-  .hdr h1{font-size:19px;margin:0 0 3px;color:#1a2e1a;font-weight:600}
-  .hdr .meta{font-size:11px;color:#666;line-height:1.5}
-  .hdr .right{text-align:right;font-size:10px;color:#888}
-  .hdr .right strong{color:#2d5a27;font-size:11px}
-  .addr-box{background:#f4f8f2;border:1px solid #c8e6c4;border-radius:4px;padding:9px 12px;margin-bottom:14px;font-size:12px}
-  .addr-box .lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px}
-  .addr-box a{color:#1a6fa8;text-decoration:none;font-size:11px;font-weight:600}
-
-  /* Big, eye-catching site notes banner at the top */
-  .site-banner{background:#fff7dc;border:2px solid #e9b84e;border-left:6px solid #b87a00;border-radius:4px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#5a4000;line-height:1.55;page-break-inside:avoid}
-  .site-banner .lbl{display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;color:#8a5a00;margin-bottom:4px}
-
-  /* Map section */
-  .map-section{margin-bottom:18px;page-break-inside:avoid}
-  .section-title{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:6px;font-weight:700}
-  .sat-wrap{position:relative;border-radius:6px;overflow:hidden;border:1px solid #c0c0c0;background:#e8e8e8;aspect-ratio:${MAP_W}/${MAP_H}}
-  .sat-img{width:100%;height:100%;display:block;object-fit:cover}
-  .sat-err-msg{display:none;padding:40px 20px;text-align:center;font-size:12px;color:#c0392b}
-  .sat-wrap.sat-err .sat-img{display:none}
-  .sat-wrap.sat-err .sat-err-msg{display:block}
-  .sat-pin{position:absolute;transform:translate(-50%,-50%);min-width:30px;height:30px;padding:0 8px;line-height:30px;text-align:center;border-radius:99px;color:#fff;font-weight:700;font-size:12px;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.5)}
-  .sat-caption{font-size:10px;color:#888;margin-top:5px;text-align:center}
-
-  /* Tree blocks — two column, photos on the right */
-  .tree-block{border:1px solid #c8d0c3;border-radius:6px;padding:12px 14px;margin-bottom:11px;page-break-inside:avoid;background:#fff}
-  .tree-grid{display:flex;gap:14px;align-items:flex-start}
-  .tree-main{flex:1;min-width:0}
-  .tree-photos{flex-shrink:0;width:150px;display:flex;flex-direction:column;gap:5px}
-  .tree-photo{width:150px;height:150px;object-fit:cover;border-radius:4px;border:1px solid #aaa;display:block}
-  .photo-more{font-size:10px;color:#888;text-align:center;padding:2px 0}
-
-  /* Tree header */
-  .tree-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:7px}
-  .tree-pin{display:inline-block;min-width:38px;padding:4px 11px;border-radius:99px;color:#fff;font-weight:700;font-size:14px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,0.15)}
-  .tree-meta{font-weight:600;font-size:14px;color:#222}
-
-  /* Per-tree field notes — prominent yellow callout right under header */
-  .field-notes{background:#fff7dc;border-left:4px solid #b87a00;padding:7px 11px;margin-bottom:9px;font-size:12px;color:#4a3500;line-height:1.55;border-radius:0 4px 4px 0}
-  .field-notes .fn-lbl{font-weight:700;color:#8a5a00}
-
-  .tree-section{margin-top:8px}
-  .section-lbl{font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#888;font-weight:700;margin-bottom:5px}
-  .no-scope{color:#999;font-style:italic;padding:6px 0;font-size:11px}
-
-  /* Scope checklist */
-  .scope-ul{list-style:none;margin:0;padding:0}
-  .scope-li{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px dotted #e0e0e0;font-size:12px;line-height:1.5}
-  .scope-li:last-child{border-bottom:none}
-  .scope-li .check{font-size:18px;line-height:1;color:#2d5a27;flex-shrink:0;font-family:Arial,sans-serif}
-  .scope-li .scope-num-s{font-family:monospace;font-size:11px;color:#2d5a27;font-weight:700;min-width:26px;flex-shrink:0}
-  .scope-li .scope-txt{color:#222}
-
-  .footer{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
-  .print-btn{position:fixed;top:14px;right:14px;background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);z-index:10;font-weight:600}
-  .print-btn:hover{background:#1a3018}
-  @media print{.print-btn{display:none}body{padding:0}}
+@page{margin:0.5in}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;max-width:7.5in;margin:0 auto;padding:24px 18px;font-size:12px;line-height:1.55;color:#222}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d5a27;padding-bottom:10px;margin-bottom:14px}
+.hdr h1{font-size:19px;margin:0 0 3px;color:#1a2e1a;font-weight:600}
+.addr-box{background:#f4f8f2;border:1px solid #c8e6c4;border-radius:4px;padding:9px 12px;margin-bottom:14px;font-size:12px}
+.addr-box a{color:#1a6fa8;text-decoration:none;font-size:11px;font-weight:600}
+.sat-note{background:#e8f4fd;border:1px solid #9ecfed;border-radius:4px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:#1a4a7a}
+.sat-note a{color:#1a6fa8;font-weight:600}
+.site-banner{background:#fff7dc;border:2px solid #e9b84e;border-left:6px solid #b87a00;border-radius:4px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#5a4000}
+.map-section{margin-bottom:18px}
+.section-title{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:6px;font-weight:700}
+.tree-block{border:1px solid #c8d0c3;border-radius:6px;padding:12px 14px;margin-bottom:11px;page-break-inside:avoid;background:#fff}
+.tree-grid{display:flex;gap:14px;align-items:flex-start}
+.tree-main{flex:1;min-width:0}
+.tree-photos{flex-shrink:0;width:150px;display:flex;flex-direction:column;gap:5px}
+.tree-photo{width:150px;height:150px;object-fit:cover;border-radius:4px;border:1px solid #aaa;display:block}
+.tree-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:7px}
+.tree-pin{display:inline-block;min-width:38px;padding:4px 11px;border-radius:99px;color:#fff;font-weight:700;font-size:14px;text-align:center}
+.tree-meta{font-weight:600;font-size:14px}
+.field-notes{background:#fff7dc;border-left:4px solid #b87a00;padding:7px 11px;margin-bottom:9px;font-size:12px;color:#4a3500;border-radius:0 4px 4px 0}
+.fn-lbl{font-weight:700;color:#8a5a00}
+.tree-section{margin-top:8px}
+.section-lbl{font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#888;font-weight:700;margin-bottom:5px}
+.scope-ul{list-style:none;margin:0;padding:0}
+.scope-li{display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px dotted #e0e0e0;font-size:12px}
+.scope-li:last-child{border-bottom:none}
+.check{font-size:18px;line-height:1;color:#2d5a27;flex-shrink:0}
+.scope-num-s{font-family:monospace;font-size:11px;color:#2d5a27;font-weight:700;min-width:26px;flex-shrink:0}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+.print-btn{position:fixed;top:14px;right:14px;background:#2d5a27;color:#fff;border:none;padding:10px 18px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;z-index:10}
+@media print{.print-btn{display:none}body{padding:0}}
 </style></head>
 <body>
   <button class="print-btn" onclick="window.print()">🖨 Save as PDF</button>
   <div class="hdr">
     <div>
       <h1>Crew Map &amp; Task Brief</h1>
-      <div class="meta">
+      <div style="font-size:11px;color:#666;line-height:1.5">
         <strong>${esc(job.client||'—')}</strong>${job.phone?` · ${esc(job.phone)}`:''}<br>
         Job #${esc(job.num)} · ${job.trees.length} tree${job.trees.length!==1?'s':''}
       </div>
     </div>
-    <div class="right">
-      <strong>${esc(settings?.companyName||'A Good Morning Tree Service')}</strong><br>
+    <div style="text-align:right;font-size:10px;color:#888">
+      <strong style="color:#2d5a27;font-size:11px">${esc(settings?.companyName||'A Good Morning Tree Service')}</strong><br>
       Generated ${date}
     </div>
   </div>
 
   <div class="addr-box">
-    <div class="lbl">Property</div>
+    <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">Property</div>
     <div style="font-size:13px"><strong>${esc(addr||'Address not set')}</strong></div>
-    ${mapLink?`<a href="${esc(mapLink)}" target="_blank">📍 Open live satellite view in Maps</a>`:''}
+    ${mapLink?`<a href="${esc(mapLink)}" target="_blank">📍 Open live satellite view in Maps →</a>`:''}
   </div>
 
-  ${job.siteNotes?`<div class="site-banner">
-    <span class="lbl">⚠ Site Notes — Read Before Arrival</span>
-    ${esc(job.siteNotes).replace(/\n/g,'<br>')}
-  </div>`:''}
+  <div class="sat-note">
+    🛰️ <strong>Live satellite view:</strong> This crew map uses free OpenStreetMap/ESRI imagery (no billing required). Tap the link above to open the real-time satellite view on any device. Pin positions are saved and visible in the app's Crew Map tab.
+  </div>
 
-  ${mapSection}
+  ${job.siteNotes?`<div class="site-banner"><span style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;color:#8a5a00;margin-bottom:4px">⚠ Site Notes — Read Before Arrival</span>${esc(job.siteNotes)}</div>`:''}
+
+  <div class="map-section">
+    <div class="section-title">Pin Layout — Tree Locations (Schematic)</div>
+    ${pinSvg}
+    <p style="font-size:10px;color:#888;margin-top:5px;text-align:center">Relative pin positions placed by arborist in the app · Open Maps link above for live satellite view</p>
+  </div>
 
   <div class="section-title" style="margin-bottom:9px">Tree-by-Tree Task List</div>
   ${treeBlocks}
@@ -1376,7 +1728,7 @@ function CrewTab({job,updateJob,settings}){
 </body></html>`;
 
     const w=window.open('','_blank');
-    if(!w){alert('Popup blocked. Please allow popups and try again.');return;}
+    if(!w){alert('Popup blocked. Allow popups and try again.');return;}
     w.document.open();
     w.document.write(html);
     w.document.close();
@@ -1384,44 +1736,24 @@ function CrewTab({job,updateJob,settings}){
 
   return(
     <div style={{padding:'15px 15px 40px'}}>
-      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,flexWrap:'wrap',gap:8}}>
+        <div style={{fontSize:12,color:'var(--ink3)',display:'flex',alignItems:'center',gap:6}}>
+          {geocoding&&<><span style={{display:'inline-block',width:10,height:10,border:'2px solid var(--g4)',borderTop:'2px solid transparent',borderRadius:'50%',animation:'spin 1s linear infinite'}}/>Locating address…</>}
+          {!geocoding&&addr&&<span>🛰️ Free satellite · ESRI World Imagery · No billing</span>}
+        </div>
         <button className="btn btn-sm btn-p" onClick={exportCrewPDF}><I d={ic.print} s={13}/>Export crew map PDF</button>
       </div>
+
       <div style={{display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start'}}>
-        {/* Map */}
+        {/* Leaflet map */}
         <div style={{flex:'1 1 300px',minWidth:260}}>
-          <div className="slabel" style={{marginBottom:7}}>{mapSrc?addr:'Property map — enter address in Intake'}</div>
-          <div ref={mapRef}
-            style={{position:'relative',borderRadius:'var(--r8)',overflow:'hidden',border:'1px solid var(--border)',height:320,cursor:drag?'grabbing':'default',userSelect:'none',touchAction:'none',background:'#d4edda'}}
-            onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
-            onTouchMove={e=>{e.preventDefault();onMove(e);}} onTouchEnd={onUp}>
-            {mapSrc
-              ?<iframe src={mapSrc} style={{width:'100%',height:'100%',border:'none',display:'block',pointerEvents:drag?'none':'auto'}} title="Satellite"/>
-              :<svg viewBox="0 0 600 320" style={{width:'100%',height:'100%',display:'block'}}>
-                <rect width="600" height="320" fill="#c8e6c4"/>
-                <rect x="175" y="65" width="190" height="148" rx="5" fill="#e8d5b7" stroke="#c4a882" strokeWidth="1.5"/>
-                <rect x="197" y="83" width="146" height="108" rx="2" fill="#f5ecd7"/>
-                <text x="270" y="132" fill="#a07850" fontSize="9" textAnchor="middle">Residence</text>
-                <rect x="0" y="285" width="600" height="35" fill="#bbb" opacity=".4"/>
-                <text x="300" y="306" fill="#666" fontSize="9" textAnchor="middle">Street</text>
-                <text x="22" y="16" fill="#555" fontSize="9">↑ N</text>
-              </svg>
-            }
-            {job.trees.map((tree,i)=>{
-              const isSel=sel===tree.id;
-              const sz=isSel?31:25;
-              const col=PIN_COLORS[i%PIN_COLORS.length];
-              return(
-                <div key={tree.id} className="pin" style={{left:(tree.px||.5)*100+'%',top:(tree.py||.4)*100+'%',width:sz,height:sz}}
-                  onMouseDown={e=>{e.stopPropagation();e.preventDefault();setDrag(tree.id);setSel(tree.id);}}
-                  onTouchStart={e=>{e.stopPropagation();setDrag(tree.id);setSel(tree.id);}}
-                  onClick={()=>setSel(tree.id)}>
-                  <div className="pdot" style={{width:sz,height:sz,background:col,fontSize:isSel?11:9,boxShadow:isSel?'0 2px 8px rgba(0,0,0,.4)':'0 1px 4px rgba(0,0,0,.25)',border:isSel?'2.5px solid #fff':'2px solid rgba(255,255,255,.8)'}}>{tree.tag}</div>
-                </div>
-              );
-            })}
+          <div className="slabel" style={{marginBottom:7}}>
+            {addr||'Satellite view — enter address in Intake'}
           </div>
-          <p style={{fontSize:11,color:'var(--ink4)',marginTop:7}}>Drag pins to mark exact tree locations on the property.</p>
+          <div ref={mapContainerRef} id="leaflet-map"/>
+          <p style={{fontSize:11,color:'var(--ink4)',marginTop:7}}>
+            Drag the colored pins to mark exact tree positions. Satellite imagery © ESRI / Maxar — free, no billing account required.
+          </p>
         </div>
 
         {/* Detail panel */}
@@ -1431,6 +1763,7 @@ function CrewTab({job,updateJob,settings}){
             ?<div style={{background:'var(--bg)',border:'1px dashed var(--border)',borderRadius:'var(--r8)',padding:'28px 14px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>Tap a pin to view</div>
             :(()=>{
               const items=selTree.scopeItems.map(sid=>SCOPE_ITEMS.find(s=>s.id===sid)).filter(Boolean);
+              const treatments=selTree.treatments||[];
               return(
                 <div className="card">
                   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:11}}>
@@ -1444,9 +1777,19 @@ function CrewTab({job,updateJob,settings}){
                     <div style={{marginBottom:9}}>
                       <div className="slabel">Scope items</div>
                       {items.map(item=>(
-                        <div key={item.id} style={{display:'flex',gap:7,fontSize:12,color:'var(--ink2)',lineHeight:1.7}}>
+                        <div key={item.id} style={{fontSize:12,color:'var(--ink2)',lineHeight:1.7,display:'flex',gap:6}}>
                           <span style={{fontFamily:'monospace',fontSize:11,color:'var(--g3)',fontWeight:600,minWidth:24}}>{item.num}.</span>
                           <span>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {treatments.length>0&&(
+                    <div style={{marginBottom:9}}>
+                      <div className="slabel">Treatments</div>
+                      {treatments.map(tx=>(
+                        <div key={tx.id} style={{fontSize:12,color:'var(--teal)',lineHeight:1.7}}>
+                          💊 {tx.name}{tx.notes?<span style={{color:'var(--ink3)'}}> — {tx.notes}</span>:null}
                         </div>
                       ))}
                     </div>
@@ -1466,10 +1809,10 @@ function CrewTab({job,updateJob,settings}){
                     </div>
                   )}
                   <div style={{paddingTop:9,borderTop:'1px solid var(--border)'}}>
-                    <div className="slabel">Switch tree</div>
+                    <div className="slabel">All trees</div>
                     <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:4}}>
                       {job.trees.map((t,i)=>(
-                        <button key={t.id} onClick={()=>setSel(t.id)}
+                        <button key={t.id} onClick={()=>recenterOnTree(t)}
                           style={{padding:'3px 8px',borderRadius:99,border:'1px solid '+(sel===t.id?PIN_COLORS[i%PIN_COLORS.length]:'var(--border)'),background:sel===t.id?PIN_COLORS[i%PIN_COLORS.length]:'transparent',color:sel===t.id?'#fff':'var(--ink3)',fontSize:11,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>
                           {t.tag}
                         </button>
@@ -1482,21 +1825,18 @@ function CrewTab({job,updateJob,settings}){
           }
         </div>
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────
 function Settings({settings,updSettings}){
-  const [showKey,setShowKey]=useState(false);
-  const hasKey=!!(settings.mapsApiKey||'').trim();
-
   return(
     <div style={{padding:'15px 15px 60px',maxWidth:680,margin:'0 auto'}}>
       <h1 style={{fontSize:20,fontWeight:300,marginBottom:4}}>Settings</h1>
-      <p style={{fontSize:12,color:'var(--ink3)',marginBottom:18}}>Company info and PDF export options. Scope pricing is now set per tree on each job — go to Intake on any job to enter prices.</p>
+      <p style={{fontSize:12,color:'var(--ink3)',marginBottom:18}}>Company info printed on estimates, scope sheets, and crew briefs.</p>
 
-      {/* Company */}
       <div className="card" style={{marginBottom:11}}>
         <div className="slabel">Company</div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(175px,1fr))',gap:10,marginTop:8}}>
@@ -1508,48 +1848,12 @@ function Settings({settings,updSettings}){
         </div>
       </div>
 
-      {/* Google Static Maps API key — unlocks real satellite imagery in
-          the Crew Map PDF export. Without a key, the PDF falls back to a
-          schematic of pin positions. Key is stored locally only. */}
-      <div className="card" style={{marginBottom:11}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
-          <div className="slabel" style={{margin:0}}>Crew Map PDF · Satellite imagery</div>
-          <span style={{fontSize:11,padding:'2px 9px',borderRadius:99,background:hasKey?'var(--g6)':'var(--bg)',color:hasKey?'var(--g3)':'var(--ink3)',border:'1px solid '+(hasKey?'var(--g5)':'var(--border)'),fontWeight:500}}>
-            {hasKey?'● Active':'Not set'}
-          </span>
-        </div>
-        <p style={{fontSize:12,color:'var(--ink3)',marginBottom:10,lineHeight:1.55}}>
-          Paste a <strong>Google Static Maps API key</strong> to include the real satellite aerial of each job address in Crew Map PDFs. Without a key, PDFs show a pin-layout schematic instead. Free tier covers ~10,000 images/month — plenty for a tree service.
-        </p>
-        <label>Static Maps API key</label>
-        <div style={{display:'flex',gap:6,alignItems:'stretch'}}>
-          <input
-            type={showKey?'text':'password'}
-            value={settings.mapsApiKey||''}
-            onChange={e=>updSettings({mapsApiKey:e.target.value.trim()})}
-            placeholder="AIzaSy…"
-            style={{fontFamily:'monospace',fontSize:13}}
-            autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
-          />
-          <button className="btn btn-sm" type="button" onClick={()=>setShowKey(s=>!s)} style={{flexShrink:0,minWidth:64}}>
-            {showKey?'Hide':'Show'}
-          </button>
-        </div>
-        <details style={{marginTop:10,fontSize:12,color:'var(--ink3)'}}>
-          <summary style={{cursor:'pointer',color:'var(--g3)',fontWeight:500}}>How to get a key (3 min)</summary>
-          <ol style={{marginTop:8,paddingLeft:20,lineHeight:1.7}}>
-            <li>Open <a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" rel="noopener" style={{color:'var(--blue)'}}>console.cloud.google.com/google/maps-apis/credentials</a></li>
-            <li>Use your existing project (the one with the OAuth Client ID for sign-in)</li>
-            <li>Click <strong>Create Credentials → API key</strong></li>
-            <li>Go to <strong>APIs &amp; Services → Library</strong>, search <strong>"Maps Static API"</strong>, click <strong>Enable</strong></li>
-            <li>Paste the key above. Locally stored on this device only.</li>
-          </ol>
-          <p style={{marginTop:8,color:'var(--ink4)',fontSize:11}}>Tip: in the key's settings, restrict it to the <em>Maps Static API</em> only to prevent misuse if it leaks.</p>
-        </details>
+      <div style={{padding:'14px',background:'var(--g6)',borderRadius:'var(--r8)',border:'1px solid var(--g5)',fontSize:13,color:'var(--g3)',marginBottom:11}}>
+        <strong>🛰️ Satellite map:</strong> The Crew Map tab now uses <strong>ESRI World Imagery</strong> via Leaflet — free satellite tiles, no Google billing account required. Your previous API key is no longer needed for satellite views.
       </div>
 
-      <div style={{padding:'12px 14px',background:'var(--g6)',borderRadius:'var(--r8)',border:'1px solid var(--g5)',fontSize:13,color:'var(--g3)'}}>
-        <strong>Sign-in:</strong> Each arborist signs in with their own Google account — no passwords or PINs to manage. Jobs are saved per user on their device. For cross-device sync, a free Supabase backend can be connected (see README).
+      <div style={{padding:'12px 14px',background:'var(--card)',borderRadius:'var(--r8)',border:'1px solid var(--border)',fontSize:13,color:'var(--ink2)'}}>
+        <strong>Sign-in:</strong> Each arborist signs in with their own Google account. Jobs are saved per user on this device.
       </div>
     </div>
   );
