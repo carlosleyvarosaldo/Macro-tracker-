@@ -1022,14 +1022,108 @@ function IntakeTab({job,updateJob,settings}){
 }
 
 // ─── TREATMENTS TAB ───────────────────────────────────────────────────────
+// Cambistat DBH dose lookup — defined outside component so it's stable
+function cambistatDose(dbh){
+  const d=parseFloat(dbh);
+  if(!d||d<4)return null;
+  if(d<=6) return{vol:'1 oz',   method:'Basal bark drench'};
+  if(d<=10)return{vol:'2 oz',   method:'Basal bark drench'};
+  if(d<=14)return{vol:'3 oz',   method:'Basal bark drench'};
+  if(d<=20)return{vol:'4.5 oz', method:'Soil application'};
+  if(d<=28)return{vol:'6.5 oz', method:'Soil application'};
+  if(d<=36)return{vol:'8.5 oz', method:'Soil application'};
+  if(d<=47)return{vol:'11 oz',  method:'Soil application'};
+  return{vol:'See label',method:'DBH > 47" — consult label'};
+}
+
+// Separate card component so each has its own isolated dbhInput state —
+// this prevents the input from losing focus when the parent re-renders.
+function TreatCard({t, isSel, onToggle, job, selTree, setSelTree, addTreatmentToTree}){
+  const [dbhInput,setDbhInput]=useState('');
+  const doseResult=dbhInput?cambistatDose(dbhInput):null;
+  return(
+    <div className={`treat-card${isSel?' sel':''}`} onClick={()=>onToggle(t.id)}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:isSel?10:0}}>
+        <span style={{fontSize:22}}>{t.img}</span>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:500,fontSize:14}}>{t.name}</div>
+          <div style={{fontSize:11,color:'var(--ink3)',marginTop:2}}>{t.notes.slice(0,60)}…</div>
+        </div>
+        {isSel&&<I d={ic.chevu} s={14} c="var(--teal)"/>}
+        {!isSel&&<I d={ic.chevd} s={14} c="var(--ink4)"/>}
+      </div>
+      {isSel&&(
+        <div style={{display:'flex',flexDirection:'column',gap:8,fontSize:13}} onClick={e=>e.stopPropagation()}>
+          <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
+            <div style={{fontWeight:500,color:'var(--teal)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>💉 Dose</div>
+            <div style={{lineHeight:1.6}}>{t.dose}</div>
+          </div>
+          {t.hasDoseCalc&&t.calcType==='cambistat'&&(
+            <div style={{background:'#fff7dc',border:'1px solid #e9b84e',borderRadius:'var(--r4)',padding:'10px 12px'}}>
+              <div style={{fontWeight:500,color:'var(--amber)',marginBottom:8,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>📐 Cambistat Dose Calculator</div>
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                <input
+                  type="number" min="4" max="47"
+                  value={dbhInput}
+                  onChange={e=>{e.stopPropagation();setDbhInput(e.target.value);}}
+                  onClick={e=>e.stopPropagation()}
+                  onKeyDown={e=>e.stopPropagation()}
+                  placeholder="Enter DBH (in.)"
+                  style={{width:140,padding:'6px 10px',fontSize:13,flexShrink:0}}
+                  autoComplete="off"
+                />
+                {doseResult&&(
+                  <div style={{flex:1,fontSize:14,fontWeight:500,color:'#7a5000',background:'#fff',borderRadius:'var(--r4)',padding:'6px 10px',border:'1px solid #e9b84e'}}>
+                    <span style={{fontSize:17,fontWeight:700}}>{doseResult.vol}</span>
+                    <div style={{fontSize:11,color:'var(--ink3)',fontWeight:400,marginTop:2}}>{doseResult.method}</div>
+                  </div>
+                )}
+                {dbhInput&&!doseResult&&(
+                  <div style={{fontSize:12,color:'var(--red)'}}>DBH must be 4–47 inches</div>
+                )}
+              </div>
+            </div>
+          )}
+          <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
+            <div style={{fontWeight:500,color:'var(--amber)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>⚠️ PPE</div>
+            <div style={{lineHeight:1.6}}>{t.ppe}</div>
+          </div>
+          <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
+            <div style={{fontWeight:500,color:'var(--blue)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>🔧 Application</div>
+            <div style={{lineHeight:1.6}}>{t.app}</div>
+            <div style={{marginTop:8,fontSize:11,color:'var(--ink3)',borderTop:'1px solid var(--border)',paddingTop:7}}>{t.notes}</div>
+          </div>
+          <a href={t.label} target="_blank" rel="noopener"
+            style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--blue)',padding:'7px 10px',border:'1px solid var(--border)',borderRadius:'var(--r4)',background:'var(--card)',textDecoration:'none'}}>
+            <I d={ic.link} s={13}/>View full product label
+          </a>
+          {job.trees.length>0&&(
+            <div style={{borderTop:'1px solid var(--border)',paddingTop:10}}>
+              <div style={{fontSize:11,fontWeight:500,color:'var(--ink3)',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:7}}>Assign to tree</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {job.trees.map((tr,i)=>{
+                  const already=(tr.treatments||[]).some(x=>x.id===t.id);
+                  return(
+                    <button key={tr.id}
+                      onClick={e=>{e.stopPropagation();setSelTree(tr.id);if(!already)addTreatmentToTree(t.id);}}
+                      style={{padding:'4px 10px',borderRadius:99,border:'1px solid '+(already?'var(--teal)':'var(--border)'),background:already?'var(--teal)':'transparent',color:already?'#fff':'var(--ink3)',fontSize:12,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>
+                      {tr.tag}{already?' ✓':''}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TreatmentsTab({job,updateJob}){
   const [season,setSeason]=useState('Spring');
   const [selTreat,setSelTreat]=useState(null);
   const [selTree,setSelTree]=useState(job.trees[0]?.id||null);
-  const [dbhInput,setDbhInput]=useState('');
-
-  const currentTree=job.trees.find(t=>t.id===selTree);
-  const treat=selTreat?Object.values(TREATMENTS).flat().find(t=>t.id===selTreat):null;
 
   function addTreatmentToTree(treatId){
     if(!selTree)return;
@@ -1054,20 +1148,6 @@ function TreatmentsTab({job,updateJob}){
     )}));
   }
 
-  // Cambistat DBH dose lookup table (simplified)
-  function cambistatDose(dbh){
-    const d=parseFloat(dbh);
-    if(!d||d<4)return null;
-    if(d<=6)return{vol:'1 oz',method:'Basal bark drench'};
-    if(d<=10)return{vol:'2 oz',method:'Basal bark drench'};
-    if(d<=14)return{vol:'3 oz',method:'Basal bark drench'};
-    if(d<=20)return{vol:'4.5 oz',method:'Soil application'};
-    if(d<=28)return{vol:'6.5 oz',method:'Soil application'};
-    if(d<=36)return{vol:'8.5 oz',method:'Soil application'};
-    if(d<=47)return{vol:'11 oz',method:'Soil application'};
-    return{vol:'See label',method:'DBH > 47" — consult label'};
-  }
-
   const seasons=Object.keys(TREATMENTS);
 
   return(
@@ -1089,78 +1169,20 @@ function TreatmentsTab({job,updateJob}){
             ))}
           </div>
 
-          {/* Product cards */}
+          {/* Product cards — each is its own component with isolated dbhInput state */}
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {TREATMENTS[season].map(t=>{
-              const isSel=selTreat===t.id;
-              return(
-                <div key={t.id} className={`treat-card${isSel?' sel':''}`} onClick={()=>setSelTreat(isSel?null:t.id)}>
-                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:isSel?10:0}}>
-                    <span style={{fontSize:22}}>{t.img}</span>
-                    <div style={{flex:1}}>
-                      <div style={{fontWeight:500,fontSize:14}}>{t.name}</div>
-                      <div style={{fontSize:11,color:'var(--ink3)',marginTop:2}}>{t.notes.slice(0,60)}…</div>
-                    </div>
-                    {isSel&&<I d={ic.chevu} s={14} c="var(--teal)"/>}
-                    {!isSel&&<I d={ic.chevd} s={14} c="var(--ink4)"/>}
-                  </div>
-                  {isSel&&(
-                    <div style={{display:'flex',flexDirection:'column',gap:8,fontSize:13}}>
-                      <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
-                        <div style={{fontWeight:500,color:'var(--teal)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>💉 Dose</div>
-                        <div style={{lineHeight:1.6}}>{t.dose}</div>
-                      </div>
-                      {t.hasDoseCalc&&t.calcType==='cambistat'&&(
-                        <div style={{background:'#fff7dc',border:'1px solid #e9b84e',borderRadius:'var(--r4)',padding:'10px 12px'}}>
-                          <div style={{fontWeight:500,color:'var(--amber)',marginBottom:8,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>📐 Cambistat Dose Calculator</div>
-                          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                            <input type="number" min="4" max="47" value={dbhInput} onChange={e=>setDbhInput(e.target.value)} placeholder="DBH in." style={{width:90,padding:'5px 8px',fontSize:13}}/>
-                            {dbhInput&&cambistatDose(dbhInput)&&(
-                              <div style={{flex:1,fontSize:13}}>
-                                <strong>{cambistatDose(dbhInput).vol}</strong>
-                                <div style={{fontSize:11,color:'var(--ink3)'}}>{cambistatDose(dbhInput).method}</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
-                        <div style={{fontWeight:500,color:'var(--amber)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>⚠️ PPE</div>
-                        <div style={{lineHeight:1.6}}>{t.ppe}</div>
-                      </div>
-                      <div style={{background:'var(--card)',borderRadius:'var(--r4)',padding:'10px 12px',border:'1px solid var(--border)'}}>
-                        <div style={{fontWeight:500,color:'var(--blue)',marginBottom:6,fontSize:11,textTransform:'uppercase',letterSpacing:'.05em'}}>🔧 Application</div>
-                        <div style={{lineHeight:1.6}}>{t.app}</div>
-                        <div style={{marginTop:8,fontSize:11,color:'var(--ink3)',borderTop:'1px solid var(--border)',paddingTop:7}}>{t.notes}</div>
-                      </div>
-                      <a href={t.label} target="_blank" rel="noopener"
-                        style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--blue)',padding:'7px 10px',border:'1px solid var(--border)',borderRadius:'var(--r4)',background:'var(--card)',textDecoration:'none'}}>
-                        <I d={ic.link} s={13}/>View full product label
-                      </a>
-
-                      {/* Assign to tree */}
-                      {job.trees.length>0&&(
-                        <div style={{borderTop:'1px solid var(--border)',paddingTop:10}}>
-                          <div style={{fontSize:11,fontWeight:500,color:'var(--ink3)',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:7}}>Assign to tree</div>
-                          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                            {job.trees.map((tr,i)=>{
-                              const already=(tr.treatments||[]).some(x=>x.id===t.id);
-                              return(
-                                <button key={tr.id}
-                                  onClick={e=>{e.stopPropagation();setSelTree(tr.id);if(!already)addTreatmentToTree(t.id);}}
-                                  style={{padding:'4px 10px',borderRadius:99,border:'1px solid '+(already?'var(--teal)':'var(--border)'),background:already?'var(--teal)':'transparent',color:already?'#fff':'var(--ink3)',fontSize:12,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>
-                                  {tr.tag}{already?' ✓':''}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {TREATMENTS[season].map(t=>(
+              <TreatCard
+                key={t.id}
+                t={t}
+                isSel={selTreat===t.id}
+                onToggle={id=>setSelTreat(prev=>prev===id?null:id)}
+                job={job}
+                selTree={selTree}
+                setSelTree={setSelTree}
+                addTreatmentToTree={addTreatmentToTree}
+              />
+            ))}
           </div>
 
           <div style={{marginTop:12,padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'var(--r8)',fontSize:12,color:'var(--ink3)'}}>
@@ -1467,126 +1489,110 @@ function ScopeTab({job,settings}){
   );
 }
 
-// ─── CREW MAP TAB (Leaflet / OpenStreetMap — no billing) ──────────────────
+// ─── CREW MAP TAB (Leaflet / ESRI satellite — no billing required) ────────
 function CrewTab({job,updateJob,settings}){
-  const mapContainerRef=useRef(null);
   const mapRef=useRef(null);
   const markersRef=useRef({});
+  const geocodedRef=useRef('');
   const [sel,setSel]=useState(null);
   const [geocoding,setGeocoding]=useState(false);
-  const [mapCenter,setMapCenter]=useState([30.018,-97.879]); // Kyle TX default
   const selTree=job.trees.find(t=>t.id===sel);
   const addr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
 
-  // Init Leaflet map once
-  useEffect(()=>{
-    if(!window.L||mapRef.current)return;
-    const map=window.L.map(mapContainerRef.current,{
-      center:mapCenter,zoom:17,
-      // Use ESRI World Imagery for free satellite tiles (no API key needed)
-      preferCanvas:false,
-    });
-
-    // Satellite layer: ESRI World Imagery — free, no key
+  // Callback ref fires when the div actually mounts with real pixel dimensions.
+  // This is the correct fix for "blank map" — useEffect with [] fires too early.
+  const mapCallbackRef=useCallback(node=>{
+    if(!node||!window.L)return;
+    if(mapRef.current){mapRef.current.invalidateSize();return;}
+    const map=window.L.map(node,{center:[30.018,-97.879],zoom:17});
     window.L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {attribution:'© Esri, Maxar, Earthstar Geographics','maxZoom':20}
+      {attribution:'Imagery © Esri · Maxar',maxZoom:20}
     ).addTo(map);
-
-    // Labels overlay (so street names show on satellite)
     window.L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      {attribution:'',opacity:.7,'maxZoom':20}
+      {attribution:'',opacity:0.7,maxZoom:20}
     ).addTo(map);
-
     mapRef.current=map;
-    return()=>{map.remove();mapRef.current=null;};
+    setTimeout(()=>map.invalidateSize(),120);
   },[]);
 
-  // Geocode address and pan map when address changes
+  // Cleanup on unmount
   useEffect(()=>{
-    if(!addr||addr.length<5||!mapRef.current)return;
-    setGeocoding(true);
-    geocodeAddress(addr).then(ll=>{
-      if(ll&&mapRef.current){
-        mapRef.current.setView([ll.lat,ll.lng],19);
-        setMapCenter([ll.lat,ll.lng]);
-      }
-      setGeocoding(false);
-    });
+    return()=>{
+      if(mapRef.current){mapRef.current.remove();mapRef.current=null;}
+      markersRef.current={};
+      geocodedRef.current='';
+    };
+  },[]);
+
+  // Geocode address — only when it changes, retries until map is ready
+  useEffect(()=>{
+    if(!addr||addr.length<5||addr===geocodedRef.current)return;
+    const tryGeocode=()=>{
+      if(!mapRef.current){setTimeout(tryGeocode,200);return;}
+      geocodedRef.current=addr;
+      setGeocoding(true);
+      geocodeAddress(addr).then(ll=>{
+        if(ll&&mapRef.current)mapRef.current.setView([ll.lat,ll.lng],19);
+        setGeocoding(false);
+      });
+    };
+    tryGeocode();
   },[addr]);
 
-  // Render/update draggable pins
+  // Sync draggable markers — retries until map is ready
   useEffect(()=>{
-    if(!mapRef.current||!window.L)return;
-    const map=mapRef.current;
-    const currentIds=new Set(job.trees.map(t=>t.id));
-
-    // Remove old markers
-    Object.keys(markersRef.current).forEach(id=>{
-      if(!currentIds.has(id)){markersRef.current[id].remove();delete markersRef.current[id];}
-    });
-
-    // Add/update markers
-    job.trees.forEach((tree,i)=>{
-      const col=PIN_COLORS[i%PIN_COLORS.length];
-      const mapBounds=map.getBounds();
+    const syncMarkers=()=>{
+      if(!mapRef.current||!window.L)return;
+      const map=mapRef.current;
       const center=map.getCenter();
-
-      // Default lat/lng: scatter around map center if not set
-      let lat=tree.lat??center.lat+(Math.random()-.5)*.001;
-      let lng=tree.lng??center.lng+(Math.random()-.5)*.001;
-
-      const icon=window.L.divIcon({
-        className:'',
-        html:`<div style="
-          background:${col};width:32px;height:32px;border-radius:50%;border:2.5px solid #fff;
-          display:flex;align-items:center;justify-content:center;
-          font-size:10px;font-weight:700;color:#fff;font-family:Arial,sans-serif;
-          box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:grab;
-          transform:translate(-50%,-50%);position:relative;
-        ">${tree.tag}</div>`,
-        iconSize:[0,0],
-        iconAnchor:[0,0],
+      const currentIds=new Set(job.trees.map(t=>t.id));
+      Object.keys(markersRef.current).forEach(id=>{
+        if(!currentIds.has(id)){markersRef.current[id].remove();delete markersRef.current[id];}
       });
-
-      if(markersRef.current[tree.id]){
-        // Update icon and position if tag changed
-        markersRef.current[tree.id].setIcon(icon);
-        if(tree.lat!==null&&tree.lng!==null){
-          markersRef.current[tree.id].setLatLng([tree.lat,tree.lng]);
-        }
-      }else{
-        const marker=window.L.marker([lat,lng],{icon,draggable:true});
-        marker.addTo(map);
-        marker.on('click',()=>setSel(tree.id));
-        marker.on('dragend',e=>{
-          const{lat:newLat,lng:newLng}=e.target.getLatLng();
-          updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
-            t.id===tree.id?{...t,lat:newLat,lng:newLng}:t
-          )}));
-          setSel(tree.id);
+      job.trees.forEach((tree,i)=>{
+        const col=PIN_COLORS[i%PIN_COLORS.length];
+        const lat=tree.lat??center.lat+(i*.00025-.0003);
+        const lng=tree.lng??center.lng+(i*.0003 -.0004);
+        const makeIcon=()=>window.L.divIcon({
+          className:'',
+          html:`<div style="background:${col};width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:Arial,sans-serif;box-shadow:0 2px 7px rgba(0,0,0,.5);cursor:grab;">${tree.tag}</div>`,
+          iconSize:[34,34],iconAnchor:[17,17],
         });
-        marker.on('dragstart',()=>setSel(tree.id));
-        markersRef.current[tree.id]=marker;
-
-        // If tree has saved lat/lng use those, else save initial position
-        if(tree.lat!==null&&tree.lng!==null){
-          marker.setLatLng([tree.lat,tree.lng]);
+        if(markersRef.current[tree.id]){
+          markersRef.current[tree.id].setIcon(makeIcon());
+          if(tree.lat!=null&&tree.lng!=null)
+            markersRef.current[tree.id].setLatLng([tree.lat,tree.lng]);
         }else{
-          updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
-            t.id===tree.id?{...t,lat,lng}:t
-          )}));
+          const marker=window.L.marker([lat,lng],{icon:makeIcon(),draggable:true});
+          marker.addTo(map);
+          marker.on('click',()=>setSel(tree.id));
+          marker.on('dragstart',()=>setSel(tree.id));
+          marker.on('dragend',e=>{
+            const ll=e.target.getLatLng();
+            updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
+              t.id===tree.id?{...t,lat:ll.lat,lng:ll.lng}:t
+            )}));
+            setSel(tree.id);
+          });
+          markersRef.current[tree.id]=marker;
+          if(tree.lat==null||tree.lng==null){
+            updateJob(job.id,j=>({...j,trees:j.trees.map(t=>
+              t.id===tree.id?{...t,lat,lng}:t
+            )}));
+          }
         }
-      }
-    });
+      });
+    };
+    if(mapRef.current)syncMarkers();
+    else{const tid=setTimeout(syncMarkers,350);return()=>clearTimeout(tid);}
   },[job.trees]);
 
   function recenterOnTree(tree){
-    if(tree.lat&&tree.lng&&mapRef.current){
-      mapRef.current.setView([tree.lat,tree.lng],19);
-    }
     setSel(tree.id);
+    if(tree.lat&&tree.lng&&mapRef.current)
+      mapRef.current.setView([tree.lat,tree.lng],19);
   }
 
   // Export crew map PDF (uses Leaflet tile URL for reference link)
@@ -1750,7 +1756,7 @@ body{font-family:Arial,Helvetica,sans-serif;max-width:7.5in;margin:0 auto;paddin
           <div className="slabel" style={{marginBottom:7}}>
             {addr||'Satellite view — enter address in Intake'}
           </div>
-          <div ref={mapContainerRef} id="leaflet-map"/>
+          <div ref={mapCallbackRef} id="leaflet-map"/>
           <p style={{fontSize:11,color:'var(--ink4)',marginTop:7}}>
             Drag the colored pins to mark exact tree positions. Satellite imagery © ESRI / Maxar — free, no billing account required.
           </p>
