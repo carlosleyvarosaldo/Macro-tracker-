@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>AGMTS Field Ops</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -100,9 +100,13 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .etbl tr:last-child td{border-bottom:none}
 .etbl .ra{text-align:right}
 
-/* Job list row */
-.jrow{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:13px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* Job list row — bigger, more scannable */
+.jrow{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:15px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .jrow:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.jrow-date{font-family:monospace;font-size:15px;font-weight:600;color:var(--ink2);min-width:78px;flex-shrink:0;line-height:1.2}
+.jrow-date-sub{font-size:11px;color:var(--ink3);font-weight:400;margin-top:1px}
+.jrow-client{font-weight:500;font-size:15px;margin-bottom:2px}
+.jrow-addr{font-size:13px;color:var(--ink3)}
 
 /* Stat */
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:13px;text-align:center}
@@ -119,19 +123,19 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:190}
 .backdrop.show{display:block}
 
-/* Calendar modal */
+/* Calendar modal — bigger text for field scanning */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:var(--card);border-radius:var(--r12);padding:20px;width:100%;max-width:460px;max-height:82vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
-.gcal-ev{border:1px solid var(--border);border-radius:var(--r8);padding:11px 13px;margin-bottom:7px;cursor:pointer;transition:all .12s}
+.modal{background:var(--card);border-radius:var(--r12);padding:20px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.gcal-ev{border:1px solid var(--border);border-radius:var(--r8);padding:14px 15px;margin-bottom:8px;cursor:pointer;transition:all .12s}
 .gcal-ev:hover{border-color:var(--g4);background:var(--g6)}
-.gcal-ev.sel{border-color:var(--g3);background:var(--g6)}
-.gcal-ev.past{opacity:.85}
+.gcal-ev.sel{border-color:var(--g3);background:var(--g6);box-shadow:0 0 0 2px rgba(74,140,63,.15)}
+.gcal-title{font-weight:600;font-size:16px;flex:1;line-height:1.3;color:var(--ink)}
+.gcal-date{font-size:15px;font-weight:600;color:var(--g3);margin-top:4px;display:flex;align-items:center;gap:6px}
+.gcal-date-past{color:var(--ink3)}
+.gcal-meta{font-size:13px;color:var(--ink2);margin-top:4px;line-height:1.4}
+.gcal-section-hdr{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.gcal-section-hdr:first-child{margin-top:0}
 .btn-gcal{background:#1a73e8;color:#fff;border-color:#1a73e8}.btn-gcal:hover{background:#1557b0;border-color:#1557b0}
-
-/* Range tabs inside calendar modal */
-.range-tabs{display:flex;gap:4px;background:var(--bg);border-radius:var(--r4);padding:3px;margin-bottom:12px}
-.range-tab{flex:1;padding:6px 8px;border-radius:3px;border:none;background:transparent;font-size:12px;font-family:var(--font);color:var(--ink3);cursor:pointer;transition:all .15s}
-.range-tab.on{background:var(--card);color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 
 @media(max-width:520px){.irow>*{min-width:100%}}
 </style>
@@ -139,7 +143,7 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const {useState,useEffect,useRef,useCallback,useMemo}=React;
+const {useState,useEffect,useRef,useCallback}=React;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 // IMPORTANT: Replace with your Google OAuth Client ID
@@ -263,13 +267,13 @@ const ic={
   logout:'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1',
   cal:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   check:'M20 6L9 17l-5-5',
-  search:'M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z',
+  search:'M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z',
 };
 
 // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
-// Uses the same OAuth token from Google Sign-In via a fresh token client.
-// Pulls a wide window — 90 days back to 45 days ahead — so past jobs can
-// also be imported (e.g. to back-fill bid sheets from completed estimates).
+// Uses the same OAuth token from Google Sign-In via a fresh token client
+// Pulls events from Jan 1 of current year through 45 days in the future
+// so past leads from this year are included for bid sheet backfill.
 async function fetchCalendarEvents(){
   return new Promise((resolve,reject)=>{
     if(!window.google?.accounts?.oauth2){reject(new Error('Google not loaded'));return;}
@@ -280,9 +284,10 @@ async function fetchCalendarEvents(){
         if(resp.error){reject(new Error(resp.error));return;}
         try{
           const now=new Date();
-          const min=new Date(now.getTime()-90*24*60*60*1000).toISOString();   // 90 days back
-          const max=new Date(now.getTime()+45*24*60*60*1000).toISOString();   // 45 days forward
-          // orderBy=startTime (ascending) — we'll sort client-side for display
+          // Start of current year — covers all past leads from Jan 1
+          const yearStart=new Date(now.getFullYear(),0,1);
+          const min=yearStart.toISOString();
+          const max=new Date(now.getTime()+45*24*60*60*1000).toISOString();
           const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=250`;
           const r=await fetch(url,{headers:{Authorization:`Bearer ${resp.access_token}`}});
           if(!r.ok)throw new Error('Calendar API error '+r.status);
@@ -323,13 +328,26 @@ function parseEventToJob(ev,user){
   return job;
 }
 
+// Format event date/time for the import list.
+// Big, scannable — shows day-of-week, month/day, and time if available.
+function formatEventDate(startIso){
+  if(!startIso)return{main:'',sub:'',isPast:false};
+  const d=new Date(startIso);
+  const now=new Date();
+  const isPast=d<now;
+  // Date-only events (no time) have length 10, e.g. "2026-03-14"
+  const hasTime=startIso.length>10;
+  const main=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const sub=hasTime?d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'All day';
+  return{main,sub,isPast,dateObj:d};
+}
+
 // ─── CALENDAR MODAL ───────────────────────────────────────────────────────
 function CalendarModal({user,onImport,onClose}){
   const [state,setState]=useState('loading');
   const [events,setEvents]=useState([]);
   const [sel,setSel]=useState(null);
   const [err,setErr]=useState('');
-  const [range,setRange]=useState('upcoming'); // 'upcoming' | 'past' | 'all'
   const [query,setQuery]=useState('');
 
   useEffect(()=>{
@@ -338,35 +356,6 @@ function CalendarModal({user,onImport,onClose}){
       .catch(e=>{setErr(e.message||'Could not load calendar.');setState('error');});
   },[]);
 
-  const now=Date.now();
-
-  // Split into past / upcoming, then apply search and range filter.
-  const filtered=useMemo(()=>{
-    const q=query.trim().toLowerCase();
-    return events
-      .map(e=>({...e,ts:e.start?new Date(e.start).getTime():0}))
-      .filter(e=>{
-        if(range==='upcoming'&&e.ts<now-24*60*60*1000)return false; // hide things >1 day old
-        if(range==='past'&&e.ts>=now)return false;
-        if(q){
-          const hay=`${e.title} ${e.location} ${e.desc}`.toLowerCase();
-          if(!hay.includes(q))return false;
-        }
-        return true;
-      })
-      // Upcoming: soonest first. Past: most recent first. All: newest first.
-      .sort((a,b)=>range==='upcoming'?a.ts-b.ts:b.ts-a.ts);
-  },[events,range,query,now]);
-
-  const counts=useMemo(()=>{
-    let upc=0,past=0;
-    events.forEach(e=>{
-      const ts=e.start?new Date(e.start).getTime():0;
-      if(ts>=now-24*60*60*1000)upc++;else past++;
-    });
-    return{upc,past,all:events.length};
-  },[events,now]);
-
   function doImport(){
     const ev=events.find(e=>e.id===sel);
     if(!ev)return;
@@ -374,17 +363,47 @@ function CalendarModal({user,onImport,onClose}){
     onClose();
   }
 
+  // Filter by search query, then split into upcoming vs past for easier scanning.
+  // Upcoming shown first (ascending), then past (most-recent first).
+  const filtered=events.filter(ev=>{
+    if(!query)return true;
+    const q=query.toLowerCase();
+    return ev.title.toLowerCase().includes(q)||
+           ev.location.toLowerCase().includes(q)||
+           ev.desc.toLowerCase().includes(q);
+  });
+  const now=new Date();
+  const upcoming=filtered.filter(e=>new Date(e.start)>=now);
+  const past=filtered.filter(e=>new Date(e.start)<now).reverse();
+
+  function renderEvent(ev){
+    const dt=formatEventDate(ev.start);
+    return(
+      <div key={ev.id} className={`gcal-ev${sel===ev.id?' sel':''}`} onClick={()=>setSel(ev.id)}>
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
+          <div className="gcal-title">{ev.title}</div>
+          {sel===ev.id&&<I d={ic.check} s={18} c="var(--g3)"/>}
+        </div>
+        <div className={`gcal-date${dt.isPast?' gcal-date-past':''}`}>
+          📅 {dt.main}<span style={{opacity:.75,fontWeight:500,marginLeft:6}}>· {dt.sub}</span>
+        </div>
+        {ev.location&&<div className="gcal-meta">📍 {ev.location}</div>}
+        {ev.desc&&<div className="gcal-meta" style={{color:'var(--ink3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.desc.replace(/<[^>]+>/g,'').slice(0,90)}</div>}
+      </div>
+    );
+  }
+
   return(
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:15}}>
-          <h3 style={{fontWeight:500,fontSize:15,display:'flex',alignItems:'center',gap:8}}><I d={ic.cal} s={16} c="var(--blue)"/>Import from Google Calendar</h3>
-          <button onClick={onClose} style={{color:'var(--ink3)',padding:4}}><I d={ic.x} s={17}/></button>
+          <h3 style={{fontWeight:500,fontSize:17,display:'flex',alignItems:'center',gap:8}}><I d={ic.cal} s={18} c="var(--blue)"/>Import from Google Calendar</h3>
+          <button onClick={onClose} style={{color:'var(--ink3)',padding:4}}><I d={ic.x} s={19}/></button>
         </div>
 
         {state==='loading'&&(
-          <div style={{textAlign:'center',padding:'32px 0',color:'var(--ink3)',fontSize:13}}>
-            <div style={{fontSize:22,marginBottom:10}}>📅</div>Loading your calendar…
+          <div style={{textAlign:'center',padding:'32px 0',color:'var(--ink3)',fontSize:14}}>
+            <div style={{fontSize:26,marginBottom:10}}>📅</div>Loading your calendar…
           </div>
         )}
         {state==='error'&&(
@@ -393,69 +412,48 @@ function CalendarModal({user,onImport,onClose}){
           </div>
         )}
         {state==='empty'&&(
-          <div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)',fontSize:13}}>No events found in the last 90 or next 45 days.</div>
+          <div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)',fontSize:14}}>No events found this year.</div>
         )}
         {state==='list'&&(
           <>
-            {/* Range tabs */}
-            <div className="range-tabs">
-              <button className={`range-tab${range==='upcoming'?' on':''}`} onClick={()=>{setRange('upcoming');setSel(null);}}>
-                Upcoming <span style={{opacity:.5,fontWeight:400}}>{counts.upc}</span>
-              </button>
-              <button className={`range-tab${range==='past'?' on':''}`} onClick={()=>{setRange('past');setSel(null);}}>
-                Past <span style={{opacity:.5,fontWeight:400}}>{counts.past}</span>
-              </button>
-              <button className={`range-tab${range==='all'?' on':''}`} onClick={()=>{setRange('all');setSel(null);}}>
-                All <span style={{opacity:.5,fontWeight:400}}>{counts.all}</span>
-              </button>
-            </div>
-
-            {/* Search */}
-            <div style={{position:'relative',marginBottom:10}}>
-              <I d={ic.search} s={13} c="var(--ink4)"/>
-              <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search title, location, notes…" style={{paddingLeft:32}}/>
-              <div style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}>
-                <I d={ic.search} s={13} c="var(--ink4)"/>
-              </div>
-            </div>
-
-            <p style={{fontSize:12,color:'var(--ink3)',marginBottom:10,lineHeight:1.6}}>
-              {range==='past'
-                ?'Select a past event to back-fill a bid sheet. Client, address, phone, and notes will be pre-filled.'
-                :range==='upcoming'
-                  ?'Select an upcoming event to create a new job pre-filled from the event details.'
-                  :'Select any event to create a new job pre-filled from the event details.'
-              }
+            <p style={{fontSize:13,color:'var(--ink3)',marginBottom:12,lineHeight:1.5}}>
+              Showing events from <strong>{now.getFullYear()}</strong> — tap one to pre-fill a new job with client name, address, phone, and notes.
             </p>
 
-            {filtered.length===0?(
-              <div style={{textAlign:'center',padding:'20px 0',color:'var(--ink3)',fontSize:13}}>
-                {query?'No events match your search.':'Nothing in this range.'}
+            {/* Search box — helps when there are lots of events */}
+            <div style={{position:'relative',marginBottom:14}}>
+              <input
+                value={query}
+                onChange={e=>setQuery(e.target.value)}
+                placeholder="Search by name, address, or notes…"
+                style={{paddingLeft:36,fontSize:14}}
+              />
+              <div style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',color:'var(--ink4)',pointerEvents:'none'}}>
+                <I d={ic.search} s={15}/>
               </div>
-            ):filtered.map(ev=>{
-              const dObj=ev.start?new Date(ev.start):null;
-              const d=dObj?dObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:dObj.getFullYear()!==new Date().getFullYear()?'numeric':undefined,hour:'numeric',minute:'2-digit'}):'';
-              const isPast=ev.ts<now;
-              return(
-                <div key={ev.id} className={`gcal-ev${sel===ev.id?' sel':''}${isPast?' past':''}`} onClick={()=>setSel(ev.id)}>
-                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
-                    <div style={{fontWeight:500,fontSize:13,flex:1,lineHeight:1.3}}>
-                      {ev.title}
-                      {isPast&&range==='all'&&<span style={{fontSize:10,background:'var(--bg)',color:'var(--ink3)',padding:'1px 6px',borderRadius:99,marginLeft:6,fontWeight:400,verticalAlign:'middle'}}>past</span>}
-                    </div>
-                    {sel===ev.id&&<I d={ic.check} s={14} c="var(--g3)"/>}
-                  </div>
-                  {d&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:3}}>🕐 {d}</div>}
-                  {ev.location&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:2}}>📍 {ev.location}</div>}
-                  {ev.desc&&<div style={{fontSize:11,color:'var(--ink4)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.desc.replace(/<[^>]+>/g,'').slice(0,80)}</div>}
-                </div>
-              );
-            })}
+            </div>
 
-            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
-              <button className="btn btn-sm" onClick={onClose}>Cancel</button>
-              <button className="btn btn-p btn-sm" onClick={doImport} style={{opacity:sel?1:.45,cursor:sel?'pointer':'not-allowed'}} disabled={!sel}>
-                <I d={ic.plus} s={13}/>Import as new job
+            {filtered.length===0&&(
+              <div style={{textAlign:'center',padding:'24px 0',color:'var(--ink3)',fontSize:14}}>No events match "{query}".</div>
+            )}
+
+            {upcoming.length>0&&(
+              <>
+                <div className="gcal-section-hdr">Upcoming ({upcoming.length})</div>
+                {upcoming.map(renderEvent)}
+              </>
+            )}
+            {past.length>0&&(
+              <>
+                <div className="gcal-section-hdr">Past — this year ({past.length})</div>
+                {past.map(renderEvent)}
+              </>
+            )}
+
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)',position:'sticky',bottom:-20,background:'var(--card)'}}>
+              <button className="btn" onClick={onClose}>Cancel</button>
+              <button className="btn btn-p" onClick={doImport} style={{opacity:sel?1:.45,cursor:sel?'pointer':'not-allowed'}} disabled={!sel}>
+                <I d={ic.plus} s={14}/>Import as new job
               </button>
             </div>
           </>
@@ -680,10 +678,10 @@ function JobList({jobs,addJob,delJob,nav,user}){
         ))}
       </div>
 
-      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search client, address, job #…" style={{marginBottom:10}}/>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search client, address, job #…" style={{marginBottom:10,fontSize:15}}/>
       <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
         {['all','active','scheduled','draft','complete'].map(x=>(
-          <button key={x} onClick={()=>setF(x)} style={{padding:'4px 11px',border:'1px solid '+(f===x?'var(--g4)':'var(--border)'),borderRadius:99,background:f===x?'var(--g6)':'transparent',color:f===x?'var(--g3)':'var(--ink3)',fontSize:12,cursor:'pointer',fontFamily:'var(--font)'}}>
+          <button key={x} onClick={()=>setF(x)} style={{padding:'5px 13px',border:'1px solid '+(f===x?'var(--g4)':'var(--border)'),borderRadius:99,background:f===x?'var(--g6)':'transparent',color:f===x?'var(--g3)':'var(--ink3)',fontSize:13,cursor:'pointer',fontFamily:'var(--font)'}}>
             {x.charAt(0).toUpperCase()+x.slice(1)}
           </button>
         ))}
@@ -697,21 +695,25 @@ function JobList({jobs,addJob,delJob,nav,user}){
           {jobs.length===0&&<button className="btn btn-p" onClick={mkNew}><I d={ic.plus} s={14}/>Create first job</button>}
         </div>
       ):(
-        <div style={{display:'flex',flexDirection:'column',gap:7}}>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {list.map(job=>{
-            const d=new Date(job.updated||job.created).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const d=new Date(job.updated||job.created);
+            const dateMain=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const dateSub=d.toLocaleDateString('en-US',{weekday:'short'});
             const sc={draft:'var(--ink3)',active:'var(--blue)',scheduled:'var(--amber)',complete:'var(--g3)'};
             return(
               <div key={job.id} className="jrow" onClick={()=>nav(`#/job/${job.id}/intake`)}>
-                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',minWidth:72,flexShrink:0}}>#{job.num}</span>
-                <div style={{flex:1,minWidth:100}}>
-                  <div style={{fontWeight:500,fontSize:13,marginBottom:1}}>{job.client||<span style={{color:'var(--ink4)',fontWeight:300}}>No client</span>}</div>
-                  {job.addr&&<div style={{fontSize:12,color:'var(--ink3)'}}>📍 {job.addr}{job.city?`, ${job.city}`:''}</div>}
+                <div className="jrow-date">
+                  {dateMain}
+                  <div className="jrow-date-sub">{dateSub}</div>
                 </div>
-                <span style={{fontSize:12,color:'var(--ink3)',flexShrink:0}}>🌳 {job.trees?.length||0}</span>
-                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink4)',flexShrink:0}}>{d}</span>
-                <span style={{fontSize:11,color:sc[job.status]||'var(--ink3)',fontWeight:500,textTransform:'uppercase',letterSpacing:'.03em',flexShrink:0}}>{job.status}</span>
-                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))delJob(job.id);}} style={{color:'var(--ink4)',fontSize:16,padding:'1px 4px',background:'none',border:'none',cursor:'pointer',flexShrink:0}}>×</button>
+                <div style={{flex:1,minWidth:140}}>
+                  <div className="jrow-client">{job.client||<span style={{color:'var(--ink4)',fontWeight:300}}>No client</span>}</div>
+                  {job.addr&&<div className="jrow-addr">📍 {job.addr}{job.city?`, ${job.city}`:''}</div>}
+                  <div style={{fontSize:11,color:'var(--ink4)',marginTop:3,fontFamily:'monospace'}}>#{job.num} · 🌳 {job.trees?.length||0}</div>
+                </div>
+                <span style={{fontSize:12,color:sc[job.status]||'var(--ink3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',flexShrink:0,padding:'3px 10px',borderRadius:99,background:'var(--bg)'}}>{job.status}</span>
+                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))delJob(job.id);}} style={{color:'var(--ink4)',fontSize:20,padding:'1px 6px',background:'none',border:'none',cursor:'pointer',flexShrink:0}}>×</button>
               </div>
             );
           })}
