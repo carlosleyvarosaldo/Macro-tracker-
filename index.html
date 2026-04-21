@@ -119,6 +119,14 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:190}
 .backdrop.show{display:block}
 
+/* Calendar modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--card);border-radius:var(--r12);padding:20px;width:100%;max-width:460px;max-height:82vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.gcal-ev{border:1px solid var(--border);border-radius:var(--r8);padding:11px 13px;margin-bottom:7px;cursor:pointer;transition:all .12s}
+.gcal-ev:hover{border-color:var(--g4);background:var(--g6)}
+.gcal-ev.sel{border-color:var(--g3);background:var(--g6)}
+.btn-gcal{background:#1a73e8;color:#fff;border-color:#1a73e8}.btn-gcal:hover{background:#1557b0;border-color:#1557b0}
+
 @media(max-width:520px){.irow>*{min-width:100%}}
 </style>
 </head>
@@ -247,7 +255,136 @@ const ic={
   jobs:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
   settings:'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',
   logout:'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1',
+  cal:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
+  check:'M20 6L9 17l-5-5',
 };
+
+// ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
+// Uses the same OAuth token from Google Sign-In via a fresh token client
+async function fetchCalendarEvents(){
+  return new Promise((resolve,reject)=>{
+    if(!window.google?.accounts?.oauth2){reject(new Error('Google not loaded'));return;}
+    const client=window.google.accounts.oauth2.initTokenClient({
+      client_id:GOOGLE_CLIENT_ID,
+      scope:'https://www.googleapis.com/auth/calendar.readonly',
+      callback:async(resp)=>{
+        if(resp.error){reject(new Error(resp.error));return;}
+        try{
+          const now=new Date();
+          const min=now.toISOString();
+          const max=new Date(now.getTime()+45*24*60*60*1000).toISOString();
+          const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=40&q=`;
+          const r=await fetch(url,{headers:{Authorization:`Bearer ${resp.access_token}`}});
+          if(!r.ok)throw new Error('Calendar API error '+r.status);
+          const data=await r.json();
+          resolve((data.items||[]).map(e=>({
+            id:e.id,
+            title:e.summary||'Untitled',
+            start:e.start?.dateTime||e.start?.date||'',
+            desc:e.description||'',
+            location:e.location||'',
+          })));
+        }catch(e){reject(e);}
+      },
+    });
+    client.requestAccessToken({prompt:''});
+  });
+}
+
+function parseEventToJob(ev,user){
+  const job=newJob(user);
+  // Strip common prefixes from title to get client name
+  job.client=ev.title.replace(/^(estimate|assessment|job|site visit|consult|quote)[:\s\-]*/i,'').trim();
+  // Parse location into address fields
+  if(ev.location){
+    const parts=ev.location.split(',').map(s=>s.trim());
+    job.addr=parts[0]||'';
+    if(parts.length>=2)job.city=parts[1]?.replace(/\s*(TX|Texas)\s*/i,'').trim()||'';
+    const zipMatch=ev.location.match(/\b(\d{5})\b/);
+    if(zipMatch)job.zip=zipMatch[1];
+  }
+  // Pull phone, email, notes from description
+  const desc=ev.desc||'';
+  const phoneMatch=desc.match(/(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/);
+  if(phoneMatch)job.phone=phoneMatch[1];
+  const emailMatch=desc.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/);
+  if(emailMatch)job.email=emailMatch[1];
+  if(desc.trim())job.siteNotes=desc.replace(/<[^>]+>/g,'').trim().slice(0,300);
+  return job;
+}
+
+// ─── CALENDAR MODAL ───────────────────────────────────────────────────────
+function CalendarModal({user,onImport,onClose}){
+  const [state,setState]=useState('loading');
+  const [events,setEvents]=useState([]);
+  const [sel,setSel]=useState(null);
+  const [err,setErr]=useState('');
+
+  useEffect(()=>{
+    fetchCalendarEvents()
+      .then(evs=>{setEvents(evs);setState(evs.length?'list':'empty');})
+      .catch(e=>{setErr(e.message||'Could not load calendar.');setState('error');});
+  },[]);
+
+  function doImport(){
+    const ev=events.find(e=>e.id===sel);
+    if(!ev)return;
+    onImport(parseEventToJob(ev,user));
+    onClose();
+  }
+
+  return(
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:15}}>
+          <h3 style={{fontWeight:500,fontSize:15,display:'flex',alignItems:'center',gap:8}}><I d={ic.cal} s={16} c="var(--blue)"/>Import from Google Calendar</h3>
+          <button onClick={onClose} style={{color:'var(--ink3)',padding:4}}><I d={ic.x} s={17}/></button>
+        </div>
+
+        {state==='loading'&&(
+          <div style={{textAlign:'center',padding:'32px 0',color:'var(--ink3)',fontSize:13}}>
+            <div style={{fontSize:22,marginBottom:10}}>📅</div>Loading your calendar…
+          </div>
+        )}
+        {state==='error'&&(
+          <div style={{padding:'13px',background:'#fdeaea',borderRadius:'var(--r8)',color:'var(--red)',fontSize:13,marginBottom:12,lineHeight:1.5}}>
+            {err}<br/><span style={{fontSize:11,opacity:.8}}>Make sure your Google Cloud project has the Calendar API enabled.</span>
+          </div>
+        )}
+        {state==='empty'&&(
+          <div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)',fontSize:13}}>No upcoming events found in the next 45 days.</div>
+        )}
+        {state==='list'&&(
+          <>
+            <p style={{fontSize:12,color:'var(--ink3)',marginBottom:12,lineHeight:1.6}}>
+              Select an event to create a new job. Client name, address, phone, and notes will be pre-filled from the event details.
+            </p>
+            {events.map(ev=>{
+              const d=ev.start?new Date(ev.start).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+              return(
+                <div key={ev.id} className={`gcal-ev${sel===ev.id?' sel':''}`} onClick={()=>setSel(ev.id)}>
+                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
+                    <div style={{fontWeight:500,fontSize:13,flex:1,lineHeight:1.3}}>{ev.title}</div>
+                    {sel===ev.id&&<I d={ic.check} s={14} c="var(--g3)"/>}
+                  </div>
+                  {d&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:3}}>🕐 {d}</div>}
+                  {ev.location&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:2}}>📍 {ev.location}</div>}
+                  {ev.desc&&<div style={{fontSize:11,color:'var(--ink4)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.desc.replace(/<[^>]+>/g,'').slice(0,80)}</div>}
+                </div>
+              );
+            })}
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
+              <button className="btn btn-sm" onClick={onClose}>Cancel</button>
+              <button className="btn btn-p btn-sm" onClick={doImport} style={{opacity:sel?1:.45,cursor:sel?'pointer':'not-allowed'}} disabled={!sel}>
+                <I d={ic.plus} s={13}/>Import as new job
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────
 function LoginScreen({onLogin}){
@@ -312,6 +449,7 @@ function App(){
   const [jobs,setJobs]=useState(()=>user?loadJobs(user.id):[]);
   const [route,setRoute]=useState(window.location.hash||'#/');
   const [sidebarOpen,setSidebarOpen]=useState(window.innerWidth>=641);
+  const [calModal,setCalModal]=useState(false);
 
   useEffect(()=>{
     const h=()=>setRoute(window.location.hash||'#/');
@@ -345,7 +483,7 @@ function App(){
   function addJob(j){setJobs(p=>{const n=[...p,j];saveJ(n);return n;});}
   function delJob(id){setJobs(p=>{const n=p.filter(j=>j.id!==id);saveJ(n);return n;});}
   function updSettings(u){setSettings(p=>{const n={...p,...u};saveSettings(n);return n;});}
-
+  function handleCalImport(job){addJob(job);nav(`#/job/${job.id}/intake`);}
   if(!user)return <LoginScreen onLogin={handleLogin}/>;
 
   const hash=route.replace('#','');
@@ -358,6 +496,7 @@ function App(){
   return(
     <div className="page">
       {isMobile&&sidebarOpen&&<div className="backdrop show" onClick={()=>setSidebarOpen(false)}/>}
+      {calModal&&<CalendarModal user={user} onImport={handleCalImport} onClose={()=>setCalModal(false)}/>}
 
       {/* Sidebar */}
       <aside className={`sidebar${isMobile&&sidebarOpen?' open':''}`}
@@ -374,6 +513,9 @@ function App(){
             const active=h==='#/'?(hash==='/'||hash===''):hash.startsWith(h.replace('#',''));
             return <button key={h} onClick={()=>nav(h)} className={`ni${active?' on':''}`}><I d={icon} s={14}/>{label}</button>;
           })}
+          <button className="ni" onClick={()=>{setSidebarOpen(false);setCalModal(true);}} style={{marginTop:4,borderTop:'1px solid rgba(255,255,255,.07)',paddingTop:10}}>
+            <I d={ic.cal} s={14}/>Import from Calendar
+          </button>
         </nav>
         <div className="sb-user" onClick={handleLogout} title="Tap to sign out">
           {user.picture
@@ -406,7 +548,14 @@ function App(){
               </select>
             </>
           )}
-          {page==='list'&&<span style={{fontSize:14,fontWeight:500}}>Jobs</span>}
+          {page==='list'&&(
+            <div style={{display:'flex',alignItems:'center',gap:8,flex:1,justifyContent:'space-between'}}>
+              <span style={{fontSize:14,fontWeight:500}}>Jobs</span>
+              <button className="btn btn-sm btn-gcal" onClick={()=>setCalModal(true)}>
+                <I d={ic.cal} s={13}/>Import from Calendar
+              </button>
+            </div>
+          )}
           {page==='settings'&&<span style={{fontSize:14,fontWeight:500}}>Settings</span>}
         </div>
         <div className="scroll">
