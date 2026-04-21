@@ -125,7 +125,13 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 .gcal-ev{border:1px solid var(--border);border-radius:var(--r8);padding:11px 13px;margin-bottom:7px;cursor:pointer;transition:all .12s}
 .gcal-ev:hover{border-color:var(--g4);background:var(--g6)}
 .gcal-ev.sel{border-color:var(--g3);background:var(--g6)}
+.gcal-ev.past{opacity:.85}
 .btn-gcal{background:#1a73e8;color:#fff;border-color:#1a73e8}.btn-gcal:hover{background:#1557b0;border-color:#1557b0}
+
+/* Range tabs inside calendar modal */
+.range-tabs{display:flex;gap:4px;background:var(--bg);border-radius:var(--r4);padding:3px;margin-bottom:12px}
+.range-tab{flex:1;padding:6px 8px;border-radius:3px;border:none;background:transparent;font-size:12px;font-family:var(--font);color:var(--ink3);cursor:pointer;transition:all .15s}
+.range-tab.on{background:var(--card);color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 
 @media(max-width:520px){.irow>*{min-width:100%}}
 </style>
@@ -133,7 +139,7 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const {useState,useEffect,useRef,useCallback}=React;
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 // IMPORTANT: Replace with your Google OAuth Client ID
@@ -257,10 +263,13 @@ const ic={
   logout:'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1',
   cal:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   check:'M20 6L9 17l-5-5',
+  search:'M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z',
 };
 
 // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
-// Uses the same OAuth token from Google Sign-In via a fresh token client
+// Uses the same OAuth token from Google Sign-In via a fresh token client.
+// Pulls a wide window — 90 days back to 45 days ahead — so past jobs can
+// also be imported (e.g. to back-fill bid sheets from completed estimates).
 async function fetchCalendarEvents(){
   return new Promise((resolve,reject)=>{
     if(!window.google?.accounts?.oauth2){reject(new Error('Google not loaded'));return;}
@@ -271,9 +280,10 @@ async function fetchCalendarEvents(){
         if(resp.error){reject(new Error(resp.error));return;}
         try{
           const now=new Date();
-          const min=now.toISOString();
-          const max=new Date(now.getTime()+45*24*60*60*1000).toISOString();
-          const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=40&q=`;
+          const min=new Date(now.getTime()-90*24*60*60*1000).toISOString();   // 90 days back
+          const max=new Date(now.getTime()+45*24*60*60*1000).toISOString();   // 45 days forward
+          // orderBy=startTime (ascending) — we'll sort client-side for display
+          const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=250`;
           const r=await fetch(url,{headers:{Authorization:`Bearer ${resp.access_token}`}});
           if(!r.ok)throw new Error('Calendar API error '+r.status);
           const data=await r.json();
@@ -319,12 +329,43 @@ function CalendarModal({user,onImport,onClose}){
   const [events,setEvents]=useState([]);
   const [sel,setSel]=useState(null);
   const [err,setErr]=useState('');
+  const [range,setRange]=useState('upcoming'); // 'upcoming' | 'past' | 'all'
+  const [query,setQuery]=useState('');
 
   useEffect(()=>{
     fetchCalendarEvents()
       .then(evs=>{setEvents(evs);setState(evs.length?'list':'empty');})
       .catch(e=>{setErr(e.message||'Could not load calendar.');setState('error');});
   },[]);
+
+  const now=Date.now();
+
+  // Split into past / upcoming, then apply search and range filter.
+  const filtered=useMemo(()=>{
+    const q=query.trim().toLowerCase();
+    return events
+      .map(e=>({...e,ts:e.start?new Date(e.start).getTime():0}))
+      .filter(e=>{
+        if(range==='upcoming'&&e.ts<now-24*60*60*1000)return false; // hide things >1 day old
+        if(range==='past'&&e.ts>=now)return false;
+        if(q){
+          const hay=`${e.title} ${e.location} ${e.desc}`.toLowerCase();
+          if(!hay.includes(q))return false;
+        }
+        return true;
+      })
+      // Upcoming: soonest first. Past: most recent first. All: newest first.
+      .sort((a,b)=>range==='upcoming'?a.ts-b.ts:b.ts-a.ts);
+  },[events,range,query,now]);
+
+  const counts=useMemo(()=>{
+    let upc=0,past=0;
+    events.forEach(e=>{
+      const ts=e.start?new Date(e.start).getTime():0;
+      if(ts>=now-24*60*60*1000)upc++;else past++;
+    });
+    return{upc,past,all:events.length};
+  },[events,now]);
 
   function doImport(){
     const ev=events.find(e=>e.id===sel);
@@ -352,19 +393,56 @@ function CalendarModal({user,onImport,onClose}){
           </div>
         )}
         {state==='empty'&&(
-          <div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)',fontSize:13}}>No upcoming events found in the next 45 days.</div>
+          <div style={{textAlign:'center',padding:'28px 0',color:'var(--ink3)',fontSize:13}}>No events found in the last 90 or next 45 days.</div>
         )}
         {state==='list'&&(
           <>
-            <p style={{fontSize:12,color:'var(--ink3)',marginBottom:12,lineHeight:1.6}}>
-              Select an event to create a new job. Client name, address, phone, and notes will be pre-filled from the event details.
+            {/* Range tabs */}
+            <div className="range-tabs">
+              <button className={`range-tab${range==='upcoming'?' on':''}`} onClick={()=>{setRange('upcoming');setSel(null);}}>
+                Upcoming <span style={{opacity:.5,fontWeight:400}}>{counts.upc}</span>
+              </button>
+              <button className={`range-tab${range==='past'?' on':''}`} onClick={()=>{setRange('past');setSel(null);}}>
+                Past <span style={{opacity:.5,fontWeight:400}}>{counts.past}</span>
+              </button>
+              <button className={`range-tab${range==='all'?' on':''}`} onClick={()=>{setRange('all');setSel(null);}}>
+                All <span style={{opacity:.5,fontWeight:400}}>{counts.all}</span>
+              </button>
+            </div>
+
+            {/* Search */}
+            <div style={{position:'relative',marginBottom:10}}>
+              <I d={ic.search} s={13} c="var(--ink4)"/>
+              <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search title, location, notes…" style={{paddingLeft:32}}/>
+              <div style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}>
+                <I d={ic.search} s={13} c="var(--ink4)"/>
+              </div>
+            </div>
+
+            <p style={{fontSize:12,color:'var(--ink3)',marginBottom:10,lineHeight:1.6}}>
+              {range==='past'
+                ?'Select a past event to back-fill a bid sheet. Client, address, phone, and notes will be pre-filled.'
+                :range==='upcoming'
+                  ?'Select an upcoming event to create a new job pre-filled from the event details.'
+                  :'Select any event to create a new job pre-filled from the event details.'
+              }
             </p>
-            {events.map(ev=>{
-              const d=ev.start?new Date(ev.start).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+
+            {filtered.length===0?(
+              <div style={{textAlign:'center',padding:'20px 0',color:'var(--ink3)',fontSize:13}}>
+                {query?'No events match your search.':'Nothing in this range.'}
+              </div>
+            ):filtered.map(ev=>{
+              const dObj=ev.start?new Date(ev.start):null;
+              const d=dObj?dObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:dObj.getFullYear()!==new Date().getFullYear()?'numeric':undefined,hour:'numeric',minute:'2-digit'}):'';
+              const isPast=ev.ts<now;
               return(
-                <div key={ev.id} className={`gcal-ev${sel===ev.id?' sel':''}`} onClick={()=>setSel(ev.id)}>
+                <div key={ev.id} className={`gcal-ev${sel===ev.id?' sel':''}${isPast?' past':''}`} onClick={()=>setSel(ev.id)}>
                   <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
-                    <div style={{fontWeight:500,fontSize:13,flex:1,lineHeight:1.3}}>{ev.title}</div>
+                    <div style={{fontWeight:500,fontSize:13,flex:1,lineHeight:1.3}}>
+                      {ev.title}
+                      {isPast&&range==='all'&&<span style={{fontSize:10,background:'var(--bg)',color:'var(--ink3)',padding:'1px 6px',borderRadius:99,marginLeft:6,fontWeight:400,verticalAlign:'middle'}}>past</span>}
+                    </div>
                     {sel===ev.id&&<I d={ic.check} s={14} c="var(--g3)"/>}
                   </div>
                   {d&&<div style={{fontSize:11,color:'var(--ink3)',marginTop:3}}>🕐 {d}</div>}
@@ -373,6 +451,7 @@ function CalendarModal({user,onImport,onClose}){
                 </div>
               );
             })}
+
             <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
               <button className="btn btn-sm" onClick={onClose}>Cancel</button>
               <button className="btn btn-p btn-sm" onClick={doImport} style={{opacity:sel?1:.45,cursor:sel?'pointer':'not-allowed'}} disabled={!sel}>
