@@ -5,125 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>AGMTS Field Ops</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --g1:#0f1a0f;--g2:#1e3320;--g3:#2d5a27;--g4:#4a8c3f;--g5:#c8e6c4;--g6:#f0f7ef;
-  --ink:#111;--ink2:#444;--ink3:#888;--ink4:#bbb;
-  --bg:#f9f9f7;--card:#fff;--border:#e8e8e4;
+  --g1:#0d1a0d;--g2:#1a3018;--g3:#2d5a27;--g4:#4a8c3f;--g5:#c8e6c4;--g6:#f0f7ef;
+  --ink:#111;--ink2:#3a3a3a;--ink3:#777;--ink4:#bbb;
+  --bg:#f8f8f6;--card:#fff;--border:#e5e5e0;
   --amber:#b87a00;--red:#c0392b;--blue:#1a6fa8;
   --r4:4px;--r8:8px;--r12:12px;
   --font:'Inter',system-ui,sans-serif;
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
 input,select,textarea{font-family:var(--font);font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--border);border-radius:var(--r4);padding:9px 12px;width:100%;outline:none;transition:border-color .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--g4)}
-textarea{resize:vertical;line-height:1.5;min-height:72px}
-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+input:focus,select:focus,textarea:focus{border-color:var(--g4);box-shadow:0 0 0 3px rgba(74,140,63,.1)}
+textarea{resize:vertical;line-height:1.5;min-height:66px}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 input[type=range]{-webkit-appearance:none;padding:0;background:transparent;cursor:pointer;width:100%}
 input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--border);border-radius:2px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--g3);border-radius:50%;margin-top:-6.5px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--g3);border-radius:50%;margin-top:-6.5px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 label{display:block;font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
 button{font-family:var(--font);cursor:pointer;border:none;background:none}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
-.page{display:flex;height:100vh;overflow:hidden;position:relative}
-/* Sidebar */
-.sidebar{width:220px;background:var(--g1);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s,width .25s;z-index:200}
-.sidebar.hidden{transform:translateX(-100%);position:absolute;height:100%;top:0;left:0}
+
+/* Layout */
+.page{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:210px;background:var(--g1);display:flex;flex-direction:column;flex-shrink:0;transition:transform .22s;z-index:200}
 @media(max-width:640px){
-  .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-220px)}
+  .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-215px)}
   .sidebar.open{transform:translateX(0)}
 }
-.sidebar-logo{padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
-.sidebar-icon{width:30px;height:30px;border-radius:6px;background:var(--g4);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.sidebar-name{font-size:13px;font-weight:400;color:rgba(255,255,255,.9);line-height:1.3}
-.sidebar-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase}
-.sidebar-nav{flex:1;padding:10px 8px}
-.nav-item{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:6px;border:none;cursor:pointer;color:rgba(255,255,255,.45);font-size:13px;font-family:var(--font);background:transparent;transition:all .15s;margin-bottom:1px;text-align:left}
-.nav-item.active,.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
-.nav-item.active{color:#fff}
-.sidebar-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.2);font-weight:300;letter-spacing:.03em}
-/* Main */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;min-height:52px}
-.menu-btn{width:34px;height:34px;border-radius:var(--r4);border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--ink2)}
-.menu-btn:hover{background:var(--bg)}
-.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden}
-/* Cards */
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:16px}
-.card+.card{margin-top:12px}
-/* Tabs */
-.tabs{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--card);padding:0 16px}
-.tab{padding:11px 14px;border:none;background:transparent;color:var(--ink3);font-size:13px;font-family:var(--font);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
-.tab.active{color:var(--g3);border-bottom-color:var(--g3);font-weight:500}
-/* Tree cards */
-.tree-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);overflow:hidden;margin-bottom:8px;transition:box-shadow .15s}
-.tree-row:hover{box-shadow:0 2px 12px rgba(0,0,0,.06)}
-.tree-header{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
-.tree-tag{background:var(--g3);color:#fff;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;flex-shrink:0;letter-spacing:.02em}
-.tree-body{padding:14px 14px 16px;border-top:1px solid var(--border);background:var(--bg)}
-/* Pill buttons (work types) */
-.pill{padding:5px 12px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--ink2);transition:all .12s;white-space:nowrap}
-.pill.on{border-color:var(--g4);background:var(--g6);color:var(--g3);font-weight:500}
-/* Badges */
-.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:400}
-.badge-r{background:#fdeaea;color:#7a1f1f}
-.badge-p{background:#e8f0fc;color:#1a3f7a}
-.badge-t{background:#fdf3dc;color:#7a4a0a}
-.badge-s{background:#f0f7ef;color:#1a4a18}
-.badge-c{background:#ede8fc;color:#3a1f7a}
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--border);min-height:50px;position:sticky;top:0;z-index:100}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+
+/* Sidebar pieces */
+.sb-logo{padding:18px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:9px;flex-shrink:0}
+.sb-icon{width:28px;height:28px;border-radius:6px;background:var(--g4);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.sb-nav{flex:1;padding:8px 6px;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;border-radius:6px;border:none;cursor:pointer;color:rgba(255,255,255,.42);font-size:13px;font-family:var(--font);background:transparent;transition:all .15s;margin-bottom:1px;text-align:left}
+.ni:hover,.ni.on{background:rgba(255,255,255,.1);color:#fff}
+.sb-user{margin:6px;background:rgba(255,255,255,.07);border-radius:6px;padding:10px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0}
+.sb-user:hover{background:rgba(255,255,255,.11)}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:500;color:#fff;flex-shrink:0;overflow:hidden}
+.sb-foot{padding:9px 14px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.18);flex-shrink:0}
+
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r4);font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s;border:1px solid var(--border);background:transparent;color:var(--ink);white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r4);font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s;border:1px solid var(--border);background:transparent;color:var(--ink);white-space:nowrap}
 .btn:hover{background:var(--bg)}
-.btn-primary{background:var(--g3);color:#fff;border-color:var(--g3)}
-.btn-primary:hover{background:var(--g2);border-color:var(--g2)}
-.btn-sm{padding:5px 11px;font-size:12px}
-.btn-danger{color:var(--red);border-color:var(--red)}
-/* Grid helpers */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
-@media(max-width:520px){.grid2,.grid3{grid-template-columns:1fr}}
-/* Map */
-#mapframe{width:100%;height:320px;border:none;border-radius:var(--r8);display:block}
-.map-container{position:relative}
-.map-overlay{position:absolute;inset:0;border-radius:var(--r8);pointer-events:none}
-/* Sidebar overlay for mobile */
-.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:190}
-.sidebar-backdrop.show{display:block}
+.btn-p{background:var(--g3);color:#fff;border-color:var(--g3)}.btn-p:hover{background:var(--g2);border-color:var(--g2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-d{color:var(--red);border-color:#f5c6c6}
+.mbtn{width:32px;height:32px;border-radius:var(--r4);border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2)}
+.mbtn:hover{background:var(--bg)}
+
+/* Cards & structure */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:15px}
+.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--card);padding:0 14px;flex-shrink:0}
+.tab{padding:10px 13px;border:none;background:transparent;color:var(--ink3);font-size:13px;font-family:var(--font);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab.on{color:var(--g3);border-bottom-color:var(--g3);font-weight:500}
+.slabel{font-size:10px;font-weight:500;color:var(--ink4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.irow{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.irow>*{flex:1;min-width:120px}
+
+/* Tree rows */
+.trow{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);overflow:hidden;margin-bottom:8px}
+.thead{display:flex;align-items:center;gap:9px;padding:12px 13px;cursor:pointer;user-select:none}
+.tbody{padding:14px 13px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.ttag{background:var(--g3);color:#fff;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;flex-shrink:0}
+
+/* Scope items */
+.scope-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--r4);border:1px solid var(--border);background:var(--card);cursor:pointer;transition:all .12s;margin-bottom:6px}
+.scope-item.on{border-color:var(--g4);background:var(--g6)}
+.scope-num{width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;color:var(--ink3)}
+.scope-item.on .scope-num{background:var(--g3);border-color:var(--g3);color:#fff}
+.scope-label{font-size:13px;flex:1;line-height:1.3}
+.scope-price{font-size:12px;color:var(--ink3);font-family:monospace;flex-shrink:0}
+.scope-item.on .scope-price{color:var(--g3)}
+
+/* Photo thumbs */
+.photo-thumb{width:58px;height:58px;object-fit:cover;border-radius:var(--r4);border:1px solid var(--border);display:block;flex-shrink:0}
+.photo-add{width:58px;height:58px;border-radius:var(--r4);border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--ink4);font-size:10px;text-transform:uppercase;letter-spacing:.03em;background:var(--bg);flex-shrink:0;margin:0}
+
 /* Estimate table */
-.est-table{width:100%;border-collapse:collapse;font-size:13px}
-.est-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
-.est-table th:last-child,.est-table td:last-child{text-align:right}
-.est-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
-.est-table tr:last-child td{border-bottom:none}
+.etbl{width:100%;border-collapse:collapse;font-size:13px}
+.etbl th{padding:8px 11px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+.etbl td{padding:9px 11px;border-bottom:1px solid var(--border)}
+.etbl tr:last-child td{border-bottom:none}
+.etbl .ra{text-align:right}
+
 /* Job list row */
-.job-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.job-row:hover{box-shadow:0 2px 12px rgba(0,0,0,.07)}
-/* Stat cards */
-.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:14px;text-align:center}
-.stat-num{font-size:28px;font-weight:300;color:var(--ink);line-height:1}
-.stat-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
-/* Section label */
-.slabel{font-size:10px;font-weight:500;color:var(--ink4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-/* Photo thumb */
-.photo-thumb{width:60px;height:60px;border-radius:var(--r4);object-fit:cover;border:1px solid var(--border);flex-shrink:0}
-.photo-add{width:60px;height:60px;border-radius:var(--r4);border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--ink4);font-size:10px;text-transform:uppercase;letter-spacing:.04em;background:var(--bg);flex-shrink:0}
-/* Crew pin */
-.pin{position:absolute;transform:translate(-50%,-50%);cursor:grab;z-index:5;transition:width .15s,height .15s}
-.pin-dot{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:all .15s}
-/* Input row */
-.irow{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
-.irow>*{flex:1;min-width:130px}
-/* Empty */
-.empty{text-align:center;padding:48px 20px;color:var(--ink3)}
-.empty-icon{font-size:36px;margin-bottom:12px}
-.empty-title{font-size:17px;font-weight:300;color:var(--ink2);margin-bottom:6px}
+.jrow{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:13px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.jrow:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
+
+/* Stat */
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r8);padding:13px;text-align:center}
+
+/* Crew map pin */
+.pin{position:absolute;transform:translate(-50%,-50%);cursor:grab;z-index:10}
+.pdot{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.3);transition:all .15s}
+
+/* Login screen */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:32px 26px;width:100%;max-width:340px;text-align:center}
+
+/* Mobile overlay */
+.backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:190}
+.backdrop.show{display:block}
+
+@media(max-width:520px){.irow>*{min-width:100%}}
 </style>
 </head>
 <body>
@@ -131,99 +127,226 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none}
 <script type="text/babel" data-presets="react">
 const {useState,useEffect,useRef,useCallback}=React;
 
-// ── DATA ──────────────────────────────────────────────────────────────────────
-const JK='agmts_j2',SK='agmts_s2';
-const DS={companyName:'A Good Morning Tree Service',phone:'(512) 555-0100',email:'office@agmts.com',isa:'TX-XXXX',tda:'XXXXXXX',rRem:65,rPru:28,rTre:180,rStu:12,rDeb:150,mCon:1.35,mCra:1.6,tax:0.04};
-const WORKS=[
-  {id:'removal',label:'Removal',cat:'r'},
-  {id:'pruning',label:'Crown Prune',cat:'p'},
-  {id:'deadwood',label:'Deadwood',cat:'p'},
-  {id:'clearance',label:'Utility Clearance',cat:'p'},
-  {id:'stump',label:'Stump Grind',cat:'s'},
-  {id:'debris',label:'Debris Haul',cat:'s'},
-  {id:'crane',label:'Crane Required',cat:'r'},
-  {id:'treatment',label:'Trunk Injection',cat:'t'},
-  {id:'spray',label:'Crown Spray',cat:'t'},
-  {id:'drench',label:'Soil Drench',cat:'t'},
-  {id:'cabling',label:'Cabling/Bracing',cat:'c'},
-  {id:'assessment',label:'Risk Assessment',cat:'c'},
-];
-const CATBADGE={r:'badge-r',p:'badge-p',t:'badge-t',s:'badge-s',c:'badge-c'};
-const CATPIN={r:'#c0392b',p:'#1a6fa8',t:'#b87a00',s:'#2d5a27',c:'#5b3fa8'};
-let _u=0;
-function uid(){return`u${Date.now()}${++_u}`}
-function newTree(n){return{id:uid(),tag:`T${n}`,name:'',dbh:'',height:'',cond:'fair',works:[],notes:'',access:'',photos:[],px:.3+Math.random()*.4,py:.2+Math.random()*.5,diff:'std'}}
-function newJob(){const d=new Date();return{id:uid(),num:`${d.getFullYear()}-${String(d.getTime()).slice(-4)}`,status:'draft',created:d.toISOString(),updated:d.toISOString(),client:'',phone:'',email:'',addr:'',city:'',zip:'',access:'open',siteNotes:'',trees:[newTree(1)],overrides:{},notes:''}}
-function loadJ(){try{const r=localStorage.getItem(JK);return r?JSON.parse(r):[]}catch{return[]}}
-function saveJ(j){localStorage.setItem(JK,JSON.stringify(j));try{const b=new BroadcastChannel('agmts');b.postMessage('u');b.close()}catch{}}
-function loadS(){try{const r=localStorage.getItem(SK);return r?{...DS,...JSON.parse(r)}:DS}catch{return DS}}
-function saveS(s){localStorage.setItem(SK,JSON.stringify(s))}
-function calcEst(job,s){
-  const m={...s,...(job.overrides||{})};
-  const lines=[];let sub=0;
-  job.trees.forEach(t=>{
-    const d=parseFloat(t.dbh)||0;if(!d||!t.works.length)return;
-    const dm=t.diff==='con'?m.mCon:t.diff==='cra'?m.mCra:1;
-    t.works.forEach(w=>{
-      let base=0,label='';
-      if(w==='removal'){base=d*m.rRem*dm;label='Removal';}
-      else if(['pruning','deadwood','clearance'].includes(w)){base=d*m.rPru;label=WORKS.find(x=>x.id===w)?.label||w;}
-      else if(w==='stump'){base=d*m.rStu;label='Stump Grind';}
-      else if(w==='debris'){base=m.rDeb;label='Debris Haul';}
-      else if(['treatment','spray','drench'].includes(w)){base=m.rTre;label=WORKS.find(x=>x.id===w)?.label||w;}
-      else if(w==='cabling'){base=200+d*10;label='Cabling/Bracing';}
-      else if(w==='assessment'){base=175;label='Risk Assessment';}
-      if(base>0){const tot=Math.round(base);sub+=tot;lines.push({tag:t.tag,name:t.name||t.tag,work:label,dbh:d,tot});}
-    });
-  });
-  const tax=Math.round(sub*(m.tax||.04));
-  return{lines,sub,tax,total:sub+tax};
-}
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+// IMPORTANT: Replace with your Google OAuth Client ID
+// Get one free at: console.cloud.google.com → APIs & Services → Credentials
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const Icon=({d,s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
-const icons={
-  menu:"M3 12h18M3 6h18M3 18h18",
-  x:"M18 6L6 18M6 6l12 12",
-  jobs:"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-  settings:"M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z",
-  plus:"M12 5v14M5 12h14",
-  chevdown:"M6 9l6 6 6-6",
-  chevup:"M18 15l-6-6-6 6",
-  print:"M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z",
-  trash:"M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2",
-  back:"M19 12H5M12 19l-7-7 7-7",
-  tree:"M12 22V12M12 12C12 8 9 4 4 4s8 8 8 8zM12 12c0-4 3-8 8-8s-8 8-8 8z",
-  cam:"M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 17a4 4 0 100-8 4 4 0 000 8z",
-  map:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 13a3 3 0 100-6 3 3 0 000 6z",
+// ─── SCOPE OF WORK ITEMS ──────────────────────────────────────────────────
+const SCOPE_ITEMS = [
+  {id:'s1',  num:'1',   label:'Prune Dead Wood',                    price:0},
+  {id:'s2',  num:'2',   label:'Remove Ball Moss / Mistletoe',       price:0},
+  {id:'s3',  num:'3',   label:'Remove Sprouts',                     price:0},
+  {id:'s4',  num:'4',   label:'Remove Broken Limbs',                price:0},
+  {id:'s5',  num:'5',   label:'Remove Vines / Cut Vines',           price:0},
+  {id:'s6',  num:'6',   label:'Take Weight Off',                    price:0},
+  {id:'s7a', num:'7A',  label:'Thin Out Canopy / Limbs',            price:0},
+  {id:'s7b', num:'7B',  label:'Top Tree(s)',                        price:0},
+  {id:'s8',  num:'8',   label:'Raise Canopy',                       price:0},
+  {id:'s9',  num:'9',   label:'Clear Roof — Remove Property Line',  price:0},
+  {id:'s10', num:'10',  label:'Shape Shrubs',                       price:0},
+  {id:'s11', num:'11',  label:'Remove Tree(s) to Ground',           price:0},
+  {id:'s11x',num:'11X', label:'Permit Required',                    price:0},
+  {id:'s11r',num:'11R', label:'Reason for Removal (Dev/Dead/Diseased)', price:0},
+  {id:'s12', num:'12',  label:'Remove Shrub(s) to Ground Level',    price:0},
+  {id:'s13', num:'13',  label:'Leave Firewood / Stack',             price:0},
+  {id:'s14', num:'14',  label:'Haul Away Piles of Debris',          price:0},
+  {id:'s15', num:'15',  label:'Leave Wood Curbside',                price:0},
+  {id:'s16', num:'16',  label:'Cut and Drop Wood',                  price:0},
+  {id:'s17', num:'17',  label:'Foam',                               price:0, extra:'cans'},
+  {id:'s18', num:'18',  label:'Extra Trailers',                     price:0, extra:'qty'},
+  {id:'s19', num:'19',  label:'Cable',                              price:0},
+];
+
+const PIN_COLORS=['#2d5a27','#1a6fa8','#b87a00','#7b3fa8','#c0392b','#0a7a6a'];
+
+// ─── DATA HELPERS ─────────────────────────────────────────────────────────
+const SK='agmts_settings_v4';
+const DEFAULT_SETTINGS={
+  companyName:'A Good Morning Tree Service',
+  phone:'(512) 555-0100',email:'office@agmts.com',
+  isa:'TX-XXXX',tda:'XXXXXXX',
+  scopePrices:{}, // keyed by scope item id
 };
 
-// ── APP ───────────────────────────────────────────────────────────────────────
+let _uid=0;
+function uid(){return`u${Date.now()}${++_uid}`}
+
+function newTree(n){
+  return{id:uid(),tag:`T${n}`,species:'',dbh:'',height:'',cond:'fair',
+    scopeItems:[],scopeExtras:{},notes:'',photos:[],
+    px:.25+Math.random()*.5,py:.2+Math.random()*.55};
+}
+function newJob(user){
+  const d=new Date();
+  return{id:uid(),num:`${d.getFullYear()}-${String(d.getTime()).slice(-4)}`,
+    status:'draft',created:d.toISOString(),updated:d.toISOString(),
+    userId:user.id,userName:user.name,
+    client:'',phone:'',email:'',addr:'',city:'',zip:'',
+    siteAccess:'open',siteNotes:'',trees:[newTree(1)],notes:''};
+}
+
+function jobKey(userId){return`agmts_jobs_${userId}`}
+function loadJobs(userId){try{const r=localStorage.getItem(jobKey(userId));return r?JSON.parse(r):[]}catch{return[]}}
+function saveJobs(userId,jobs){localStorage.setItem(jobKey(userId),JSON.stringify(jobs));try{const b=new BroadcastChannel('agmts');b.postMessage('u');b.close()}catch{}}
+function loadSettings(){try{const r=localStorage.getItem(SK);return r?{...DEFAULT_SETTINGS,...JSON.parse(r)}:DEFAULT_SETTINGS}catch{return DEFAULT_SETTINGS}}
+function saveSettings(s){localStorage.setItem(SK,JSON.stringify(s))}
+function loadSession(){try{return JSON.parse(sessionStorage.getItem('agmts_sess')||'null')}catch{return null}}
+function saveSession(u){sessionStorage.setItem('agmts_sess',JSON.stringify(u))}
+function clearSession(){sessionStorage.removeItem('agmts_sess')}
+
+function calcJobTotal(job,settings){
+  const sp=settings.scopePrices||{};
+  let total=0;
+  const lines=[];
+  job.trees.forEach(tree=>{
+    tree.scopeItems.forEach(sid=>{
+      const item=SCOPE_ITEMS.find(s=>s.id===sid);
+      if(!item)return;
+      const price=parseFloat(sp[sid])||0;
+      if(price>0){total+=price;lines.push({tag:tree.tag,species:tree.species||tree.tag,item:item.label,num:item.num,price});}
+    });
+  });
+  return{total,lines};
+}
+
+// ─── PHOTO COMPRESS ───────────────────────────────────────────────────────
+function compressPhoto(file,maxPx=900,quality=0.75){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const scale=Math.min(1,maxPx/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+      const c=document.createElement('canvas');
+      c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(null)};
+    img.src=url;
+  });
+}
+
+// ─── SVG ICONS ────────────────────────────────────────────────────────────
+const I=({d,s=16,c='currentColor',sw=1.75})=>(
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    <path d={d}/>
+  </svg>
+);
+const ic={
+  menu:'M3 12h18M3 6h18M3 18h18',
+  x:'M18 6L6 18M6 6l12 12',
+  back:'M19 12H5M12 19l-7-7 7-7',
+  plus:'M12 5v14M5 12h14',
+  trash:'M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2',
+  chevd:'M6 9l6 6 6-6',chevu:'M18 15l-6-6-6 6',
+  print:'M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z',
+  cam:'M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 17a4 4 0 100-8 4 4 0 000 8z',
+  jobs:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  settings:'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',
+  logout:'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1',
+};
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────
+function LoginScreen({onLogin}){
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState('');
+  const btnRef=useRef(null);
+
+  useEffect(()=>{
+    // Wait for GSI to load then render button
+    const tryRender=()=>{
+      if(!window.google?.accounts?.id)return setTimeout(tryRender,200);
+      window.google.accounts.id.initialize({
+        client_id:GOOGLE_CLIENT_ID,
+        callback:(resp)=>{
+          try{
+            // Decode JWT
+            const payload=JSON.parse(atob(resp.credential.split('.')[1]));
+            const user={
+              id:payload.sub,
+              name:payload.name||payload.email,
+              email:payload.email,
+              picture:payload.picture||'',
+            };
+            saveSession(user);
+            onLogin(user);
+          }catch(e){setErr('Sign-in failed. Try again.');setLoading(false);}
+        },
+        auto_select:false,
+      });
+      if(btnRef.current){
+        window.google.accounts.id.renderButton(btnRef.current,{
+          type:'standard',theme:'outline',size:'large',
+          text:'signin_with',shape:'rectangular',width:260,
+        });
+      }
+    };
+    tryRender();
+  },[]);
+
+  return(
+    <div className="login-wrap">
+      <div className="login-box">
+        <div style={{fontSize:28,marginBottom:6}}>🌳</div>
+        <h1 style={{fontWeight:300,fontSize:21,marginBottom:4,letterSpacing:'-.02em'}}>A Good Morning</h1>
+        <p style={{fontSize:13,color:'var(--ink3)',marginBottom:6}}>Tree Service Field Ops</p>
+        <p style={{fontSize:12,color:'var(--ink4)',marginBottom:24}}>Sign in with your Google account</p>
+        <div ref={btnRef} style={{display:'flex',justifyContent:'center',minHeight:44}}/>
+        {loading&&<p style={{fontSize:12,color:'var(--ink3)',marginTop:12}}>Signing in…</p>}
+        {err&&<p style={{fontSize:12,color:'var(--red)',marginTop:8}}>{err}</p>}
+        <p style={{fontSize:11,color:'var(--ink4)',marginTop:20,lineHeight:1.6}}>
+          Each arborist signs in with their own Google account. Jobs are saved per user.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────
 function App(){
-  const [jobs,setJobs]=useState(loadJ);
-  const [settings,setSettings]=useState(loadS);
+  const [settings,setSettings]=useState(loadSettings);
+  const [user,setUser]=useState(loadSession);
+  const [jobs,setJobs]=useState(()=>user?loadJobs(user.id):[]);
   const [route,setRoute]=useState(window.location.hash||'#/');
   const [sidebarOpen,setSidebarOpen]=useState(window.innerWidth>=641);
 
   useEffect(()=>{
     const h=()=>setRoute(window.location.hash||'#/');
     window.addEventListener('hashchange',h);
-    let b;try{b=new BroadcastChannel('agmts');b.onmessage=()=>setJobs(loadJ())}catch{}
-    return()=>{window.removeEventListener('hashchange',h);b?.close()};
-  },[]);
+    let b;try{b=new BroadcastChannel('agmts');b.onmessage=()=>{if(user)setJobs(loadJobs(user.id));}}catch{}
+    return()=>{window.removeEventListener('hashchange',h);b?.close();};
+  },[user]);
 
-  // Close sidebar on mobile when navigating
   const nav=useCallback(hash=>{
     window.location.hash=hash;
     if(window.innerWidth<641)setSidebarOpen(false);
   },[]);
 
-  function updateJob(id,fn){
-    setJobs(p=>{const n=p.map(j=>{if(j.id!==id)return j;const u=typeof fn==='function'?fn(j):{...j,...fn};return{...u,updated:new Date().toISOString()}});saveJ(n);return n});
+  function handleLogin(u){setUser(u);setJobs(loadJobs(u.id));}
+  function handleLogout(){
+    if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();
+    setUser(null);clearSession();setJobs([]);window.location.hash='#/';
   }
-  function addJob(j){setJobs(p=>{const n=[...p,j];saveJ(n);return n})}
-  function delJob(id){setJobs(p=>{const n=p.filter(j=>j.id!==id);saveJ(n);return n})}
-  function updSettings(u){setSettings(p=>{const n={...p,...u};saveS(n);return n})}
+
+  function saveJ(j){if(user)saveJobs(user.id,j);}
+  function updateJob(id,fn){
+    setJobs(p=>{
+      const n=p.map(j=>{
+        if(j.id!==id)return j;
+        const u=typeof fn==='function'?fn(j):{...j,...fn};
+        return{...u,updated:new Date().toISOString()};
+      });
+      saveJ(n);return n;
+    });
+  }
+  function addJob(j){setJobs(p=>{const n=[...p,j];saveJ(n);return n;});}
+  function delJob(id){setJobs(p=>{const n=p.filter(j=>j.id!==id);saveJ(n);return n;});}
+  function updSettings(u){setSettings(p=>{const n={...p,...u};saveSettings(n);return n;});}
+
+  if(!user)return <LoginScreen onLogin={handleLogin}/>;
 
   const hash=route.replace('#','');
   let page='list',jid=null,tab='intake';
@@ -234,37 +357,50 @@ function App(){
 
   return(
     <div className="page">
-      {/* Sidebar backdrop (mobile) */}
-      {isMobile&&sidebarOpen&&<div className="sidebar-backdrop show" onClick={()=>setSidebarOpen(false)}/>}
+      {isMobile&&sidebarOpen&&<div className="backdrop show" onClick={()=>setSidebarOpen(false)}/>}
 
       {/* Sidebar */}
-      <aside className={`sidebar${isMobile?(sidebarOpen?' open':''):(sidebarOpen?'':' hidden')}`}>
-        <div className="sidebar-logo">
-          <div className="sidebar-icon">🌳</div>
-          <div><div className="sidebar-name">A Good Morning</div><div className="sidebar-sub">Tree Service</div></div>
+      <aside className={`sidebar${isMobile&&sidebarOpen?' open':''}`}
+        style={!isMobile&&!sidebarOpen?{transform:'translateX(-215px)',position:'absolute',height:'100%'}:{}}>
+        <div className="sb-logo">
+          <div className="sb-icon">🌳</div>
+          <div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,.85)',fontWeight:400,lineHeight:1.3}}>A Good Morning</div>
+            <div style={{fontSize:10,color:'rgba(255,255,255,.35)',textTransform:'uppercase',letterSpacing:'.07em'}}>Tree Service</div>
+          </div>
         </div>
-        <nav className="sidebar-nav">
-          {[{h:'#/',label:'Jobs',icon:icons.jobs},{h:'#/settings',label:'Settings',icon:icons.settings}].map(({h,label,icon})=>{
+        <nav className="sb-nav">
+          {[{h:'#/',label:'Jobs',icon:ic.jobs},{h:'#/settings',label:'Settings',icon:ic.settings}].map(({h,label,icon})=>{
             const active=h==='#/'?(hash==='/'||hash===''):hash.startsWith(h.replace('#',''));
-            return <button key={h} onClick={()=>nav(h)} className={`nav-item${active?' active':''}`}><Icon d={icon} s={15}/>{label}</button>;
+            return <button key={h} onClick={()=>nav(h)} className={`ni${active?' on':''}`}><I d={icon} s={14}/>{label}</button>;
           })}
         </nav>
-        <div className="sidebar-foot">Field Ops · Kyle TX</div>
+        <div className="sb-user" onClick={handleLogout} title="Tap to sign out">
+          {user.picture
+            ?<img src={user.picture} className="avatar" style={{width:28,height:28}} alt=""/>
+            :<div className="avatar" style={{width:28,height:28,background:PIN_COLORS[0],fontSize:12}}>{user.name?.charAt(0)}</div>
+          }
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,color:'rgba(255,255,255,.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.name}</div>
+            <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>Tap to sign out</div>
+          </div>
+          <I d={ic.logout} s={13} c="rgba(255,255,255,.25)"/>
+        </div>
+        <div className="sb-foot">Field Ops · Kyle TX</div>
       </aside>
 
       {/* Main */}
       <div className="main">
-        {/* Always-visible topbar with menu toggle */}
         <div className="topbar">
-          <button className="menu-btn" onClick={()=>setSidebarOpen(o=>!o)}>
-            <Icon d={sidebarOpen&&!isMobile?icons.x:icons.menu} s={16}/>
+          <button className="mbtn" onClick={()=>setSidebarOpen(o=>!o)}>
+            <I d={sidebarOpen&&!isMobile?ic.x:ic.menu} s={15}/>
           </button>
           {page==='job'&&curJob&&(
             <>
-              <button onClick={()=>nav('#/')} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ink3)',display:'flex',alignItems:'center',gap:4,fontSize:13}}><Icon d={icons.back} s={14}/>Jobs</button>
-              <span style={{color:'var(--ink4)'}}>·</span>
+              <button onClick={()=>nav('#/')} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ink3)',display:'flex',alignItems:'center',gap:4,fontSize:13,padding:0,flexShrink:0}}><I d={ic.back} s={13}/>Jobs</button>
+              <span style={{color:'var(--ink4)',flexShrink:0}}>·</span>
               <span style={{fontSize:13,fontWeight:500,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{curJob.client||'Unnamed job'}</span>
-              <select value={curJob.status} onChange={e=>updateJob(jid,{status:e.target.value})} style={{width:'auto',fontSize:12,padding:'4px 24px 4px 8px',flex:'none'}}>
+              <select value={curJob.status} onChange={e=>updateJob(jid,{status:e.target.value})} style={{width:'auto',fontSize:12,padding:'5px 24px 5px 8px',flex:'none'}}>
                 <option value="draft">Draft</option><option value="active">Active</option>
                 <option value="scheduled">Scheduled</option><option value="complete">Complete</option>
               </select>
@@ -273,11 +409,10 @@ function App(){
           {page==='list'&&<span style={{fontSize:14,fontWeight:500}}>Jobs</span>}
           {page==='settings'&&<span style={{fontSize:14,fontWeight:500}}>Settings</span>}
         </div>
-
-        <div className="scroll-area">
-          {page==='list'&&<JobList jobs={jobs} addJob={addJob} delJob={delJob} nav={nav}/>}
+        <div className="scroll">
+          {page==='list'&&<JobList jobs={jobs} addJob={addJob} delJob={delJob} nav={nav} user={user}/>}
           {page==='job'&&curJob&&<JobDetail job={curJob} updateJob={updateJob} settings={settings} nav={nav} tab={tab}/>}
-          {page==='job'&&!curJob&&<div className="empty"><p>Job not found.</p><br/><button className="btn" onClick={()=>nav('#/')}>← Back</button></div>}
+          {page==='job'&&!curJob&&<div style={{padding:40,textAlign:'center',color:'var(--ink3)'}}><p style={{marginBottom:12}}>Job not found.</p><button className="btn" onClick={()=>nav('#/')}>← Back</button></div>}
           {page==='settings'&&<Settings settings={settings} updSettings={updSettings}/>}
         </div>
       </div>
@@ -285,55 +420,70 @@ function App(){
   );
 }
 
-// ── JOB LIST ──────────────────────────────────────────────────────────────────
-function JobList({jobs,addJob,delJob,nav}){
+// ─── JOB LIST ─────────────────────────────────────────────────────────────
+function JobList({jobs,addJob,delJob,nav,user}){
   const [q,setQ]=useState('');
   const [f,setF]=useState('all');
-  function handleNew(){const j=newJob();addJob(j);nav(`#/job/${j.id}/intake`)}
-  const list=jobs.filter(j=>f==='all'||j.status===f).filter(j=>{if(!q)return true;const s=q.toLowerCase();return j.client?.toLowerCase().includes(s)||j.addr?.toLowerCase().includes(s)||j.num?.includes(s)}).sort((a,b)=>new Date(b.updated)-new Date(a.updated));
+
+  function mkNew(){const j=newJob(user);addJob(j);nav(`#/job/${j.id}/intake`);}
+  const list=jobs
+    .filter(j=>f==='all'||j.status===f)
+    .filter(j=>{if(!q)return true;const s=q.toLowerCase();return j.client?.toLowerCase().includes(s)||j.addr?.toLowerCase().includes(s)||j.num?.includes(s);})
+    .sort((a,b)=>new Date(b.updated||b.created)-new Date(a.updated||a.created));
+
   const cnt={total:jobs.length,active:jobs.filter(j=>j.status==='active').length,scheduled:jobs.filter(j=>j.status==='scheduled').length,draft:jobs.filter(j=>j.status==='draft').length};
+
   return(
-    <div style={{padding:'20px 16px 40px',maxWidth:800,margin:'0 auto'}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
-        <div><h1 style={{fontSize:22,fontWeight:300,letterSpacing:'-.02em'}}>Job Board</h1><p style={{fontSize:12,color:'var(--ink3)',marginTop:2}}>Assessments, estimates & crew assignments</p></div>
-        <button className="btn btn-primary" onClick={handleNew}><Icon d={icons.plus} s={14}/>New job</button>
+    <div style={{padding:'18px 15px 40px',maxWidth:800,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:18,gap:10,flexWrap:'wrap'}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:300,letterSpacing:'-.02em'}}>Job Board</h1>
+          <p style={{fontSize:12,color:'var(--ink3)',marginTop:2}}>Signed in as {user.name}</p>
+        </div>
+        <button className="btn btn-p" onClick={mkNew}><I d={ic.plus} s={14}/>New job</button>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:18}}>
         {[{l:'Total',v:cnt.total},{l:'Active',v:cnt.active},{l:'Scheduled',v:cnt.scheduled},{l:'Drafts',v:cnt.draft}].map(s=>(
-          <div key={s.l} className="stat"><div className="stat-num">{s.v}</div><div className="stat-label">{s.l}</div></div>
+          <div key={s.l} className="stat">
+            <div style={{fontSize:24,fontWeight:300,lineHeight:1}}>{s.v}</div>
+            <div style={{fontSize:10,color:'var(--ink3)',textTransform:'uppercase',letterSpacing:'.04em',marginTop:3}}>{s.l}</div>
+          </div>
         ))}
       </div>
+
       <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search client, address, job #…" style={{marginBottom:10}}/>
-      <div style={{display:'flex',gap:6,marginBottom:16,flexWrap:'wrap'}}>
+      <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
         {['all','active','scheduled','draft','complete'].map(x=>(
-          <button key={x} onClick={()=>setF(x)} style={{padding:'5px 12px',border:'1px solid '+(f===x?'var(--g4)':'var(--border)'),borderRadius:99,background:f===x?'var(--g6)':'transparent',color:f===x?'var(--g3)':'var(--ink3)',fontSize:12,cursor:'pointer',fontFamily:'var(--font)'}}>
+          <button key={x} onClick={()=>setF(x)} style={{padding:'4px 11px',border:'1px solid '+(f===x?'var(--g4)':'var(--border)'),borderRadius:99,background:f===x?'var(--g6)':'transparent',color:f===x?'var(--g3)':'var(--ink3)',fontSize:12,cursor:'pointer',fontFamily:'var(--font)'}}>
             {x.charAt(0).toUpperCase()+x.slice(1)}
           </button>
         ))}
       </div>
+
       {list.length===0?(
-        <div className="empty">
-          <div className="empty-icon">🌳</div>
-          <div className="empty-title">{jobs.length===0?'No jobs yet':'No results'}</div>
-          <p style={{fontSize:13,marginBottom:16}}>{jobs.length===0?'Start by creating a new field assessment.':'Try a different search.'}</p>
-          {jobs.length===0&&<button className="btn btn-primary" onClick={handleNew}><Icon d={icons.plus} s={14}/>Create first job</button>}
+        <div style={{textAlign:'center',padding:'44px 20px',color:'var(--ink3)'}}>
+          <div style={{fontSize:30,marginBottom:10}}>🌳</div>
+          <div style={{fontSize:17,fontWeight:300,color:'var(--ink2)',marginBottom:6}}>{jobs.length===0?'No jobs yet':'No results'}</div>
+          <p style={{fontSize:13,marginBottom:16}}>{jobs.length===0?'Tap New Job to start a field assessment.':'Try a different search.'}</p>
+          {jobs.length===0&&<button className="btn btn-p" onClick={mkNew}><I d={ic.plus} s={14}/>Create first job</button>}
         </div>
       ):(
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        <div style={{display:'flex',flexDirection:'column',gap:7}}>
           {list.map(job=>{
-            const d=new Date(job.updated).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-            const statC={draft:'var(--ink3)',active:'var(--blue)',scheduled:'var(--amber)',complete:'var(--g3)'};
+            const d=new Date(job.updated||job.created).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const sc={draft:'var(--ink3)',active:'var(--blue)',scheduled:'var(--amber)',complete:'var(--g3)'};
             return(
-              <div key={job.id} className="job-row" onClick={()=>nav(`#/job/${job.id}/intake`)}>
-                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',minWidth:76}}>#{job.num}</span>
-                <div style={{flex:1,minWidth:140}}>
-                  <div style={{fontWeight:500,fontSize:14,marginBottom:2}}>{job.client||<span style={{color:'var(--ink4)',fontWeight:300}}>No client</span>}</div>
+              <div key={job.id} className="jrow" onClick={()=>nav(`#/job/${job.id}/intake`)}>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',minWidth:72,flexShrink:0}}>#{job.num}</span>
+                <div style={{flex:1,minWidth:100}}>
+                  <div style={{fontWeight:500,fontSize:13,marginBottom:1}}>{job.client||<span style={{color:'var(--ink4)',fontWeight:300}}>No client</span>}</div>
                   {job.addr&&<div style={{fontSize:12,color:'var(--ink3)'}}>📍 {job.addr}{job.city?`, ${job.city}`:''}</div>}
                 </div>
-                <span style={{fontSize:12,color:'var(--ink3)'}}>🌳 {job.trees?.length||0}</span>
-                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink4)'}}>{d}</span>
-                <span style={{fontSize:11,color:statC[job.status]||'var(--ink3)',fontWeight:500,textTransform:'uppercase',letterSpacing:'.03em'}}>{job.status}</span>
-                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))delJob(job.id)}} style={{color:'var(--ink4)',fontSize:16,padding:'2px 4px',background:'none',border:'none',cursor:'pointer'}}>×</button>
+                <span style={{fontSize:12,color:'var(--ink3)',flexShrink:0}}>🌳 {job.trees?.length||0}</span>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink4)',flexShrink:0}}>{d}</span>
+                <span style={{fontSize:11,color:sc[job.status]||'var(--ink3)',fontWeight:500,textTransform:'uppercase',letterSpacing:'.03em',flexShrink:0}}>{job.status}</span>
+                <button onClick={e=>{e.stopPropagation();if(confirm('Delete this job?'))delJob(job.id);}} style={{color:'var(--ink4)',fontSize:16,padding:'1px 4px',background:'none',border:'none',cursor:'pointer',flexShrink:0}}>×</button>
               </div>
             );
           })}
@@ -343,280 +493,333 @@ function JobList({jobs,addJob,delJob,nav}){
   );
 }
 
-// ── JOB DETAIL ────────────────────────────────────────────────────────────────
+// ─── JOB DETAIL ───────────────────────────────────────────────────────────
 function JobDetail({job,updateJob,settings,nav,tab}){
-  const TABS=[{id:'intake',label:'Intake'},{id:'estimate',label:'Estimate'},{id:'scope',label:'Scope'},{id:'crew',label:'Crew Map'}];
+  const T=[{id:'intake',l:'Intake'},{id:'estimate',l:'Estimate'},{id:'scope',l:'Scope'},{id:'crew',l:'Crew Map'}];
   return(
-    <div>
-      <div className="tabs">
-        {TABS.map(({id,label})=>(
-          <button key={id} onClick={()=>nav(`#/job/${job.id}/${id}`)} className={`tab${tab===id?' active':''}`}>{label}</button>
-        ))}
-      </div>
-      {tab==='intake'&&<IntakeTab job={job} updateJob={updateJob}/>}
-      {tab==='estimate'&&<EstimateTab job={job} updateJob={updateJob} settings={settings}/>}
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="tabs">{T.map(({id,l})=><button key={id} onClick={()=>nav(`#/job/${job.id}/${id}`)} className={`tab${tab===id?' on':''}`}>{l}</button>)}</div>
+      {tab==='intake'&&<IntakeTab job={job} updateJob={updateJob} settings={settings}/>}
+      {tab==='estimate'&&<EstimateTab job={job} settings={settings}/>}
       {tab==='scope'&&<ScopeTab job={job} settings={settings}/>}
       {tab==='crew'&&<CrewTab job={job} updateJob={updateJob}/>}
     </div>
   );
 }
 
-// ── INTAKE TAB ────────────────────────────────────────────────────────────────
-function IntakeTab({job,updateJob}){
+// ─── INTAKE TAB ───────────────────────────────────────────────────────────
+function IntakeTab({job,updateJob,settings}){
   const [exp,setExp]=useState(()=>job.trees.map(t=>t.id));
   const upd=(f,v)=>updateJob(job.id,{[f]:v});
   const updT=(tid,f,v)=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,[f]:v}:t)}));
-  const togW=(tid,wid)=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{if(t.id!==tid)return t;const has=t.works.includes(wid);return{...t,works:has?t.works.filter(w=>w!==wid):[...t.works,wid]}})}));
-  function addTree(){const t=newTree(job.trees.length+1);updateJob(job.id,j=>({...j,trees:[...j.trees,t]}));setExp(p=>[...p,t.id])}
-  function remTree(tid){if(!confirm('Remove tree?'))return;updateJob(job.id,j=>({...j,trees:j.trees.filter(t=>t.id!==tid)}))}
+
+  function togScope(tid,sid){
+    updateJob(job.id,j=>({...j,trees:j.trees.map(t=>{
+      if(t.id!==tid)return t;
+      const has=t.scopeItems.includes(sid);
+      return{...t,scopeItems:has?t.scopeItems.filter(s=>s!==sid):[...t.scopeItems,sid]};
+    })}));
+  }
+  function setExtra(tid,sid,val){
+    updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,scopeExtras:{...t.scopeExtras,[sid]:val}}:t)}));
+  }
+  function addTree(){
+    const t=newTree(job.trees.length+1);
+    updateJob(job.id,j=>({...j,trees:[...j.trees,t]}));
+    setExp(p=>[...p,t.id]);
+  }
+  function remTree(tid){
+    if(!confirm('Remove this tree?'))return;
+    updateJob(job.id,j=>({...j,trees:j.trees.filter(t=>t.id!==tid)}));
+  }
   const togExp=id=>setExp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
 
+  async function handlePhotos(tid,files){
+    for(const file of Array.from(files)){
+      const url=await compressPhoto(file);
+      if(url)updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tid?{...t,photos:[...t.photos,{url}]}:t)}));
+    }
+  }
+
+  const sp=settings.scopePrices||{};
+
   return(
-    <div style={{padding:'16px 16px 40px',maxWidth:800,margin:'0 auto'}}>
-      {/* Client card */}
-      <div className="card" style={{marginBottom:12}}>
-        <div className="slabel" style={{marginBottom:12}}>Client & property</div>
+    <div style={{padding:'15px 15px 40px',maxWidth:820,margin:'0 auto'}}>
+      {/* Client info */}
+      <div className="card" style={{marginBottom:11}}>
+        <div className="slabel" style={{marginBottom:10}}>Client & property</div>
         <div className="irow">
           <div><label>Client name</label><input value={job.client} onChange={e=>upd('client',e.target.value)} placeholder="Full name"/></div>
           <div><label>Phone</label><input value={job.phone} onChange={e=>upd('phone',e.target.value)} placeholder="(512) 000-0000"/></div>
         </div>
         <div className="irow">
-          <div style={{flex:2}}><label>Street address</label><input value={job.addr} onChange={e=>upd('addr',e.target.value)} placeholder="123 Main St"/></div>
+          <div style={{flex:2,minWidth:160}}><label>Street address</label><input value={job.addr} onChange={e=>upd('addr',e.target.value)} placeholder="123 Main St"/></div>
           <div><label>City</label><input value={job.city} onChange={e=>upd('city',e.target.value)} placeholder="Kyle"/></div>
-          <div style={{maxWidth:80}}><label>Zip</label><input value={job.zip} onChange={e=>upd('zip',e.target.value)} placeholder="78640"/></div>
+          <div style={{maxWidth:82}}><label>Zip</label><input value={job.zip} onChange={e=>upd('zip',e.target.value)} placeholder="78640"/></div>
         </div>
         <div className="irow" style={{marginBottom:0}}>
           <div><label>Site access</label>
-            <select value={job.access} onChange={e=>upd('access',e.target.value)}>
+            <select value={job.siteAccess} onChange={e=>upd('siteAccess',e.target.value)}>
               <option value="open">Open — easy access</option>
               <option value="locked">Locked gate</option>
               <option value="narrow">Narrow driveway</option>
               <option value="steep">Steep slope</option>
             </select>
           </div>
-          <div style={{flex:2}}><label>Site notes</label><input value={job.siteNotes} onChange={e=>upd('siteNotes',e.target.value)} placeholder="Utilities, fencing, neighbor notes…"/></div>
+          <div style={{flex:2,minWidth:160}}><label>Site notes</label><input value={job.siteNotes} onChange={e=>upd('siteNotes',e.target.value)} placeholder="Utilities, fencing, hazards…"/></div>
         </div>
       </div>
 
-      {/* Trees header */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+      {/* Trees */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:9}}>
         <span className="slabel" style={{margin:0}}>Trees / work zones ({job.trees.length})</span>
-        <button className="btn btn-sm" onClick={addTree}><Icon d={icons.plus} s={13}/>Add tree</button>
+        <button className="btn btn-sm" onClick={addTree}><I d={ic.plus} s={13}/>Add tree</button>
       </div>
 
-      {/* Tree cards */}
       {job.trees.map((tree,idx)=>{
         const open=exp.includes(tree.id);
-        const pw=WORKS.find(w=>w.id===tree.works[0]);
+        const count=tree.scopeItems.length;
         return(
-          <div key={tree.id} className="tree-row">
-            <div className="tree-header" onClick={()=>togExp(tree.id)}>
-              <span className="tree-tag">{tree.tag||`T${idx+1}`}</span>
-              <span style={{flex:1,fontWeight:500,fontSize:14}}>{tree.name||<span style={{color:'var(--ink4)',fontWeight:300}}>Unnamed tree</span>}{tree.dbh?<span style={{color:'var(--ink3)',fontWeight:300,fontSize:12,marginLeft:6}}>{tree.dbh}"</span>:null}</span>
-              {pw&&<span className={`badge ${CATBADGE[pw.cat]}`}>{pw.label}</span>}
-              {tree.works.length>1&&<span style={{fontSize:11,color:'var(--ink4)'}}>+{tree.works.length-1}</span>}
-              <Icon d={open?icons.chevup:icons.chevdown} s={14} c="var(--ink4)"/>
+          <div key={tree.id} className="trow">
+            <div className="thead" onClick={()=>togExp(tree.id)}>
+              <span className="ttag">{tree.tag||`T${idx+1}`}</span>
+              <span style={{flex:1,fontWeight:500,fontSize:13}}>
+                {tree.species||<span style={{color:'var(--ink4)',fontWeight:300}}>No species</span>}
+                {tree.dbh?<span style={{color:'var(--ink3)',fontWeight:300,fontSize:12,marginLeft:5}}>{tree.dbh}"</span>:null}
+              </span>
+              {count>0&&<span style={{fontSize:11,color:'var(--g3)',fontWeight:500}}>{count} item{count>1?'s':''}</span>}
+              <I d={open?ic.chevu:ic.chevd} s={13} c="var(--ink4)"/>
             </div>
             {open&&(
-              <div className="tree-body">
+              <div className="tbody">
+                {/* Basic info */}
                 <div className="irow">
-                  <div style={{maxWidth:60}}><label>Tag</label><input value={tree.tag} onChange={e=>updT(tree.id,'tag',e.target.value)}/></div>
-                  <div style={{flex:3}}><label>Tree name (free text)</label><input value={tree.name} onChange={e=>updT(tree.id,'name',e.target.value)} placeholder="e.g. Live Oak, Cedar Elm, or custom description"/></div>
+                  <div style={{maxWidth:56}}><label>Tag</label><input value={tree.tag} onChange={e=>updT(tree.id,'tag',e.target.value)}/></div>
+                  <div style={{flex:2,minWidth:150}}><label>Tree species (free text)</label><input value={tree.species} onChange={e=>updT(tree.id,'species',e.target.value)} placeholder="Live Oak, Cedar Elm, Pecan, Hackberry…"/></div>
                 </div>
                 <div className="irow">
-                  <div><label>DBH (inches)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updT(tree.id,'dbh',e.target.value)} placeholder="24"/></div>
-                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updT(tree.id,'height',e.target.value)} placeholder="40"/></div>
+                  <div><label>DBH (inches)</label><input type="number" min="1" value={tree.dbh} onChange={e=>updT(tree.id,'dbh',e.target.value)} placeholder="e.g. 24"/></div>
+                  <div><label>Height (ft)</label><input type="number" min="1" value={tree.height} onChange={e=>updT(tree.id,'height',e.target.value)} placeholder="e.g. 40"/></div>
                   <div><label>Condition</label>
                     <select value={tree.cond} onChange={e=>updT(tree.id,'cond',e.target.value)}>
                       {['excellent','good','fair','poor','critical'].map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
                     </select>
                   </div>
-                  <div><label>Difficulty</label>
-                    <select value={tree.diff} onChange={e=>updT(tree.id,'diff',e.target.value)}>
-                      <option value="std">Standard</option>
-                      <option value="con">Confined (1.35×)</option>
-                      <option value="cra">Crane (1.6×)</option>
-                    </select>
-                  </div>
                 </div>
+
+                {/* Scope items */}
                 <div style={{marginBottom:11}}>
-                  <label>Work type</label>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:6}}>
-                    {WORKS.map(w=><button key={w.id} onClick={()=>togW(tree.id,w.id)} className={`pill${tree.works.includes(w.id)?' on':''}`}>{w.label}</button>)}
+                  <label>Scope of work items</label>
+                  <div style={{marginTop:7}}>
+                    {SCOPE_ITEMS.map(item=>{
+                      const on=tree.scopeItems.includes(item.id);
+                      const price=parseFloat(sp[item.id])||0;
+                      return(
+                        <div key={item.id} className={`scope-item${on?' on':''}`} onClick={()=>togScope(tree.id,item.id)}>
+                          <div className="scope-num">{item.num}</div>
+                          <span className="scope-label">{item.label}</span>
+                          {price>0&&<span className="scope-price">${price}</span>}
+                          {on&&item.extra&&(
+                            <input
+                              type="number" min="1"
+                              value={tree.scopeExtras?.[item.id]||''}
+                              onClick={e=>e.stopPropagation()}
+                              onChange={e=>setExtra(tree.id,item.id,e.target.value)}
+                              placeholder={item.extra==='cans'?'# cans':'qty'}
+                              style={{width:70,padding:'4px 8px',fontSize:12}}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="irow">
-                  <div><label>Field notes</label><textarea value={tree.notes} onChange={e=>updT(tree.id,'notes',e.target.value)} placeholder="Observations, hazards, defects, disease signs…" rows={3}/></div>
-                  <div><label>Access notes</label><textarea value={tree.access} onChange={e=>updT(tree.id,'access',e.target.value)} placeholder="Equipment staging, utilities, obstructions…" rows={3}/></div>
+
+                {/* Notes */}
+                <div style={{marginBottom:11}}>
+                  <label>Field notes</label>
+                  <textarea value={tree.notes} onChange={e=>updT(tree.id,'notes',e.target.value)} placeholder="Additional observations, access constraints, hazards…" rows={3}/>
                 </div>
+
+                {/* Photos */}
                 <div style={{marginBottom:11}}>
                   <label>Photos</label>
-                  <div style={{display:'flex',gap:7,flexWrap:'wrap',marginTop:6,alignItems:'center'}}>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6,alignItems:'center'}}>
                     {tree.photos.map((p,pi)=>(
                       <div key={pi} style={{position:'relative',flexShrink:0}}>
                         <img src={p.url} className="photo-thumb" alt=""/>
-                        <button onClick={()=>updT(tree.id,'photos',tree.photos.filter((_,i)=>i!==pi))} style={{position:'absolute',top:2,right:2,width:16,height:16,borderRadius:'50%',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                        <button onClick={()=>updT(tree.id,'photos',tree.photos.filter((_,i)=>i!==pi))}
+                          style={{position:'absolute',top:2,right:2,width:17,height:17,borderRadius:'50%',background:'rgba(0,0,0,.58)',color:'#fff',border:'none',cursor:'pointer',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}>×</button>
                       </div>
                     ))}
-                    <label className="photo-add"><Icon d={icons.cam} s={15}/><span>Add</span>
-                      <input type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>{Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===tree.id?{...t,photos:[...t.photos,{url:ev.target.result}]}:t)}));r.readAsDataURL(f)})}}/>
+                    <label className="photo-add">
+                      <I d={ic.cam} s={15} c="var(--ink4)"/><span>Add</span>
+                      <input type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>handlePhotos(tree.id,e.target.files)}/>
                     </label>
                   </div>
                 </div>
+
                 <div style={{display:'flex',justifyContent:'flex-end'}}>
-                  <button className="btn btn-sm btn-danger" onClick={()=>remTree(tree.id)}><Icon d={icons.trash} s={13}/>Remove</button>
+                  <button className="btn btn-sm btn-d" onClick={()=>remTree(tree.id)}><I d={ic.trash} s={12}/>Remove tree</button>
                 </div>
               </div>
             )}
           </div>
         );
       })}
-      <button onClick={addTree} style={{width:'100%',padding:'14px',border:'1.5px dashed var(--border)',borderRadius:'var(--r8)',background:'transparent',color:'var(--ink3)',cursor:'pointer',fontSize:13,fontFamily:'var(--font)',marginTop:4}}
+
+      <button onClick={addTree}
+        style={{width:'100%',padding:13,border:'1.5px dashed var(--border)',borderRadius:'var(--r8)',background:'transparent',color:'var(--ink3)',cursor:'pointer',fontSize:13,fontFamily:'var(--font)',marginTop:3}}
         onMouseEnter={e=>e.currentTarget.style.background='var(--bg)'}
         onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-        <Icon d={icons.plus} s={13}/> Tag another tree or zone
+        + Tag another tree or work zone
       </button>
     </div>
   );
 }
 
-// ── ESTIMATE TAB ──────────────────────────────────────────────────────────────
-function EstimateTab({job,updateJob,settings}){
-  const [showP,setShowP]=useState(false);
-  const ov=job.overrides||{};
-  const m={...settings,...ov};
-  const est=calcEst(job,m);
-  const empty=job.trees.every(t=>!t.dbh||!t.works.length);
-  function setOv(k,v){updateJob(job.id,j=>({...j,overrides:{...j.overrides,[k]:parseFloat(v)||v}}))}
+// ─── ESTIMATE TAB ─────────────────────────────────────────────────────────
+function EstimateTab({job,settings}){
+  const {total,lines}=calcJobTotal(job,settings);
+  const sp=settings.scopePrices||{};
+  const hasPrices=Object.values(sp).some(v=>parseFloat(v)>0);
+
   function doPrint(){
-    const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-    const rows=est.lines.map(l=>`<tr><td>${l.tag}</td><td>${l.name}</td><td>${l.work}</td><td>${l.dbh}"</td><td style="text-align:right">$${l.tot.toLocaleString()}</td></tr>`).join('');
+    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    const rows=lines.map(l=>`<tr><td>${l.tag}</td><td>${l.species}</td><td>${l.num}. ${l.item}</td><td class="ra">$${l.price.toLocaleString()}</td></tr>`).join('');
     const w=window.open('','_blank');
-    w.document.write(`<!DOCTYPE html><html><head><title>Estimate #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.6}h1{font-weight:300;font-size:20px;color:#1a2e1a}table{width:100%;border-collapse:collapse;margin:18px 0}th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:7px;border-bottom:1px solid #ccc;text-align:left;color:#666}td{padding:9px 7px;border-bottom:1px solid #eee}td:last-child,th:last-child{text-align:right}.tot td{font-weight:600;font-size:14px;border-top:1px solid #ccc;border-bottom:none}@media print{body{margin:18px}}</style></head><body><h1>${settings.companyName||'Tree Service'}</h1><p style="color:#888;font-size:12px">${d}</p><p style="margin:12px 0"><strong>${job.client||'—'}</strong><br>${job.addr||''}${job.city?`, ${job.city}`:''} ${job.zip||''}<br>Job #${job.num}</p><table><thead><tr><th>Tag</th><th>Tree</th><th>Scope</th><th>DBH</th><th>Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="color:#888;padding:8px 7px">Subtotal</td><td style="text-align:right;padding:8px 7px">$${est.sub.toLocaleString()}</td></tr><tr><td colspan="4" style="color:#888;font-size:11px;padding:5px 7px">Tax/permits (${((m.tax||.04)*100).toFixed(0)}%)</td><td style="text-align:right;font-size:11px;padding:5px 7px">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="4" style="padding:10px 7px">Estimate Total</td><td style="text-align:right;padding:10px 7px">$${est.total.toLocaleString()}</td></tr></tfoot></table><p style="font-size:10px;color:#aaa;margin-top:24px">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.phone||''} · ${settings.email||''}</p></body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><title>Estimate #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.6}h1{font-weight:300;font-size:20px;color:#1a2e1a}table{width:100%;border-collapse:collapse;margin:16px 0}th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:7px;border-bottom:1px solid #ccc;text-align:left;color:#666}td{padding:9px 7px;border-bottom:1px solid #eee}.ra{text-align:right}.tot{font-weight:600;font-size:14px}@media print{body{margin:16px}}</style></head><body><h1>${settings.companyName||'Tree Service'}</h1><p style="color:#888;font-size:12px">${date}</p><p style="margin:10px 0"><strong>${job.client||'—'}</strong><br>${job.addr||''}${job.city?`, ${job.city}`:''} ${job.zip||''}<br>Job #${job.num}</p><table><thead><tr><th>Tag</th><th>Species</th><th>Scope item</th><th class="ra">Price</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="tot"><td colspan="3" style="padding:10px 7px">Estimate Total</td><td class="ra" style="padding:10px 7px">$${total.toLocaleString()}</td></tr></tfoot></table><p style="font-size:10px;color:#aaa;margin-top:20px">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.phone||''}</p></body></html>`);
     w.document.close();w.print();
   }
-  return(
-    <div style={{padding:'16px 16px 40px',maxWidth:800,margin:'0 auto'}}>
-      {/* Pricing accordion */}
-      <div className="card" style={{marginBottom:12}}>
-        <button onClick={()=>setShowP(s=>!s)} style={{width:'100%',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'var(--font)',fontSize:13,color:'var(--ink)',padding:0}}>
-          <span style={{fontWeight:500}}>Pricing rules {Object.keys(ov).length>0&&<span style={{fontSize:11,color:'var(--amber)',marginLeft:6}}>(job override)</span>}</span>
-          <Icon d={showP?icons.chevup:icons.chevdown} s={14} c="var(--ink3)"/>
-        </button>
-        {showP&&(
-          <div style={{marginTop:14,paddingTop:14,borderTop:'1px solid var(--border)'}}>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(155px,1fr))',gap:10}}>
-              {[{k:'rRem',l:'Removal/DBH in',p:'$'},{k:'rPru',l:'Pruning/DBH in',p:'$'},{k:'rTre',l:'Treatment flat',p:'$'},{k:'rStu',l:'Stump/DBH in',p:'$'},{k:'rDeb',l:'Debris haul',p:'$'},{k:'mCon',l:'Confined mult.',p:'×'},{k:'mCra',l:'Crane mult.',p:'×'},{k:'tax',l:'Tax rate',p:''}].map(({k,l,p})=>(
-                <div key={k}><label>{l}</label>
-                  <div style={{display:'flex',alignItems:'center',gap:5}}>{p&&<span style={{fontSize:12,color:'var(--ink3)'}}>{p}</span>}<input type="number" step={k==='mCon'||k==='mCra'||k==='tax'?'.01':'1'} value={ov[k]??settings[k]??DS[k]} onChange={e=>setOv(k,e.target.value)}/></div>
-                  {ov[k]!==undefined&&<button onClick={()=>{const n={...ov};delete n[k];updateJob(job.id,{overrides:n})}} style={{fontSize:11,color:'var(--ink4)',background:'none',border:'none',cursor:'pointer',marginTop:3,padding:0,fontFamily:'var(--font)'}}>Reset</button>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Table */}
-      <div className="card" style={{padding:0,overflow:'hidden',marginBottom:12}}>
-        <div style={{padding:'13px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div><div className="slabel" style={{marginBottom:2}}>Itemized estimate</div><div style={{fontSize:12,color:'var(--ink3)'}}>{job.client||'Client'} · #{job.num}</div></div>
-          <button className="btn btn-sm" onClick={doPrint}><Icon d={icons.print} s={13}/>Print</button>
+  return(
+    <div style={{padding:'15px 15px 40px',maxWidth:800,margin:'0 auto'}}>
+      {!hasPrices&&(
+        <div style={{padding:'12px 14px',background:'#fdf3dc',borderRadius:'var(--r8)',border:'1px solid #f0d090',fontSize:13,color:'#7a5000',marginBottom:14}}>
+          💡 Set prices for scope items in <strong>Settings → Scope Pricing</strong> to see totals here.
         </div>
-        {empty?(
-          <div style={{padding:'32px 16px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>Add DBH and work types to trees in the Intake tab to generate an estimate.</div>
+      )}
+      <div className="card" style={{padding:0,overflow:'hidden',marginBottom:12}}>
+        <div style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div className="slabel" style={{marginBottom:1}}>Estimate</div>
+            <div style={{fontSize:12,color:'var(--ink3)'}}>{job.client||'Client'} · #{job.num}</div>
+          </div>
+          <button className="btn btn-sm" onClick={doPrint}><I d={ic.print} s={13}/>Print</button>
+        </div>
+        {lines.length===0?(
+          <div style={{padding:'28px 14px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>
+            {job.trees.every(t=>!t.scopeItems.length)?'Select scope items on trees in the Intake tab.':'Set prices for scope items in Settings to calculate totals.'}
+          </div>
         ):(
           <div style={{overflowX:'auto'}}>
-            <table className="est-table">
-              <thead><tr>{['Tag','Tree','Scope','DBH','Amount'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+            <table className="etbl">
+              <thead><tr>
+                <th>Tag</th><th>Species</th><th>Scope item</th><th className="ra">Price</th>
+              </tr></thead>
               <tbody>
-                {est.lines.map((l,i)=>(
+                {lines.map((l,i)=>(
                   <tr key={i}>
-                    <td><span className="tree-tag" style={{fontSize:11}}>{l.tag}</span></td>
-                    <td style={{color:'var(--ink3)',fontSize:12}}>{l.name}</td>
-                    <td>{l.work}</td>
-                    <td style={{fontFamily:'monospace',fontSize:12,color:'var(--ink3)'}}>{l.dbh}"</td>
-                    <td style={{fontFamily:'monospace',fontWeight:500}}>${l.tot.toLocaleString()}</td>
+                    <td><span className="ttag" style={{fontSize:11}}>{l.tag}</span></td>
+                    <td style={{color:'var(--ink3)',fontSize:12}}>{l.species}</td>
+                    <td><span style={{fontFamily:'monospace',fontSize:11,color:'var(--ink3)',marginRight:5}}>{l.num}.</span>{l.item}</td>
+                    <td className="ra" style={{fontFamily:'monospace',fontWeight:500}}>${l.price.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{background:'var(--bg)'}}><td colSpan={4} style={{color:'var(--ink3)',fontSize:12}}>Subtotal</td><td style={{fontFamily:'monospace'}}>${est.sub.toLocaleString()}</td></tr>
-                <tr style={{background:'var(--bg)'}}><td colSpan={4} style={{color:'var(--ink3)',fontSize:11}}>Tax/permits ({((m.tax||.04)*100).toFixed(0)}%)</td><td style={{fontFamily:'monospace',color:'var(--ink3)',fontSize:12}}>${est.tax.toLocaleString()}</td></tr>
-                <tr style={{background:'var(--g6)'}}><td colSpan={4} style={{fontWeight:500,fontSize:15,padding:'13px 12px'}}>Total</td><td style={{fontFamily:'monospace',fontWeight:600,fontSize:16,color:'var(--g3)',padding:'13px 12px'}}>${est.total.toLocaleString()}</td></tr>
+                <tr style={{background:'var(--g6)'}}>
+                  <td colSpan={3} style={{fontWeight:500,fontSize:15,padding:'12px 11px'}}>Total</td>
+                  <td className="ra" style={{fontFamily:'monospace',fontWeight:600,fontSize:16,color:'var(--g3)',padding:'12px 11px'}}>${total.toLocaleString()}</td>
+                </tr>
               </tfoot>
             </table>
           </div>
         )}
       </div>
-      <div className="card"><div className="slabel">Internal notes</div><textarea rows={3} value={job.notes} onChange={e=>updateJob(job.id,{notes:e.target.value})} placeholder="Scheduling, equipment, crew assignments…" style={{marginTop:6}}/></div>
+      <div className="card">
+        <div className="slabel">Internal notes</div>
+        <textarea rows={3} value={job.notes} onChange={()=>{}} placeholder="Scheduling, equipment, crew notes…" style={{marginTop:6}} readOnly/>
+      </div>
     </div>
   );
 }
 
-// ── SCOPE TAB ─────────────────────────────────────────────────────────────────
+// ─── SCOPE TAB ────────────────────────────────────────────────────────────
 function ScopeTab({job,settings}){
-  const est=calcEst(job,settings);
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  const trees=job.trees.filter(t=>t.works.length>0);
+  const treesWithWork=job.trees.filter(t=>t.scopeItems.length>0);
   const addr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
-  const condMap={excellent:'is in excellent structural condition',good:'is in good overall condition',fair:'is in fair condition with some concerns noted',poor:'is in poor condition with significant deficiencies',critical:'is in critical condition with elevated failure risk'};
+  const {total}=calcJobTotal(job,settings);
+
   function doPrint(){
-    const blocks=trees.map(t=>{
-      const wl=t.works.map(w=>WORKS.find(x=>x.id===w)?.label||w).join(', ');
-      return `<h3>${t.tag} — ${t.name||'Tree'}${t.dbh?`, ${t.dbh}" DBH`:''}</h3><div style="border-left:2px solid #c8e6c4;padding-left:12px;margin-top:6px"><p><strong>Work:</strong> ${wl}.</p>${t.notes?`<p><strong>Assessment:</strong> The specimen ${condMap[t.cond]||''}. ${t.notes}</p>`:''} ${t.access?`<p><strong>Access:</strong> ${t.access}</p>`:''} ${t.works.some(w=>['treatment','spray','drench'].includes(w))?'<p><strong>Regulatory:</strong> TDA Form Q527 required per 4 TAC §7.24.</p>':''}</div>`;
+    const treeBlocks=treesWithWork.map(tree=>{
+      const items=tree.scopeItems.map(sid=>{
+        const item=SCOPE_ITEMS.find(s=>s.id===sid);
+        if(!item)return '';
+        const extra=tree.scopeExtras?.[sid]?` (${tree.scopeExtras[sid]} ${SCOPE_ITEMS.find(s=>s.id===sid)?.extra||''})`:'' ;
+        return `<li>${item.num}. ${item.label}${extra}</li>`;
+      }).join('');
+      return`<h3>${tree.tag} — ${tree.species||'Tree'}${tree.dbh?` ${tree.dbh}" DBH`:''}</h3><ul style="margin:6px 0 10px 18px;line-height:1.9">${items}</ul>${tree.notes?`<p style="font-size:12px;color:#555;margin-bottom:10px">${tree.notes}</p>`:''}`;
     }).join('');
-    const er=est.lines.map(l=>`<tr><td>${l.tag}</td><td>${l.work}</td><td style="text-align:right">$${l.tot.toLocaleString()}</td></tr>`).join('');
     const w=window.open('','_blank');
-    w.document.write(`<!DOCTYPE html><html><head><title>Scope of Work</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.7;color:#222}h1{font-size:22px;font-weight:300;color:#1a2e1a}h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:22px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}h3{font-size:14px;font-weight:500;margin:18px 0 6px}table{width:100%;border-collapse:collapse}td,th{padding:7px;border-bottom:1px solid #eee}th{font-size:11px;color:#888;text-transform:uppercase}.tot{font-weight:600}@media print{body{margin:16px}}</style></head><body><h1>Scope of Work</h1><p><strong>${job.client||'—'}</strong> · Job #${job.num} · ${date}<br>${addr}</p><h2>Overview</h2><p>${settings.companyName||'This company'} has assessed ${trees.length} tree(s) at the above property following an on-site evaluation by a licensed arborist. All work per ANSI A300 standards.</p>${job.siteNotes?`<p><strong>Site notes:</strong> ${job.siteNotes}</p>`:''}<h2>Tree Scope</h2>${blocks}${est.lines.length?`<h2>Estimate Summary</h2><table><thead><tr><th>Tag</th><th>Work</th><th style="text-align:right">Amount</th></tr></thead><tbody>${er}</tbody><tfoot><tr><td colspan="2" style="color:#888">Tax/permits</td><td style="text-align:right">$${est.tax.toLocaleString()}</td></tr><tr class="tot"><td colspan="2">Total</td><td style="text-align:right">$${est.total.toLocaleString()}</td></tr></tfoot></table>`:''}<p style="margin-top:28px;font-size:10px;color:#aaa">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.companyName||''} · ${settings.phone||''}</p></body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><title>Scope of Work — Job #${job.num}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:36px auto;font-size:13px;line-height:1.7;color:#222}h1{font-size:21px;font-weight:300;color:#1a2e1a;margin-bottom:2px}h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:20px 0 6px;border-bottom:1px solid #eee;padding-bottom:3px}h3{font-size:14px;font-weight:500;margin:16px 0 4px}ul{list-style:disc}li{margin-bottom:2px}@media print{body{margin:16px}}</style></head><body><h1>Scope of Work</h1><p style="font-size:12px;color:#888">${date} · Job #${job.num}</p><p style="margin:12px 0"><strong>${job.client||'—'}</strong> · ${job.phone||''}<br>${addr||'—'}</p>${job.siteNotes?`<p style="font-style:italic;color:#555;font-size:12px">Site notes: ${job.siteNotes}</p>`:''}<h2>Tree Scope</h2>${treeBlocks}${total>0?`<p style="margin-top:20px;font-weight:600">Estimate Total: $${total.toLocaleString()}</p>`:''}<p style="margin-top:28px;font-size:10px;color:#aaa">ISA: ${settings.isa||'—'} · TDA: ${settings.tda||'—'} · ${settings.companyName||''} · ${settings.phone||''}</p></body></html>`);
     w.document.close();w.print();
   }
+
   return(
-    <div style={{padding:'16px 16px 40px',maxWidth:800,margin:'0 auto'}}>
-      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}><button className="btn btn-sm" onClick={doPrint}><Icon d={icons.print} s={13}/>Print / export</button></div>
+    <div style={{padding:'15px 15px 40px',maxWidth:800,margin:'0 auto'}}>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:11}}>
+        <button className="btn btn-sm" onClick={doPrint}><I d={ic.print} s={13}/>Print / export</button>
+      </div>
       <div className="card">
-        <div style={{marginBottom:18,paddingBottom:16,borderBottom:'1px solid var(--border)'}}>
-          <h2 style={{fontWeight:300,fontSize:20,marginBottom:8,color:'var(--ink)'}}>Scope of Work</h2>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'3px 16px',fontSize:13,color:'var(--ink2)'}}>
+        <div style={{marginBottom:16,paddingBottom:14,borderBottom:'1px solid var(--border)'}}>
+          <h2 style={{fontWeight:300,fontSize:19,marginBottom:8}}>Scope of Work</h2>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'3px 14px',fontSize:13,color:'var(--ink2)'}}>
             <div><span style={{color:'var(--ink3)'}}>Job # </span>{job.num}</div>
             <div><span style={{color:'var(--ink3)'}}>Date </span>{date}</div>
             <div><span style={{color:'var(--ink3)'}}>Client </span>{job.client||'—'}</div>
             <div><span style={{color:'var(--ink3)'}}>Phone </span>{job.phone||'—'}</div>
             <div style={{gridColumn:'1/-1'}}><span style={{color:'var(--ink3)'}}>Address </span>{addr||'—'}</div>
           </div>
+          {job.siteNotes&&<div style={{marginTop:10,padding:'8px 11px',background:'#fdf3dc',borderRadius:'var(--r4)',fontSize:12,color:'var(--ink2)',borderLeft:'3px solid var(--amber)'}}>{job.siteNotes}</div>}
         </div>
-        <div style={{marginBottom:18}}>
-          <div className="slabel">Overview</div>
-          <p style={{fontSize:13,lineHeight:1.8,color:'var(--ink2)'}}>{settings.companyName||'This company'} has assessed {trees.length} {trees.length===1?'tree':'trees'} at the above-referenced property on behalf of {job.client||'the property owner'}. All work shall be performed per ANSI A300 standards and applicable TDA requirements.</p>
-          {job.siteNotes&&<div style={{marginTop:10,padding:'9px 12px',background:'#fdf3dc',borderRadius:'var(--r4)',fontSize:13,color:'var(--ink2)',borderLeft:'3px solid var(--amber)'}}>{job.siteNotes}</div>}
-        </div>
-        {trees.length===0?<p style={{color:'var(--ink3)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No trees with assigned work yet.</p>
-        :trees.map((t,i)=>{
-          const wl=t.works.map(w=>WORKS.find(x=>x.id===w)?.label||w).join(', ');
-          const hasTx=t.works.some(w=>['treatment','spray','drench'].includes(w));
-          return(
-            <div key={t.id} style={{marginBottom:i<trees.length-1?20:0,paddingBottom:i<trees.length-1?20:0,borderBottom:i<trees.length-1?'1px solid var(--border)':'none'}}>
-              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9}}>
-                <span className="tree-tag">{t.tag}</span>
-                <span style={{fontWeight:500,fontSize:14}}>{t.name||'Tree'}{t.dbh?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:6}}>{t.dbh}" DBH</span>:null}{t.height?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:4}}>{t.height}' ht.</span>:null}</span>
+
+        {treesWithWork.length===0
+          ?<p style={{color:'var(--ink3)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No scope items selected. Go to Intake tab to assign work.</p>
+          :treesWithWork.map((tree,i)=>{
+            const items=tree.scopeItems.map(sid=>SCOPE_ITEMS.find(s=>s.id===sid)).filter(Boolean);
+            return(
+              <div key={tree.id} style={{marginBottom:i<treesWithWork.length-1?18:0,paddingBottom:i<treesWithWork.length-1?18:0,borderBottom:i<treesWithWork.length-1?'1px solid var(--border)':'none'}}>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
+                  <span className="ttag">{tree.tag}</span>
+                  <span style={{fontWeight:500,fontSize:14}}>{tree.species||'Tree'}{tree.dbh?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:5}}>{tree.dbh}"</span>:null}{tree.height?<span style={{fontWeight:300,color:'var(--ink3)',fontSize:12,marginLeft:4}}>{tree.height}'</span>:null}</span>
+                </div>
+                <div style={{borderLeft:'2px solid var(--g5)',paddingLeft:12}}>
+                  {items.map(item=>{
+                    const extra=tree.scopeExtras?.[item.id];
+                    return(
+                      <div key={item.id} style={{display:'flex',alignItems:'baseline',gap:8,marginBottom:5,fontSize:13,color:'var(--ink2)'}}>
+                        <span style={{fontFamily:'monospace',fontSize:11,color:'var(--g3)',fontWeight:600,minWidth:28,flexShrink:0}}>{item.num}.</span>
+                        <span>{item.label}{extra?<span style={{color:'var(--ink3)',fontSize:12}}> — {extra} {item.extra}</span>:null}</span>
+                      </div>
+                    );
+                  })}
+                  {tree.notes&&<p style={{fontSize:12,color:'var(--ink3)',marginTop:7,fontStyle:'italic'}}>{tree.notes}</p>}
+                </div>
               </div>
-              <div style={{borderLeft:'2px solid var(--g5)',paddingLeft:12}}>
-                <p style={{fontSize:13,lineHeight:1.75,marginBottom:7,color:'var(--ink2)'}}><strong>Work:</strong> {wl}.</p>
-                {t.notes&&<p style={{fontSize:13,lineHeight:1.75,marginBottom:7,color:'var(--ink2)'}}><strong>Assessment:</strong> The specimen {condMap[t.cond]||''}. {t.notes}</p>}
-                {t.access&&<p style={{fontSize:13,lineHeight:1.75,marginBottom:7,color:'var(--ink2)'}}><strong>Access:</strong> {t.access}</p>}
-                {hasTx&&<p style={{fontSize:13,lineHeight:1.75,color:'var(--ink2)'}}><strong>Regulatory:</strong> A TDA Pesticide Applicator Record (Form Q527) will be completed per 4 TAC §7.24.</p>}
-              </div>
-            </div>
-          );
-        })}
-        {est.lines.length>0&&(
-          <div style={{marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
-            <div className="slabel">Estimate</div>
-            {est.lines.map((l,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:13,lineHeight:2,color:'var(--ink2)'}}><span>{l.tag} — {l.work}</span><span style={{fontFamily:'monospace'}}>${l.tot.toLocaleString()}</span></div>)}
-            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid var(--border)',paddingTop:9,marginTop:5,fontWeight:500,fontSize:14}}><span>Total (incl. tax/permits)</span><span style={{fontFamily:'monospace',color:'var(--g3)'}}>${est.total.toLocaleString()}</span></div>
+            );
+          })
+        }
+
+        {total>0&&(
+          <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid var(--border)',display:'flex',justifyContent:'space-between',fontWeight:500,fontSize:14}}>
+            <span>Estimate Total</span>
+            <span style={{fontFamily:'monospace',color:'var(--g3)'}}>${total.toLocaleString()}</span>
           </div>
         )}
-        <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid var(--border)',fontSize:11,color:'var(--ink4)',display:'flex',flexWrap:'wrap',gap:'4px 20px'}}>
+
+        <div style={{marginTop:18,paddingTop:14,borderTop:'1px solid var(--border)',fontSize:11,color:'var(--ink4)',display:'flex',flexWrap:'wrap',gap:'4px 18px'}}>
           <span>ISA: {settings.isa||'—'}</span><span>TDA: {settings.tda||'—'}</span><span>{settings.companyName}</span><span>{settings.phone}</span>
         </div>
       </div>
@@ -624,132 +827,139 @@ function ScopeTab({job,settings}){
   );
 }
 
-// ── CREW MAP TAB ──────────────────────────────────────────────────────────────
+// ─── CREW MAP TAB ─────────────────────────────────────────────────────────
 function CrewTab({job,updateJob}){
   const [sel,setSel]=useState(null);
   const [drag,setDrag]=useState(null);
-  const [mapReady,setMapReady]=useState(false);
   const mapRef=useRef(null);
-  const iframeRef=useRef(null);
   const selTree=job.trees.find(t=>t.id===sel);
+  const addr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
+  const mapSrc=addr.length>5?`https://maps.google.com/maps?q=${encodeURIComponent(addr)}&t=k&z=19&output=embed`:null;
 
-  // Build OSM/Google Maps embed URL from address
-  const fullAddr=[job.addr,job.city,'TX',job.zip].filter(Boolean).join(', ');
-  const mapSrc=fullAddr.length>5
-    ? `https://maps.google.com/maps?q=${encodeURIComponent(fullAddr)}&t=k&z=19&output=embed&maptype=satellite`
-    : null;
-
-  function getCoords(e){
-    const rect=mapRef.current.getBoundingClientRect();
+  function getXY(e){
+    const r=mapRef.current.getBoundingClientRect();
     const cx=e.touches?e.touches[0].clientX:e.clientX;
     const cy=e.touches?e.touches[0].clientY:e.clientY;
-    return{x:Math.max(.02,Math.min(.98,(cx-rect.left)/rect.width)),y:Math.max(.02,Math.min(.98,(cy-rect.top)/rect.height))};
+    return{x:Math.max(.02,Math.min(.98,(cx-r.left)/r.width)),y:Math.max(.02,Math.min(.98,(cy-r.top)/r.height))};
   }
-  function onMove(e){if(!drag)return;e.preventDefault();const c=getCoords(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===drag?{...t,px:c.x,py:c.y}:t)}))}
-  function onUp(){setDrag(null)}
-  function pinCol(t){const w=WORKS.find(x=>x.id===t.works[0]);return CATPIN[w?.cat]||'#4a8c3f'}
+  function onMove(e){if(!drag)return;e.preventDefault();const c=getXY(e);updateJob(job.id,j=>({...j,trees:j.trees.map(t=>t.id===drag?{...t,px:c.x,py:c.y}:t)}));}
+  function onUp(){setDrag(null);}
 
   return(
-    <div style={{padding:'16px 16px 40px'}}>
+    <div style={{padding:'15px 15px 40px'}}>
       <div style={{display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start'}}>
-        {/* Map area */}
-        <div style={{flex:'1 1 320px',minWidth:280}}>
-          <div className="slabel" style={{marginBottom:8}}>
-            {mapSrc?`Aerial — ${fullAddr}`:'Property map — drag pins to position'}
-          </div>
-          <div ref={mapRef} className="map-container" style={{borderRadius:'var(--r8)',overflow:'hidden',border:'1px solid var(--border)',position:'relative',background:'#d4edda',height:340,cursor:drag?'grabbing':'default',userSelect:'none',touchAction:'none'}}
+        {/* Map */}
+        <div style={{flex:'1 1 300px',minWidth:260}}>
+          <div className="slabel" style={{marginBottom:7}}>{mapSrc?addr:'Property map — enter address in Intake'}</div>
+          <div ref={mapRef}
+            style={{position:'relative',borderRadius:'var(--r8)',overflow:'hidden',border:'1px solid var(--border)',height:320,cursor:drag?'grabbing':'default',userSelect:'none',touchAction:'none',background:'#d4edda'}}
             onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
-            onTouchMove={e=>{e.preventDefault();onMove(e)}} onTouchEnd={onUp}>
-            {/* Satellite map embed */}
-            {mapSrc&&(
-              <iframe ref={iframeRef} src={mapSrc} style={{width:'100%',height:'100%',border:'none',display:'block',pointerEvents:drag?'none':'auto'}} onLoad={()=>setMapReady(true)} title="Satellite map"/>
-            )}
-            {/* Fallback SVG */}
-            {!mapSrc&&(
-              <svg viewBox="0 0 600 340" style={{width:'100%',height:'100%',display:'block'}}>
-                <rect width="600" height="340" fill="#c8e6c4"/>
-                <rect x="175" y="70" width="200" height="160" rx="5" fill="#e8d5b7" stroke="#c4a882" strokeWidth="1.5"/>
-                <rect x="198" y="90" width="154" height="112" rx="2" fill="#f5ecd7"/>
-                <text x="275" y="145" fill="#a07850" fontSize="10" textAnchor="middle">Residence</text>
-                <rect x="175" y="230" width="200" height="80" fill="#b8d9b4" opacity=".5"/>
-                <rect x="0" y="300" width="600" height="40" fill="#bbb" opacity=".4"/>
-                <text x="300" y="323" fill="#666" fontSize="9" textAnchor="middle">Street</text>
-                <text x="24" y="17" fill="#555" fontSize="9">↑ N</text>
+            onTouchMove={e=>{e.preventDefault();onMove(e);}} onTouchEnd={onUp}>
+            {mapSrc
+              ?<iframe src={mapSrc} style={{width:'100%',height:'100%',border:'none',display:'block',pointerEvents:drag?'none':'auto'}} title="Satellite"/>
+              :<svg viewBox="0 0 600 320" style={{width:'100%',height:'100%',display:'block'}}>
+                <rect width="600" height="320" fill="#c8e6c4"/>
+                <rect x="175" y="65" width="190" height="148" rx="5" fill="#e8d5b7" stroke="#c4a882" strokeWidth="1.5"/>
+                <rect x="197" y="83" width="146" height="108" rx="2" fill="#f5ecd7"/>
+                <text x="270" y="132" fill="#a07850" fontSize="9" textAnchor="middle">Residence</text>
+                <rect x="0" y="285" width="600" height="35" fill="#bbb" opacity=".4"/>
+                <text x="300" y="306" fill="#666" fontSize="9" textAnchor="middle">Street</text>
+                <text x="22" y="16" fill="#555" fontSize="9">↑ N</text>
               </svg>
-            )}
-            {/* Draggable pins overlaid */}
-            {job.trees.map(tree=>{
-              const col=pinCol(tree);const isSel=sel===tree.id;
-              const sz=isSel?32:26;
+            }
+            {job.trees.map((tree,i)=>{
+              const isSel=sel===tree.id;
+              const sz=isSel?31:25;
+              const col=PIN_COLORS[i%PIN_COLORS.length];
               return(
-                <div key={tree.id} className="pin" style={{left:(tree.px||.5)*100+'%',top:(tree.py||.4)*100+'%',zIndex:isSel?20:10,width:sz,height:sz}}
-                  onMouseDown={e=>{e.stopPropagation();e.preventDefault();setDrag(tree.id);setSel(tree.id)}}
-                  onTouchStart={e=>{e.stopPropagation();setDrag(tree.id);setSel(tree.id)}}
+                <div key={tree.id} className="pin" style={{left:(tree.px||.5)*100+'%',top:(tree.py||.4)*100+'%',width:sz,height:sz}}
+                  onMouseDown={e=>{e.stopPropagation();e.preventDefault();setDrag(tree.id);setSel(tree.id);}}
+                  onTouchStart={e=>{e.stopPropagation();setDrag(tree.id);setSel(tree.id);}}
                   onClick={()=>setSel(tree.id)}>
-                  <div className="pin-dot" style={{width:sz,height:sz,background:col,fontSize:isSel?11:9,boxShadow:isSel?'0 2px 8px rgba(0,0,0,.35)':'0 1px 4px rgba(0,0,0,.25)',border:isSel?'2.5px solid #fff':'2px solid #fff'}}>{tree.tag}</div>
+                  <div className="pdot" style={{width:sz,height:sz,background:col,fontSize:isSel?11:9,boxShadow:isSel?'0 2px 8px rgba(0,0,0,.4)':'0 1px 4px rgba(0,0,0,.25)',border:isSel?'2.5px solid #fff':'2px solid rgba(255,255,255,.8)'}}>{tree.tag}</div>
                 </div>
               );
             })}
-            {/* Address overlay if no address yet */}
-            {!mapSrc&&<div style={{position:'absolute',bottom:8,left:8,background:'rgba(255,255,255,.85)',borderRadius:4,padding:'4px 8px',fontSize:11,color:'var(--ink3)'}}>Enter address in Intake to load satellite view</div>}
           </div>
-          {/* Pin legend */}
-          <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
-            {Object.entries(CATPIN).map(([cat,col])=>{
-              const label={r:'Removal',p:'Pruning',t:'Treatment',s:'Stump',c:'Cabling'};
-              return<div key={cat} style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:'var(--ink3)'}}><div style={{width:8,height:8,borderRadius:'50%',background:col}}/>{label[cat]}</div>;
-            })}
-          </div>
+          <p style={{fontSize:11,color:'var(--ink4)',marginTop:7}}>Drag pins to mark exact tree locations on the property.</p>
         </div>
 
-        {/* Task detail */}
-        <div style={{flex:'1 1 230px',minWidth:210}}>
-          <div className="slabel" style={{marginBottom:8}}>Task detail</div>
-          {!selTree?(
-            <div style={{background:'var(--bg)',border:'1px dashed var(--border)',borderRadius:'var(--r8)',padding:'32px 16px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>Tap a pin to view task details</div>
-          ):(
-            <div className="card">
-              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-                <span className="tree-tag" style={{background:pinCol(selTree)}}>{selTree.tag}</span>
-                <div>
-                  <div style={{fontWeight:500,fontSize:14}}>{selTree.name||'Tree'}</div>
-                  {selTree.dbh&&<div style={{fontSize:11,color:'var(--ink3)',fontFamily:'monospace'}}>{selTree.dbh}" DBH · {selTree.cond}</div>}
-                </div>
-              </div>
-              {selTree.works.length>0&&(
-                <div style={{marginBottom:10}}>
-                  <div className="slabel">Work</div>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
-                    {selTree.works.map(w=>{const f=WORKS.find(x=>x.id===w);return<span key={w} className={`badge ${CATBADGE[f?.cat]||''}`}>{f?.label||w}</span>})}
+        {/* Detail panel */}
+        <div style={{flex:'1 1 210px',minWidth:200}}>
+          <div className="slabel" style={{marginBottom:7}}>Task detail</div>
+          {!selTree
+            ?<div style={{background:'var(--bg)',border:'1px dashed var(--border)',borderRadius:'var(--r8)',padding:'28px 14px',textAlign:'center',color:'var(--ink3)',fontSize:13}}>Tap a pin to view</div>
+            :(()=>{
+              const items=selTree.scopeItems.map(sid=>SCOPE_ITEMS.find(s=>s.id===sid)).filter(Boolean);
+              return(
+                <div className="card">
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:11}}>
+                    <span className="ttag" style={{background:PIN_COLORS[job.trees.indexOf(selTree)%PIN_COLORS.length]}}>{selTree.tag}</span>
+                    <div>
+                      <div style={{fontWeight:500,fontSize:13}}>{selTree.species||'Tree'}</div>
+                      {selTree.dbh&&<div style={{fontSize:11,color:'var(--ink3)',fontFamily:'monospace'}}>{selTree.dbh}" DBH · {selTree.cond}</div>}
+                    </div>
+                  </div>
+                  {items.length>0&&(
+                    <div style={{marginBottom:9}}>
+                      <div className="slabel">Scope items</div>
+                      {items.map(item=>(
+                        <div key={item.id} style={{display:'flex',gap:7,fontSize:12,color:'var(--ink2)',lineHeight:1.7}}>
+                          <span style={{fontFamily:'monospace',fontSize:11,color:'var(--g3)',fontWeight:600,minWidth:24}}>{item.num}.</span>
+                          <span>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {selTree.notes&&(
+                    <div style={{marginBottom:9}}>
+                      <div className="slabel">Notes</div>
+                      <p style={{fontSize:12,lineHeight:1.65,color:'var(--ink2)'}}>{selTree.notes}</p>
+                    </div>
+                  )}
+                  {selTree.photos?.length>0&&(
+                    <div style={{marginBottom:9}}>
+                      <div className="slabel">Photos</div>
+                      <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:5}}>
+                        {selTree.photos.map((p,i)=><img key={i} src={p.url} style={{width:52,height:52,objectFit:'cover',borderRadius:3,border:'1px solid var(--border)'}} alt=""/>)}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{paddingTop:9,borderTop:'1px solid var(--border)'}}>
+                    <div className="slabel">Switch tree</div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:4}}>
+                      {job.trees.map((t,i)=>(
+                        <button key={t.id} onClick={()=>setSel(t.id)}
+                          style={{padding:'3px 8px',borderRadius:99,border:'1px solid '+(sel===t.id?PIN_COLORS[i%PIN_COLORS.length]:'var(--border)'),background:sel===t.id?PIN_COLORS[i%PIN_COLORS.length]:'transparent',color:sel===t.id?'#fff':'var(--ink3)',fontSize:11,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>
+                          {t.tag}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )}
-              {selTree.notes&&<div style={{marginBottom:9}}><div className="slabel">Notes</div><p style={{fontSize:12,lineHeight:1.65,color:'var(--ink2)'}}>{selTree.notes}</p></div>}
-              {selTree.access&&<div style={{marginBottom:9,padding:'8px 10px',background:'#fdf3dc',borderRadius:'var(--r4)',borderLeft:'3px solid var(--amber)'}}><div className="slabel" style={{color:'var(--amber)',marginBottom:3}}>Access / hazard</div><p style={{fontSize:12,lineHeight:1.6,color:'#5a3800'}}>{selTree.access}</p></div>}
-              {selTree.photos?.length>0&&<div style={{marginBottom:9}}><div className="slabel">Photos</div><div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:4}}>{selTree.photos.map((p,i)=><img key={i} src={p.url} style={{width:52,height:52,objectFit:'cover',borderRadius:4,border:'1px solid var(--border)'}} alt=""/>)}</div></div>}
-              <div style={{paddingTop:10,borderTop:'1px solid var(--border)'}}><div className="slabel">All tags</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:4}}>
-                  {job.trees.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:'3px 9px',borderRadius:99,border:'1px solid '+(sel===t.id?pinCol(t):'var(--border)'),background:sel===t.id?pinCol(t):'transparent',color:sel===t.id?'#fff':'var(--ink3)',fontSize:11,fontFamily:'monospace',fontWeight:600,cursor:'pointer'}}>{t.tag}</button>)}
-                </div>
-              </div>
-            </div>
-          )}
+              );
+            })()
+          }
         </div>
       </div>
     </div>
   );
 }
 
-// ── SETTINGS ──────────────────────────────────────────────────────────────────
+// ─── SETTINGS ─────────────────────────────────────────────────────────────
 function Settings({settings,updSettings}){
-  const s=k=>v=>updSettings({[k]:typeof v==='string'?v:parseFloat(v)||v});
+  const sp=settings.scopePrices||{};
+  function setPrice(id,val){updSettings({scopePrices:{...sp,[id]:parseFloat(val)||0}});}
+
   return(
-    <div style={{padding:'16px 16px 60px',maxWidth:680,margin:'0 auto'}}>
-      <h1 style={{fontSize:22,fontWeight:300,marginBottom:5}}>Settings</h1>
-      <p style={{fontSize:13,color:'var(--ink3)',marginBottom:20}}>Company info and default pricing for all new jobs.</p>
-      <div className="card" style={{marginBottom:12}}>
+    <div style={{padding:'15px 15px 60px',maxWidth:680,margin:'0 auto'}}>
+      <h1 style={{fontSize:20,fontWeight:300,marginBottom:4}}>Settings</h1>
+      <p style={{fontSize:12,color:'var(--ink3)',marginBottom:18}}>Company info and pricing for scope items.</p>
+
+      {/* Company */}
+      <div className="card" style={{marginBottom:11}}>
         <div className="slabel">Company</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:11,marginTop:8}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(175px,1fr))',gap:10,marginTop:8}}>
           <div style={{gridColumn:'1/-1'}}><label>Company name</label><input value={settings.companyName} onChange={e=>updSettings({companyName:e.target.value})}/></div>
           <div><label>Phone</label><input value={settings.phone} onChange={e=>updSettings({phone:e.target.value})}/></div>
           <div><label>Email</label><input value={settings.email} onChange={e=>updSettings({email:e.target.value})}/></div>
@@ -757,31 +967,30 @@ function Settings({settings,updSettings}){
           <div><label>TDA License #</label><input value={settings.tda} onChange={e=>updSettings({tda:e.target.value})}/></div>
         </div>
       </div>
-      <div className="card" style={{marginBottom:12}}>
-        <div className="slabel">Pricing defaults</div>
-        <p style={{fontSize:12,color:'var(--ink3)',marginBottom:12,marginTop:6}}>Per-job overrides available on the Estimate tab.</p>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:11}}>
-          {[{k:'rRem',l:'Removal per DBH inch',p:'$'},{k:'rPru',l:'Pruning per DBH inch',p:'$'},{k:'rTre',l:'Treatment flat rate',p:'$'},{k:'rStu',l:'Stump per DBH inch',p:'$'},{k:'rDeb',l:'Debris haul flat',p:'$'}].map(({k,l,p})=>(
-            <div key={k}><label>{l}</label><div style={{display:'flex',alignItems:'center',gap:5}}><span style={{fontSize:12,color:'var(--ink3)'}}>{p}</span><input type="number" min="0" value={settings[k]} onChange={e=>updSettings({[k]:parseFloat(e.target.value)||0})}/></div></div>
-          ))}
-        </div>
+
+      {/* Scope pricing */}
+      <div className="card" style={{marginBottom:11}}>
+        <div className="slabel">Scope item pricing</div>
+        <p style={{fontSize:12,color:'var(--ink3)',marginBottom:13,marginTop:6}}>Set a default price per item. Leave at $0 if pricing varies by job — you can still use items without a price set.</p>
+        {SCOPE_ITEMS.map(item=>(
+          <div key={item.id} style={{display:'flex',alignItems:'center',gap:11,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+            <div style={{width:28,height:28,borderRadius:'50%',background:'var(--g6)',border:'1px solid var(--g5)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:500,color:'var(--g3)',flexShrink:0}}>{item.num}</div>
+            <span style={{flex:1,fontSize:13,color:'var(--ink2)'}}>{item.label}</span>
+            <div style={{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
+              <span style={{fontSize:12,color:'var(--ink3)'}}>$</span>
+              <input type="number" min="0" value={sp[item.id]||0} onChange={e=>setPrice(item.id,e.target.value)} style={{width:80,padding:'5px 8px',fontSize:13}}/>
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="card" style={{marginBottom:16}}>
-        <div className="slabel">Multipliers</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:14,marginTop:10}}>
-          <div><label>Confined felling ({settings.mCon}×)</label><input type="range" min="1" max="2.5" step=".05" value={settings.mCon} onChange={e=>updSettings({mCon:parseFloat(e.target.value)})}/></div>
-          <div><label>Crane ({settings.mCra}×)</label><input type="range" min="1" max="3" step=".05" value={settings.mCra} onChange={e=>updSettings({mCra:parseFloat(e.target.value)})}/></div>
-          <div><label>Tax / permit ({(settings.tax*100).toFixed(0)}%)</label><input type="range" min="0" max=".15" step=".005" value={settings.tax} onChange={e=>updSettings({tax:parseFloat(e.target.value)})}/></div>
-        </div>
-      </div>
-      <div style={{padding:'13px 15px',background:'var(--g6)',borderRadius:'var(--r8)',border:'1px solid var(--g5)',fontSize:13,color:'var(--g3)'}}>
-        <strong>Data:</strong> Jobs save automatically to your browser. To sync across devices, connect a Supabase backend (see README — free, ~30 min).
+
+      <div style={{padding:'12px 14px',background:'var(--g6)',borderRadius:'var(--r8)',border:'1px solid var(--g5)',fontSize:13,color:'var(--g3)'}}>
+        <strong>Sign-in:</strong> Each arborist signs in with their own Google account — no passwords or PINs to manage. Jobs are saved per user on their device. For cross-device sync, a free Supabase backend can be connected (see README).
       </div>
     </div>
   );
 }
 
-// BOOT
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
