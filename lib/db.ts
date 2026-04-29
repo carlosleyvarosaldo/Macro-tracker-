@@ -7,14 +7,24 @@ class ArboristDB extends Dexie {
 
   constructor() {
     super("ArboristDB");
+
+    // v1: original schema
     this.version(1).stores({
       estimates: "id, createdAt, status",
       trees: "id, createdAt",
+    });
+
+    // v2: index trees by estimateId for fast lookup
+    this.version(2).stores({
+      estimates: "id, createdAt, status",
+      trees: "id, estimateId, createdAt",
     });
   }
 }
 
 export const db = new ArboristDB();
+
+// --- Estimates ---
 
 export async function createEstimate(): Promise<Estimate> {
   const estimate: Estimate = {
@@ -33,4 +43,14 @@ export async function getAllEstimates(): Promise<Estimate[]> {
 
 export async function getEstimateById(id: string): Promise<Estimate | undefined> {
   return db.estimates.get(id);
+}
+
+// --- Trees ---
+
+export async function addTree(tree: Tree): Promise<void> {
+  await db.trees.add(tree);
+}
+
+export async function getTreesForEstimate(estimateId: string): Promise<Tree[]> {
+  return db.trees.where("estimateId").equals(estimateId).sortBy("createdAt");
 }
