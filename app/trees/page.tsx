@@ -1,21 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAppStore } from "@/lib/store";
-import { getEstimateById } from "@/lib/db";
-import { Estimate } from "@/types";
 
 export default function TreesPage() {
-  const { activeEstimateId } = useAppStore();
-  const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const { activeEstimateId, activeTrees, loadTreesForActiveEstimate } = useAppStore();
 
   useEffect(() => {
-    if (!activeEstimateId) {
-      setEstimate(null);
-      return;
-    }
-    getEstimateById(activeEstimateId).then((e) => setEstimate(e ?? null));
-  }, [activeEstimateId]);
+    loadTreesForActiveEstimate();
+  }, [activeEstimateId, loadTreesForActiveEstimate]);
 
   return (
     <div className="px-4 py-6">
@@ -27,16 +20,29 @@ export default function TreesPage() {
         </p>
       )}
 
-      {activeEstimateId && estimate && estimate.trees.length === 0 && (
+      {activeEstimateId && activeTrees.length === 0 && (
         <p className="text-gray-500">No trees yet</p>
       )}
 
-      {estimate && estimate.trees.length > 0 && (
-        <ul className="space-y-2">
-          {estimate.trees.map((tree) => (
-            <li key={tree.id} className="rounded-lg bg-white border border-gray-200 p-3">
-              <p className="text-sm font-medium">Tree {tree.id.slice(0, 6)}</p>
-              <p className="text-xs text-gray-500">${tree.price}</p>
+      {activeTrees.length > 0 && (
+        <ul className="space-y-3">
+          {activeTrees.map((tree) => (
+            <li
+              key={tree.id}
+              className="flex items-center gap-3 rounded-lg bg-white border border-gray-200 p-3"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={tree.image}
+                alt="Tree"
+                className="h-16 w-16 rounded-md object-cover bg-gray-100"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Tree {tree.id.slice(0, 6)}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(tree.createdAt).toLocaleString()}
+                </p>
+              </div>
             </li>
           ))}
         </ul>
