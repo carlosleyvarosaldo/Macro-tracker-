@@ -5,6 +5,7 @@ import {
   getAllEstimates,
   addTree as dbAddTree,
   getTreesForEstimate,
+  updateTree as dbUpdateTree,
 } from "./db";
 
 type StoreState = {
@@ -18,6 +19,7 @@ type StoreState = {
 
   addTreeToEstimate: (tree: Tree) => Promise<void>;
   loadTreesForActiveEstimate: () => Promise<void>;
+  updateTree: (id: string, changes: Partial<Tree>) => Promise<void>;
 };
 
 export const useAppStore = create<StoreState>((set, get) => ({
@@ -57,5 +59,14 @@ export const useAppStore = create<StoreState>((set, get) => ({
     }
     const trees = await getTreesForEstimate(id);
     set({ activeTrees: trees });
+  },
+
+  updateTree: async (id, changes) => {
+    await dbUpdateTree(id, changes);
+    set((state) => ({
+      activeTrees: state.activeTrees.map((t) =>
+        t.id === id ? { ...t, ...changes } : t
+      ),
+    }));
   },
 }));
