@@ -8,14 +8,18 @@ class ArboristDB extends Dexie {
   constructor() {
     super("ArboristDB");
 
-    // v1: original schema
     this.version(1).stores({
       estimates: "id, createdAt, status",
       trees: "id, createdAt",
     });
 
-    // v2: index trees by estimateId for fast lookup
     this.version(2).stores({
+      estimates: "id, createdAt, status",
+      trees: "id, estimateId, createdAt",
+    });
+
+    // v3: schema unchanged at index level; bump signals scopeItems migration
+    this.version(3).stores({
       estimates: "id, createdAt, status",
       trees: "id, estimateId, createdAt",
     });
@@ -53,4 +57,15 @@ export async function addTree(tree: Tree): Promise<void> {
 
 export async function getTreesForEstimate(estimateId: string): Promise<Tree[]> {
   return db.trees.where("estimateId").equals(estimateId).sortBy("createdAt");
+}
+
+export async function getTreeById(id: string): Promise<Tree | undefined> {
+  return db.trees.get(id);
+}
+
+export async function updateTree(
+  id: string,
+  changes: Partial<Tree>
+): Promise<void> {
+  await db.trees.update(id, changes);
 }
