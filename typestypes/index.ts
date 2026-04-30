@@ -1,9 +1,9 @@
 export type Tree = {
   id: string;
-  estimateId: string;       // NEW: foreign key
-  image: string;            // base64 JPEG
+  estimateId: string;
+  image: string;
   price: number;
-  scopeCount: number;
+  scopeItems: number[];     // CHANGED from scopeCount: number
   notes: string;
   lat: number;
   lng: number;
@@ -12,7 +12,7 @@ export type Tree = {
 
 export type Estimate = {
   id: string;
-  trees: Tree[];            // legacy field, kept for type compat (unused after v2)
+  trees: Tree[];
   createdAt: number;
   status: "draft" | "done";
 };
