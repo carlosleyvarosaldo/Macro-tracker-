@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { captureFrameAsJpeg } from "@/lib/image";
+import { getCurrentLocation } from "@/lib/location";
 import { ScopeSelector } from "@/components/ScopeSelector";
 import { Tree } from "@/types";
 
 type Mode = "live" | "preview" | "details";
+type SaveStage = "idle" | "locating" | "saving";
 
 export default function CameraPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -16,7 +18,8 @@ export default function CameraPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [scopeItems, setScopeItems] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [saveStage, setSaveStage] = useState<SaveStage>("idle");
+  const [toast, setToast] = useState<string | null>(null);
 
   const {
     activeEstimateId,
@@ -28,6 +31,13 @@ export default function CameraPage() {
   useEffect(() => {
     loadEstimates();
   }, [loadEstimates]);
+
+  // Auto-clear toast after 3s
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -85,8 +95,18 @@ export default function CameraPage() {
   const handleProceedToDetails = () => setMode("details");
 
   const handleSaveTree = async () => {
-    if (!capturedImage || saving) return;
-    setSaving(true);
+    if (!capturedImage || saveStage !== "idle") return;
+
+    setSaveStage("locating");
+
+    // 1. Best-effort location fetch (never throws, max 5s)
+    const locResult = await getCurrentLocation();
+    const coords = locResult.ok
+      ? locResult.coords
+      : { lat: 0, lng: 0 };
+
+    setSaveStage("saving");
+
     try {
       let estimateId = activeEstimateId;
       if (!estimateId) {
@@ -101,22 +121,29 @@ export default function CameraPage() {
         price: 0,
         scopeItems,
         notes: "",
-        lat: 0,
-        lng: 0,
+        lat: coords.lat,
+        lng: coords.lng,
         createdAt: Date.now(),
       };
 
       await addTreeToEstimate(tree);
+
+      // 2. Tell the user if location failed (but the tree still saved)
+      if (!locResult.ok) {
+        setToast("Location unavailable – saved without location");
+      }
+
       setCapturedImage(null);
       setScopeItems([]);
       setMode("live");
     } catch {
       setError("Could not save tree.");
     } finally {
-      setSaving(false);
+      setSaveStage("idle");
     }
   };
 
+  // --- Error fallback ---
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-6 pb-16 text-center">
@@ -134,6 +161,15 @@ export default function CameraPage() {
     );
   }
 
+  const isWorking = saveStage !== "idle";
+  const saveLabel =
+    saveStage === "locating"
+      ? "Getting location..."
+      : saveStage === "saving"
+      ? "Saving..."
+      : "Save Tree";
+
+  // --- Details mode (scope selection + save) ---
   if (mode === "details" && capturedImage) {
     return (
       <div className="flex min-h-screen flex-col bg-white pb-16">
@@ -156,23 +192,30 @@ export default function CameraPage() {
         <div className="px-4 py-4 bg-white border-t border-gray-200 flex gap-3">
           <button
             onClick={handleRetake}
-            disabled={saving}
+            disabled={isWorking}
             className="flex-1 rounded-xl bg-gray-200 py-4 text-gray-800 font-semibold active:bg-gray-300 disabled:opacity-50"
           >
             Retake
           </button>
           <button
             onClick={handleSaveTree}
-            disabled={saving}
+            disabled={isWorking}
             className="flex-1 rounded-xl bg-emerald-600 py-4 text-white font-semibold active:bg-emerald-700 disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save Tree"}
+            {saveLabel}
           </button>
         </div>
+
+        {toast && (
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 max-w-[90%] rounded-lg bg-gray-900 px-4 py-2 text-sm text-white shadow-lg z-20">
+            {toast}
+          </div>
+        )}
       </div>
     );
   }
 
+  // --- Live + preview modes ---
   return (
     <div className="flex min-h-screen flex-col bg-black pb-16">
       <div className="relative flex-1 flex items-center justify-center overflow-hidden">
@@ -228,6 +271,12 @@ export default function CameraPage() {
           </div>
         )}
       </div>
+
+      {toast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 max-w-[90%] rounded-lg bg-gray-900 px-4 py-2 text-sm text-white shadow-lg z-20">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

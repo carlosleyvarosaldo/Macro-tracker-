@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useAppStore } from "@/lib/store";
 import { getScopeLabel } from "@/lib/scope";
 
+function formatLocation(lat: number, lng: number): string {
+  if (lat === 0 && lng === 0) return "No location";
+  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
 export default function TreesPage() {
   const { activeEstimateId, activeTrees, loadTreesForActiveEstimate } = useAppStore();
 
@@ -30,21 +35,37 @@ export default function TreesPage() {
         <ul className="space-y-3">
           {activeTrees.map((tree) => {
             const scope = tree.scopeItems ?? [];
+            const locationText = formatLocation(tree.lat ?? 0, tree.lng ?? 0);
             return (
               <li key={tree.id}>
-                <Link href={`/trees/${tree.id}`} className="flex gap-3 rounded-lg bg-white border border-gray-200 p-3 active:bg-gray-50">
+                <Link
+                  href={`/trees/${tree.id}`}
+                  className="flex gap-3 rounded-lg bg-white border border-gray-200 p-3 active:bg-gray-50"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={tree.image} alt="Tree" className="h-16 w-16 rounded-md object-cover bg-gray-100 flex-shrink-0" />
+                  <img
+                    src={tree.image}
+                    alt="Tree"
+                    className="h-16 w-16 rounded-md object-cover bg-gray-100 flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">
+                    <p className="text-xs text-gray-500">
                       {new Date(tree.createdAt).toLocaleString()}
                     </p>
+                    <p className="text-xs text-gray-400 font-mono mb-1">
+                      {locationText}
+                    </p>
                     {scope.length === 0 ? (
-                      <p className="text-xs text-gray-400 italic">No scope selected</p>
+                      <p className="text-xs text-gray-400 italic">
+                        No scope selected
+                      </p>
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {scope.map((id) => (
-                          <span key={id} className="inline-block rounded bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 border border-emerald-200">
+                          <span
+                            key={id}
+                            className="inline-block rounded bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 border border-emerald-200"
+                          >
                             {getScopeLabel(id)}
                           </span>
                         ))}
