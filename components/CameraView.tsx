@@ -247,33 +247,55 @@ export default function CameraView({ isActive }: Props) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-black">
-      <div className="relative flex-1 overflow-hidden">
-        {/* Always-mounted video element; just hidden during preview to avoid remount cost */}
+    <div className="flex flex-col bg-black" style={{ height: "100vh" }}>
+      <div
+        className="relative overflow-hidden"
+        style={{ flex: "1 1 0", minHeight: 0 }}
+      >
         <video
           ref={videoRef}
           autoPlay
           muted
           playsInline
-          className={`absolute inset-0 h-full w-full object-cover ${
-            mode === "live" ? "block" : "hidden"
-          }`}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: mode === "live" ? "block" : "none",
+          }}
         />
         {mode === "preview" && capturedImage && (
-  <>
-    {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img
-      src={capturedImage}
-      alt="Captured tree"
-      className="absolute inset-0 h-full w-full object-cover"
-      onLoad={() => console.log("preview image loaded")}
-      onError={(e) => console.log("preview image error:", e)}
-    />
-    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 z-50">
-      Preview mode | img length: {capturedImage.length}
-    </div>
-  </>
-)}
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={capturedImage}
+              alt="Captured tree"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                left: 8,
+                backgroundColor: "red",
+                color: "white",
+                fontSize: 12,
+                padding: "4px 8px",
+                zIndex: 50,
+              }}
+            >
+              Preview | bytes: {capturedImage.length}
+            </div>
+          </>
+        )}
       </div>
       <div className="bg-black px-6 py-6 space-y-3">
         {activeEstimateId && (

@@ -18,8 +18,10 @@ export default function DraftsView({ onSelectDraft }: Props) {
     loadEstimates();
   }, [loadEstimates]);
 
-  const handleSelect = (id: string) => {
+  const handleSelect = async (id: string) => {
     setActiveEstimate(id);
+    // Force the trees to load before swiping over
+    await useAppStore.getState().loadTreesForActiveEstimate();
     if (onSelectDraft) onSelectDraft();
     else router.push("/");
   };
