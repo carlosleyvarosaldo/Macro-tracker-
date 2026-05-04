@@ -96,18 +96,27 @@ export default function CameraView({ isActive }: Props) {
 
   const waitForVideoReady = (
     video: HTMLVideoElement,
-    timeoutMs = 2000
+    timeoutMs = 3000
   ): Promise<void> => {
     return new Promise((resolve, reject) => {
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        resolve();
+      // Need both: dimensions AND enough data to render a real frame
+      const isReady = () =>
+        video.videoWidth > 0 &&
+        video.videoHeight > 0 &&
+        video.readyState >= 2 && // HAVE_CURRENT_DATA
+        !video.paused;
+
+      if (isReady()) {
+        // Even when "ready," wait one extra frame to guarantee real pixels
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         return;
       }
+
       const start = Date.now();
       const interval = setInterval(() => {
-        if (video.videoWidth > 0 && video.videoHeight > 0) {
+        if (isReady()) {
           clearInterval(interval);
-          resolve();
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         } else if (Date.now() - start > timeoutMs) {
           clearInterval(interval);
           reject(new Error("Camera not ready — try again"));
@@ -267,34 +276,18 @@ export default function CameraView({ isActive }: Props) {
           }}
         />
         {mode === "preview" && capturedImage && (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={capturedImage}
-              alt="Captured tree"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 8,
-                backgroundColor: "red",
-                color: "white",
-                fontSize: 12,
-                padding: "4px 8px",
-                zIndex: 50,
-              }}
-            >
-              Preview | bytes: {capturedImage.length}
-            </div>
-          </>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={capturedImage}
+            alt="Captured tree"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
         )}
       </div>
       <div className="bg-black px-6 py-6 space-y-3">
