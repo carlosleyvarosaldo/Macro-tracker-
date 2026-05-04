@@ -260,13 +260,20 @@ export default function CameraView({ isActive }: Props) {
           }`}
         />
         {mode === "preview" && capturedImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={capturedImage}
-            alt="Captured tree"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        )}
+  <>
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img
+      src={capturedImage}
+      alt="Captured tree"
+      className="absolute inset-0 h-full w-full object-cover"
+      onLoad={() => console.log("preview image loaded")}
+      onError={(e) => console.log("preview image error:", e)}
+    />
+    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 z-50">
+      Preview mode | img length: {capturedImage.length}
+    </div>
+  </>
+)}
       </div>
       <div className="bg-black px-6 py-6 space-y-3">
         {activeEstimateId && (
