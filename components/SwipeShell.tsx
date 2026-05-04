@@ -4,15 +4,31 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import CameraView from "./CameraView";
 import TreesView from "./TreesView";
 import DraftsView from "./DraftsView";
+import WriteUpView from "./WriteUpView";
 
 // Page indices: 0 = Trees, 1 = Camera (default), 2 = Drafts
 const PAGE_TREES = 0;
 const PAGE_CAMERA = 1;
-const PAGE_DRAFTS = 2;
+const PAGE_WRITEUP = 2;
+const PAGE_DRAFTS = 3;
+const PAGE_COUNT = 4;
 
 const SWIPE_THRESHOLD = 0.2; // 20% of viewport triggers a page change
 const VELOCITY_THRESHOLD = 0.5; // px/ms — fast flick triggers regardless of distance
-
+function pageLabel(index: number): string {
+  switch (index) {
+    case PAGE_TREES:
+      return "Trees";
+    case PAGE_CAMERA:
+      return "Camera";
+    case PAGE_WRITEUP:
+      return "Write-Up";
+    case PAGE_DRAFTS:
+      return "Drafts";
+    default:
+      return "";
+  }
+}
 export default function SwipeShell() {
   const [activePage, setActivePage] = useState<number>(PAGE_CAMERA);
   const [dragOffset, setDragOffset] = useState<number>(0);
@@ -28,7 +44,7 @@ export default function SwipeShell() {
   const dragAxis = useRef<"h" | "v" | null>(null);
 
   const goTo = useCallback((page: number) => {
-    setActivePage(Math.max(0, Math.min(2, page)));
+    setActivePage(Math.max(0, Math.min(PAGE_COUNT - 1, page)));
     setDragOffset(0);
   }, []);
 
@@ -86,8 +102,8 @@ export default function SwipeShell() {
 
     let nextPage = activePage;
     if (ratio > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-      if (dragOffset < 0 && activePage < PAGE_DRAFTS) nextPage = activePage + 1;
-      else if (dragOffset > 0 && activePage > PAGE_TREES) nextPage = activePage - 1;
+      if (dragOffset < 0 && activePage < PAGE_COUNT - 1) nextPage = activePage + 1;
+      else if (dragOffset > 0 && activePage > 0) nextPage = activePage - 1;
     }
 
     goTo(nextPage);
@@ -96,11 +112,11 @@ export default function SwipeShell() {
   // Compute the transform: each page is 100% wide; full container is 300%
   // Active page index becomes the negative percentage shift.
   // Drag offset is added live in pixels.
-  const baseShiftPercent = -activePage * (100 / 3); // -0%, -33.33%, -66.66%
+  const baseShiftPercent = -activePage * (100 / PAGE_COUNT); // -0%, -25%, -50%, -75%
   const dragShiftPx = isDragging ? dragOffset : 0;
 
   const transformStyle: React.CSSProperties = {
-    width: "300%",
+    width: `${PAGE_COUNT * 100}%`,
     transform: `translateX(calc(${baseShiftPercent}% + ${dragShiftPx}px))`,
     transition: isDragging ? "none" : "transform 250ms ease-out",
     display: "flex",
@@ -119,16 +135,19 @@ export default function SwipeShell() {
         onTouchCancel={handleTouchEnd}
       >
         <div style={transformStyle}>
-          <div style={{ width: "33.3333%" }} className="h-full">
+          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
             <TreesView />
           </div>
-          <div style={{ width: "33.3333%" }} className="h-full">
+          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
             <CameraView
               isActive={activePage === PAGE_CAMERA && !isDragging}
               onSwipeLockChange={setSwipeLocked}
             />
           </div>
-          <div style={{ width: "33.3333%" }} className="h-full">
+          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
+            <WriteUpView />
+          </div>
+          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
             <DraftsView onSelectDraft={() => goTo(PAGE_TREES)} />
           </div>
         </div>
@@ -136,22 +155,22 @@ export default function SwipeShell() {
 
       {/* Top-edge fallback nav buttons */}
       <div className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex justify-between px-2 pt-2">
-        {activePage !== PAGE_TREES ? (
+        {activePage > 0 ? (
           <button
             onClick={() => goTo(activePage - 1)}
             className="pointer-events-auto rounded-full bg-black/40 backdrop-blur-sm text-white text-xs px-3 py-1.5 active:bg-black/60"
           >
-            ← {activePage === PAGE_CAMERA ? "Trees" : "Camera"}
+            ← {pageLabel(activePage - 1)}
           </button>
         ) : (
           <span />
         )}
-        {activePage !== PAGE_DRAFTS ? (
+        {activePage < PAGE_COUNT - 1 ? (
           <button
             onClick={() => goTo(activePage + 1)}
             className="pointer-events-auto rounded-full bg-black/40 backdrop-blur-sm text-white text-xs px-3 py-1.5 active:bg-black/60"
           >
-            {activePage === PAGE_CAMERA ? "Drafts" : "Camera"} →
+            {pageLabel(activePage + 1)} →
           </button>
         ) : (
           <span />
@@ -160,7 +179,7 @@ export default function SwipeShell() {
 
       {/* Page indicator dots */}
       <div className="pointer-events-none fixed bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-        {[0, 1, 2].map((i) => (
+        {Array.from({ length: PAGE_COUNT }).map((_, i) => (
           <span
             key={i}
             className={`h-1.5 w-1.5 rounded-full transition-colors ${

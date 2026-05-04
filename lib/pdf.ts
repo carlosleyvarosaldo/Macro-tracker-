@@ -162,25 +162,33 @@ async function drawTree(
 }
 
 /** Render the trailing additional-notes section. */
-function drawFooter(doc: jsPDF, cursorY: number): void {
-  let y = ensureSpace(doc, cursorY, 60);
+function drawWriteUpSection(doc: jsPDF, writeUp: string): void {
+  if (!writeUp.trim()) return;
+
+  // Always start on a fresh page so the write-up reads cleanly
+  doc.addPage();
+  let y = MARGIN;
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("Additional Notes", MARGIN, y);
-  y += 16;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.setTextColor(120);
-  doc.text(
-    "(Placeholder — to be filled in when finalizing estimate)",
-    MARGIN,
-    y
-  );
-  doc.setTextColor(0);
+  doc.setFontSize(16);
+  doc.text("Scope Write-Up", MARGIN, y);
+  y += 24;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  const lines = doc.splitTextToSize(writeUp, CONTENT_WIDTH);
+  for (const line of lines) {
+    y = ensureSpace(doc, y, 16);
+    doc.text(line, MARGIN, y);
+    y += 16;
+  }
 }
 
 /** Build a complete PDF document for the given trees. */
-export async function buildEstimatePdf(trees: Tree[]): Promise<Blob> {
+export async function buildEstimatePdf(
+  trees: Tree[],
+  writeUp = ""
+): Promise<Blob> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
   let y = drawHeader(doc, totalPrice(trees));
@@ -189,7 +197,7 @@ export async function buildEstimatePdf(trees: Tree[]): Promise<Blob> {
     y = await drawTree(doc, trees[i], i, y);
   }
 
-  drawFooter(doc, y);
+  drawWriteUpSection(doc, writeUp);
 
   return doc.output("blob");
 }

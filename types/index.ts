@@ -15,6 +15,7 @@ export type Tree = {
 export type Estimate = {
   id: string;
   trees: Tree[];
+  writeUp?: string;
   createdAt: number;
   status: "draft" | "done";
 };

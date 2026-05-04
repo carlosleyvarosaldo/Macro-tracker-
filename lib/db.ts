@@ -22,6 +22,12 @@ class ArboristDB extends Dexie {
       estimates: "id, createdAt, status",
       trees: "id, estimateId, createdAt",
     });
+
+    // v4: adds optional writeUp field on estimate (no index needed)
+    this.version(4).stores({
+      estimates: "id, createdAt, status",
+      trees: "id, estimateId, createdAt",
+    });
   }
 }
 
@@ -67,4 +73,11 @@ export async function updateTree(
   changes: Partial<Tree>
 ): Promise<void> {
   await db.trees.update(id, changes);
+}
+
+export async function updateEstimate(
+  id: string,
+  changes: Partial<Estimate>
+): Promise<void> {
+  await db.estimates.update(id, changes);
 }

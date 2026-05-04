@@ -7,6 +7,7 @@ import { getScopeLabel } from "@/lib/scope";
 import { buildKml, downloadKml, downloadBlob, hasValidLocation } from "@/lib/kml";
 import { ensureAllTreeImagesUploaded } from "@/lib/upload";
 import { buildEstimatePdf } from "@/lib/pdf";
+import { resolveEstimateWriteUp } from "@/lib/writeup";
 
 function formatLocation(lat: number, lng: number): string {
   if (lat === 0 && lng === 0) return "No location";
@@ -24,7 +25,7 @@ function formatDateForFilename(ts: number): string {
 type ExportKind = "kml" | "pdf" | null;
 
 export default function TreesView() {
-  const { activeEstimateId, activeTrees, loadTreesForActiveEstimate } =
+  const { activeEstimateId, activeTrees, estimates, loadTreesForActiveEstimate } =
     useAppStore();
   const [toast, setToast] = useState<string | null>(null);
   const [exporting, setExporting] = useState<ExportKind>(null);
@@ -82,7 +83,9 @@ export default function TreesView() {
     setExporting("pdf");
     setToast("Generating PDF...");
     try {
-      const blob = await buildEstimatePdf(activeTrees);
+      const activeEstimate = estimates.find((e) => e.id === activeEstimateId);
+      const writeUp = resolveEstimateWriteUp(activeEstimate, activeTrees);
+      const blob = await buildEstimatePdf(activeTrees, writeUp);
       const date = formatDateForFilename(Date.now());
       downloadBlob(
         blob,

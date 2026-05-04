@@ -7,6 +7,7 @@ import {
   addTree as dbAddTree,
   getTreesForEstimate,
   updateTree as dbUpdateTree,
+  updateEstimate as dbUpdateEstimate,
 } from "./db";
 
 type StoreState = {
@@ -21,6 +22,7 @@ type StoreState = {
   addTreeToEstimate: (tree: Tree) => Promise<void>;
   loadTreesForActiveEstimate: () => Promise<void>;
   updateTree: (id: string, changes: Partial<Tree>) => Promise<void>;
+  updateEstimate: (id: string, changes: Partial<Estimate>) => Promise<void>;
 };
 
 export const useAppStore = create<StoreState>()(
@@ -72,11 +74,19 @@ export const useAppStore = create<StoreState>()(
           ),
         }));
       },
+
+      updateEstimate: async (id, changes) => {
+        await dbUpdateEstimate(id, changes);
+        set((state) => ({
+          estimates: state.estimates.map((e) =>
+            e.id === id ? { ...e, ...changes } : e
+          ),
+        }));
+      },
     }),
     {
       name: "arborist-store",
       storage: createJSONStorage(() => localStorage),
-      // Only persist the active estimate ID. Everything else comes from Dexie.
       partialize: (state) => ({ activeEstimateId: state.activeEstimateId }),
     }
   )
