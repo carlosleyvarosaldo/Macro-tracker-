@@ -6,8 +6,10 @@ import { captureFrameAsJpeg } from "@/lib/image";
 import { getCurrentLocation } from "@/lib/location";
 import { ScopeSelector } from "@/components/ScopeSelector";
 import { Tree } from "@/types";
+import MarkupCanvas, { MarkupCanvasHandle } from "@/components/MarkupCanvas";
 
-type Mode = "live" | "preview" | "details";
+type Mode = "live" | "preview" | "markup" | "details";
+type MarkupTool = "draw" | "erase" | "text";
 type SaveStage = "idle" | "locating" | "saving";
 
 type LensOption = {
@@ -17,6 +19,7 @@ type LensOption = {
 
 type Props = {
   isActive: boolean;
+  onSwipeLockChange?: (locked: boolean) => void;
 };
 
 /**
@@ -32,12 +35,15 @@ function classifyRearCamera(label: string): string | null {
   return "1x";
 }
 
-export default function CameraView({ isActive }: Props) {
+export default function CameraView({ isActive, onSwipeLockChange }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [mode, setMode] = useState<Mode>("live");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
+  const [undoToken, setUndoToken] = useState(0);
+  const markupRef = useRef<MarkupCanvasHandle>(null);
   const [scopeItems, setScopeItems] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveStage, setSaveStage] = useState<SaveStage>("idle");
@@ -57,6 +63,10 @@ export default function CameraView({ isActive }: Props) {
     const t = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(t);
   }, [toast]);
+  // Lock swipe nav while in markup or details so horizontal gestures aren't intercepted
+  useEffect(() => {
+    onSwipeLockChange?.(mode === "markup" || mode === "details");
+  }, [mode, onSwipeLockChange]);
 
   // Enumerate available cameras after we have permission
   const enumerateLenses = useCallback(async () => {
@@ -225,7 +235,23 @@ export default function CameraView({ isActive }: Props) {
     setMode("live");
   };
 
+  const handleProceedToMarkup = () => {
+    setMarkupTool("draw");
+    setMode("markup");
+  };
   const handleProceedToDetails = () => setMode("details");
+
+  const handleSkipMarkup = () => setMode("details");
+
+  const handleApplyMarkup = () => {
+    if (!markupRef.current) {
+      setMode("details");
+      return;
+    }
+    const merged = markupRef.current.exportJpeg(0.85);
+    setCapturedImage(merged);
+    setMode("details");
+  };
 
   const handleSaveTree = async () => {
     if (!capturedImage || saveStage !== "idle") return;
@@ -335,7 +361,81 @@ export default function CameraView({ isActive }: Props) {
       </div>
     );
   }
+// --- Markup mode ---
+  if (mode === "markup" && capturedImage) {
+    return (
+      <div
+        className="flex flex-col bg-black"
+        style={{ height: "100vh" }}
+      >
+        {/* Top toolbar */}
+        <div className="flex justify-between items-center px-3 py-2 bg-black/70 backdrop-blur-sm">
+          <button
+            onClick={() => setMode("preview")}
+            className="text-white text-sm font-medium px-3 py-1.5 rounded-lg active:bg-white/10"
+          >
+            Back
+          </button>
+          <p className="text-white text-xs opacity-70">Markup</p>
+          <button
+            onClick={handleSkipMarkup}
+            className="text-white text-sm font-medium px-3 py-1.5 rounded-lg active:bg-white/10"
+          >
+            Skip
+          </button>
+        </div>
 
+        {/* Canvas area */}
+        <div className="flex-1 relative overflow-hidden">
+          <MarkupCanvas
+            ref={markupRef}
+            imageDataUrl={capturedImage}
+            tool={markupTool}
+            undoToken={undoToken}
+          />
+        </div>
+
+        {/* Tool palette */}
+        <div className="bg-black px-4 py-3 flex gap-2 justify-center border-t border-white/10">
+          {(["draw", "erase", "text"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setMarkupTool(t)}
+              className={`flex-1 max-w-[90px] py-2.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+                markupTool === t
+                  ? "bg-white text-black"
+                  : "bg-white/10 text-white active:bg-white/20"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+          <button
+            onClick={() => setUndoToken((n) => n + 1)}
+            className="flex-1 max-w-[90px] py-2.5 rounded-lg text-sm font-medium bg-white/10 text-white active:bg-white/20"
+          >
+            Undo
+          </button>
+        </div>
+
+        {/* Bottom action bar */}
+        <div className="px-4 py-4 bg-black flex gap-3 border-t border-white/10">
+          <button
+            onClick={() => setMode("preview")}
+            className="flex-1 rounded-xl bg-gray-700 py-4 text-white font-semibold active:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleApplyMarkup}
+            className="flex-1 rounded-xl bg-emerald-600 py-4 text-white font-semibold active:bg-emerald-700"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col bg-black" style={{ height: "100vh" }}>
       <div
@@ -414,7 +514,7 @@ export default function CameraView({ isActive }: Props) {
               Retake
             </button>
             <button
-              onClick={handleProceedToDetails}
+              onClick={handleProceedToMarkup}
               className="flex-1 rounded-xl bg-emerald-600 py-4 text-white font-semibold active:bg-emerald-700"
             >
               Next

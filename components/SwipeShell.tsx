@@ -17,6 +17,7 @@ export default function SwipeShell() {
   const [activePage, setActivePage] = useState<number>(PAGE_CAMERA);
   const [dragOffset, setDragOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [swipeLocked, setSwipeLocked] = useState<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
@@ -32,6 +33,7 @@ export default function SwipeShell() {
   }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (swipeLocked) return;
     const t = e.touches[0];
     touchStartX.current = t.clientX;
     touchStartY.current = t.clientY;
@@ -121,7 +123,10 @@ export default function SwipeShell() {
             <TreesView />
           </div>
           <div style={{ width: "33.3333%" }} className="h-full">
-            <CameraView isActive={activePage === PAGE_CAMERA && !isDragging} />
+            <CameraView
+              isActive={activePage === PAGE_CAMERA && !isDragging}
+              onSwipeLockChange={setSwipeLocked}
+            />
           </div>
           <div style={{ width: "33.3333%" }} className="h-full">
             <DraftsView onSelectDraft={() => goTo(PAGE_TREES)} />
