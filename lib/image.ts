@@ -7,8 +7,18 @@ export function captureFrameAsJpeg(
   maxWidth = 1200,
   quality = 0.7
 ): string {
-  const sourceWidth = video.videoWidth;
-  const sourceHeight = video.videoHeight;
+  // Some browsers report videoWidth=0 right after stream attachment.
+  // Fall back to MediaStream track settings if so.
+  let sourceWidth = video.videoWidth;
+  let sourceHeight = video.videoHeight;
+
+  if (!sourceWidth || !sourceHeight) {
+    const stream = video.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks()[0];
+    const settings = track?.getSettings();
+    sourceWidth = settings?.width ?? 0;
+    sourceHeight = settings?.height ?? 0;
+  }
 
   if (!sourceWidth || !sourceHeight) {
     throw new Error("Video stream not ready");
@@ -25,6 +35,11 @@ export function captureFrameAsJpeg(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
 
-  ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-  return canvas.toDataURL("image/jpeg", quality);
+  try {
+    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "unknown";
+    throw new Error(`Frame encode failed: ${msg}`);
+  }
 }

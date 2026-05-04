@@ -43,7 +43,11 @@ export default function CameraView({ isActive }: Props) {
     try {
       setError(null);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
         audio: false,
       });
       streamRef.current = stream;
@@ -82,8 +86,9 @@ export default function CameraView({ isActive }: Props) {
       const dataUrl = captureFrameAsJpeg(videoRef.current, 1920, 0.85);
       setCapturedImage(dataUrl);
       setMode("preview");
-    } catch {
-      setError("Capture failed. Try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown";
+      setError(`Capture failed: ${msg}`);
     }
   };
 
