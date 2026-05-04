@@ -53,6 +53,20 @@ export default function CameraView({ isActive }: Props) {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Wait for first frame's metadata before continuing.
+        // This makes videoWidth/videoHeight populated by the time the user can tap Capture.
+        await new Promise<void>((resolve) => {
+          const v = videoRef.current!;
+          if (v.readyState >= 2) {
+            resolve();
+            return;
+          }
+          const onReady = () => {
+            v.removeEventListener("loadedmetadata", onReady);
+            resolve();
+          };
+          v.addEventListener("loadedmetadata", onReady);
+        });
         await videoRef.current.play().catch(() => {});
       }
     } catch (err) {
@@ -80,9 +94,32 @@ export default function CameraView({ isActive }: Props) {
     return () => stopCamera();
   }, [isActive, mode, startCamera, stopCamera]);
 
-  const handleCapture = () => {
+  const waitForVideoReady = (
+    video: HTMLVideoElement,
+    timeoutMs = 2000
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        resolve();
+        return;
+      }
+      const start = Date.now();
+      const interval = setInterval(() => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          clearInterval(interval);
+          resolve();
+        } else if (Date.now() - start > timeoutMs) {
+          clearInterval(interval);
+          reject(new Error("Camera not ready — try again"));
+        }
+      }, 50);
+    });
+  };
+
+  const handleCapture = async () => {
     if (!videoRef.current) return;
     try {
+      await waitForVideoReady(videoRef.current);
       const dataUrl = captureFrameAsJpeg(videoRef.current, 1920, 0.85);
       setCapturedImage(dataUrl);
       setMode("preview");
