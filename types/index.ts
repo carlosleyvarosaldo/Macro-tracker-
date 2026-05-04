@@ -2,6 +2,7 @@ export type Tree = {
   id: string;
   estimateId: string;
   image: string;
+  imageUrl?: string;
   price: number;
   scopeItems: number[];
   notes: string;

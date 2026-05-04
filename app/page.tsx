@@ -78,7 +78,7 @@ export default function CameraPage() {
   const handleCapture = () => {
     if (!videoRef.current) return;
     try {
-      const dataUrl = captureFrameAsJpeg(videoRef.current, 1200, 0.7);
+ const dataUrl = captureFrameAsJpeg(videoRef.current, 2560, 0.9);
       setCapturedImage(dataUrl);
       setMode("preview");
     } catch {
