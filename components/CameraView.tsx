@@ -45,8 +45,8 @@ export default function CameraView({ isActive }: Props) {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 3840 },
+          height: { ideal: 2160 },
         },
         audio: false,
       });
@@ -129,7 +129,7 @@ export default function CameraView({ isActive }: Props) {
     if (!videoRef.current) return;
     try {
       await waitForVideoReady(videoRef.current);
-      const dataUrl = captureFrameAsJpeg(videoRef.current, 1920, 0.85);
+      const dataUrl = captureFrameAsJpeg(videoRef.current, 2560, 0.9);
       setCapturedImage(dataUrl);
       setMode("preview");
     } catch (err) {
