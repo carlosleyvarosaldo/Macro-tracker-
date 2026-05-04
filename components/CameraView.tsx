@@ -248,16 +248,17 @@ export default function CameraView({ isActive }: Props) {
 
   return (
     <div className="flex h-full flex-col bg-black">
-      <div className="relative flex-1 flex items-center justify-center overflow-hidden">
-        {mode === "live" && (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        )}
+      <div className="relative flex-1 overflow-hidden">
+        {/* Always-mounted video element; just hidden during preview to avoid remount cost */}
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className={`absolute inset-0 h-full w-full object-cover ${
+            mode === "live" ? "block" : "hidden"
+          }`}
+        />
         {mode === "preview" && capturedImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
