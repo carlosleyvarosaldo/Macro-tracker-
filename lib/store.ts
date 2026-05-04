@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { Estimate, Tree } from "@/types";
 import {
   createEstimate as dbCreateEstimate,
@@ -22,51 +23,61 @@ type StoreState = {
   updateTree: (id: string, changes: Partial<Tree>) => Promise<void>;
 };
 
-export const useAppStore = create<StoreState>((set, get) => ({
-  activeEstimateId: null,
-  estimates: [],
-  activeTrees: [],
-
-  setActiveEstimate: (id) => {
-    set({ activeEstimateId: id, activeTrees: [] });
-  },
-
-  createEstimate: async () => {
-    const estimate = await dbCreateEstimate();
-    set((state) => ({
-      estimates: [estimate, ...state.estimates],
-      activeEstimateId: estimate.id,
+export const useAppStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
+      activeEstimateId: null,
+      estimates: [],
       activeTrees: [],
-    }));
-    return estimate;
-  },
 
-  loadEstimates: async () => {
-    const estimates = await getAllEstimates();
-    set({ estimates });
-  },
+      setActiveEstimate: (id) => {
+        set({ activeEstimateId: id, activeTrees: [] });
+      },
 
-  addTreeToEstimate: async (tree) => {
-    await dbAddTree(tree);
-    set((state) => ({ activeTrees: [...state.activeTrees, tree] }));
-  },
+      createEstimate: async () => {
+        const estimate = await dbCreateEstimate();
+        set((state) => ({
+          estimates: [estimate, ...state.estimates],
+          activeEstimateId: estimate.id,
+          activeTrees: [],
+        }));
+        return estimate;
+      },
 
-  loadTreesForActiveEstimate: async () => {
-    const id = get().activeEstimateId;
-    if (!id) {
-      set({ activeTrees: [] });
-      return;
+      loadEstimates: async () => {
+        const estimates = await getAllEstimates();
+        set({ estimates });
+      },
+
+      addTreeToEstimate: async (tree) => {
+        await dbAddTree(tree);
+        set((state) => ({ activeTrees: [...state.activeTrees, tree] }));
+      },
+
+      loadTreesForActiveEstimate: async () => {
+        const id = get().activeEstimateId;
+        if (!id) {
+          set({ activeTrees: [] });
+          return;
+        }
+        const trees = await getTreesForEstimate(id);
+        set({ activeTrees: trees });
+      },
+
+      updateTree: async (id, changes) => {
+        await dbUpdateTree(id, changes);
+        set((state) => ({
+          activeTrees: state.activeTrees.map((t) =>
+            t.id === id ? { ...t, ...changes } : t
+          ),
+        }));
+      },
+    }),
+    {
+      name: "arborist-store",
+      storage: createJSONStorage(() => localStorage),
+      // Only persist the active estimate ID. Everything else comes from Dexie.
+      partialize: (state) => ({ activeEstimateId: state.activeEstimateId }),
     }
-    const trees = await getTreesForEstimate(id);
-    set({ activeTrees: trees });
-  },
-
-  updateTree: async (id, changes) => {
-    await dbUpdateTree(id, changes);
-    set((state) => ({
-      activeTrees: state.activeTrees.map((t) =>
-        t.id === id ? { ...t, ...changes } : t
-      ),
-    }));
-  },
-}));
+  )
+);
