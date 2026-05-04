@@ -10,10 +10,27 @@ import { Tree } from "@/types";
 type Mode = "live" | "preview" | "details";
 type SaveStage = "idle" | "locating" | "saving";
 
+type LensOption = {
+  deviceId: string;
+  label: string;     // What we display to user, e.g. "0.5x", "1x", "3x"
+};
+
 type Props = {
-  /** Whether this view is currently visible. Camera stream only runs when true. */
   isActive: boolean;
 };
+
+/**
+ * Heuristic to label rear cameras based on their device labels.
+ * Returns null if the camera doesn't appear to be a useful rear camera.
+ */
+function classifyRearCamera(label: string): string | null {
+  const l = label.toLowerCase();
+  // Filter out front cameras
+  if (l.includes("front") || l.includes("user") || l.includes("face")) return null;
+  if (l.includes("ultra") || l.includes("wide") && !l.includes("zoom")) return "0.5x";
+  if (l.includes("tele") || l.includes("zoom") || /\b[3-9]x\b/.test(l)) return "3x";
+  return "1x";
+}
 
 export default function CameraView({ isActive }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -25,6 +42,8 @@ export default function CameraView({ isActive }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saveStage, setSaveStage] = useState<SaveStage>("idle");
   const [toast, setToast] = useState<string | null>(null);
+  const [lenses, setLenses] = useState<LensOption[]>([]);
+  const [activeLensId, setActiveLensId] = useState<string | null>(null);
 
   const { activeEstimateId, createEstimate, addTreeToEstimate, loadEstimates } =
     useAppStore();
@@ -39,47 +58,98 @@ export default function CameraView({ isActive }: Props) {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const startCamera = useCallback(async () => {
+  // Enumerate available cameras after we have permission
+  const enumerateLenses = useCallback(async () => {
     try {
-      setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 3840 },
-          height: { ideal: 2160 },
-        },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        // Wait for first frame's metadata before continuing.
-        // This makes videoWidth/videoHeight populated by the time the user can tap Capture.
-        await new Promise<void>((resolve) => {
-          const v = videoRef.current!;
-          if (v.readyState >= 2) {
-            resolve();
-            return;
-          }
-          const onReady = () => {
-            v.removeEventListener("loadedmetadata", onReady);
-            resolve();
-          };
-          v.addEventListener("loadedmetadata", onReady);
-        });
-        await videoRef.current.play().catch(() => {});
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === "videoinput");
+
+      // Map each rear camera to a labeled lens option
+      const seen = new Set<string>();
+      const result: LensOption[] = [];
+      for (const d of videoInputs) {
+        const label = classifyRearCamera(d.label || "");
+        if (!label) continue;
+        // Avoid duplicate labels (some phones expose 1x camera twice)
+        if (seen.has(label)) continue;
+        seen.add(label);
+        result.push({ deviceId: d.deviceId, label });
       }
-    } catch (err) {
-      const name = (err as Error).name;
-      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        setError("Camera permission denied.");
-      } else if (name === "NotFoundError") {
-        setError("No camera found on this device.");
-      } else {
-        setError("Could not start camera.");
-      }
+
+      // Sort: 0.5x, 1x, 3x
+      const order: Record<string, number> = { "0.5x": 0, "1x": 1, "3x": 2 };
+      result.sort((a, b) => (order[a.label] ?? 99) - (order[b.label] ?? 99));
+
+      setLenses(result);
+    } catch {
+      setLenses([]);
     }
   }, []);
+
+  const startCamera = useCallback(
+    async (deviceId?: string) => {
+      try {
+        setError(null);
+
+        const constraints: MediaStreamConstraints = {
+          video: deviceId
+            ? {
+                deviceId: { exact: deviceId },
+                width: { ideal: 3840 },
+                height: { ideal: 2160 },
+              }
+            : {
+                facingMode: "environment",
+                width: { ideal: 3840 },
+                height: { ideal: 2160 },
+              },
+          audio: false,
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await new Promise<void>((resolve) => {
+            const v = videoRef.current!;
+            if (v.readyState >= 2) {
+              resolve();
+              return;
+            }
+            const onReady = () => {
+              v.removeEventListener("loadedmetadata", onReady);
+              resolve();
+            };
+            v.addEventListener("loadedmetadata", onReady);
+          });
+          await videoRef.current.play().catch(() => {});
+        }
+
+        // After first successful permission grant, labels are populated
+        if (lenses.length === 0) {
+          await enumerateLenses();
+        }
+
+        // Track the active deviceId so the UI can highlight it
+        const track = stream.getVideoTracks()[0];
+        const settings = track?.getSettings();
+        if (settings?.deviceId) {
+          setActiveLensId(settings.deviceId);
+        }
+      } catch (err) {
+        const name = (err as Error).name;
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          setError("Camera permission denied.");
+        } else if (name === "NotFoundError") {
+          setError("No camera found on this device.");
+        } else {
+          setError("Could not start camera.");
+        }
+      }
+    },
+    [lenses.length, enumerateLenses]
+  );
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -87,27 +157,38 @@ export default function CameraView({ isActive }: Props) {
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
-  // Camera stream tied to BOTH visibility (isActive) AND mode
+  // Lifecycle: start camera when active+live, stop otherwise
   useEffect(() => {
-    if (isActive && mode === "live") startCamera();
-    else stopCamera();
+    if (isActive && mode === "live") {
+      startCamera(activeLensId ?? undefined);
+    } else {
+      stopCamera();
+    }
     return () => stopCamera();
-  }, [isActive, mode, startCamera, stopCamera]);
+    // We intentionally exclude `activeLensId` from deps to avoid restarting on every change;
+    // the user-driven switch path handles that explicitly via handleSwitchLens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, mode]);
+
+  const handleSwitchLens = async (deviceId: string) => {
+    if (deviceId === activeLensId) return;
+    stopCamera();
+    setActiveLensId(deviceId);
+    await startCamera(deviceId);
+  };
 
   const waitForVideoReady = (
     video: HTMLVideoElement,
     timeoutMs = 3000
   ): Promise<void> => {
     return new Promise((resolve, reject) => {
-      // Need both: dimensions AND enough data to render a real frame
       const isReady = () =>
         video.videoWidth > 0 &&
         video.videoHeight > 0 &&
-        video.readyState >= 2 && // HAVE_CURRENT_DATA
+        video.readyState >= 2 &&
         !video.paused;
 
       if (isReady()) {
-        // Even when "ready," wait one extra frame to guarantee real pixels
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         return;
       }
@@ -129,7 +210,7 @@ export default function CameraView({ isActive }: Props) {
     if (!videoRef.current) return;
     try {
       await waitForVideoReady(videoRef.current);
-      const dataUrl = captureFrameAsJpeg(videoRef.current, 2560, 0.9);
+      const dataUrl = captureFrameAsJpeg(videoRef.current, 1920, 0.85);
       setCapturedImage(dataUrl);
       setMode("preview");
     } catch (err) {
@@ -289,7 +370,27 @@ export default function CameraView({ isActive }: Props) {
             }}
           />
         )}
+
+        {/* Lens picker — only shown in live mode and when 2+ lenses are available */}
+        {mode === "live" && lenses.length >= 2 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1.5 z-10">
+            {lenses.map((lens) => (
+              <button
+                key={lens.deviceId}
+                onClick={() => handleSwitchLens(lens.deviceId)}
+                className={`rounded-full text-xs font-semibold transition-colors ${
+                  lens.deviceId === activeLensId
+                    ? "bg-white text-black w-10 h-10"
+                    : "bg-transparent text-white w-9 h-9 active:bg-white/20"
+                }`}
+              >
+                {lens.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
       <div className="bg-black px-6 py-6 space-y-3">
         {activeEstimateId && (
           <p className="text-center text-xs text-gray-400">
