@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
-import { captureFrameAsJpeg } from "@/lib/image";
+import { captureFrameAsJpeg, processImageFile } from "@/lib/image";
 import { getCurrentLocation } from "@/lib/location";
 import { ScopeSelector } from "@/components/ScopeSelector";
 import { Tree } from "@/types";
@@ -41,9 +41,11 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
 
   const [mode, setMode] = useState<Mode>("live");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
+const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
+  const [strokeWidth, setStrokeWidth] = useState<number>(12);
   const [undoToken, setUndoToken] = useState(0);
   const markupRef = useRef<MarkupCanvasHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [scopeItems, setScopeItems] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveStage, setSaveStage] = useState<SaveStage>("idle");
@@ -242,6 +244,25 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
   const handleProceedToDetails = () => setMode("details");
 
   const handleSkipMarkup = () => setMode("details");
+  const handleGalleryClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Always reset the input so picking the same file again still triggers
+    if (e.target) e.target.value = "";
+    if (!file) return;
+
+    try {
+      const dataUrl = await processImageFile(file, 1920, 0.85);
+      setCapturedImage(dataUrl);
+      setMode("preview");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown";
+      setError(`Could not load photo: ${msg}`);
+    }
+  };
 
   const handleApplyMarkup = () => {
     if (!markupRef.current) {
@@ -392,11 +413,12 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
             imageDataUrl={capturedImage}
             tool={markupTool}
             undoToken={undoToken}
+            strokeWidth={strokeWidth}
           />
         </div>
 
         {/* Tool palette */}
-        <div className="bg-black px-4 py-3 flex gap-2 justify-center border-t border-white/10">
+        <div className="bg-black px-4 pt-3 pb-2 flex gap-2 justify-center border-t border-white/10">
           {(["draw", "erase", "text"] as const).map((t) => (
             <button
               key={t}
@@ -417,6 +439,37 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
             Undo
           </button>
         </div>
+
+        {/* Stroke width picker — only relevant for draw/erase */}
+        {(markupTool === "draw" || markupTool === "erase") && (
+          <div className="bg-black px-4 pb-3 flex gap-2 justify-center">
+            {[8, 12, 20, 28].map((w) => (
+              <button
+                key={w}
+                onClick={() => setStrokeWidth(w)}
+                className={`flex items-center justify-center rounded-full transition-colors ${
+                  strokeWidth === w
+                    ? "bg-white"
+                    : "bg-white/10 active:bg-white/20"
+                }`}
+                style={{ width: 40, height: 40 }}
+                aria-label={`Stroke ${w}px`}
+              >
+                <span
+                  className={
+                    strokeWidth === w ? "bg-black" : "bg-white"
+                  }
+                  style={{
+                    display: "block",
+                    width: w,
+                    height: w,
+                    borderRadius: "50%",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Bottom action bar */}
         <div className="px-4 py-4 bg-black flex gap-3 border-t border-white/10">
@@ -498,13 +551,31 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
           </p>
         )}
         {mode === "live" && (
-          <button
-            onClick={handleCapture}
-            className="w-full rounded-xl bg-white py-4 text-black font-semibold active:bg-gray-200"
-          >
-            Capture
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleGalleryClick}
+              className="rounded-xl bg-white/10 px-4 py-4 text-white text-sm font-medium active:bg-white/20"
+              aria-label="Pick from gallery"
+            >
+              Gallery
+            </button>
+            <button
+              onClick={handleCapture}
+              className="flex-1 rounded-xl bg-white py-4 text-black font-semibold active:bg-gray-200"
+            >
+              Capture
+            </button>
+          </div>
         )}
+
+        {/* Hidden file input — opens phone gallery picker when clicked */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFilePicked}
+          style={{ display: "none" }}
+        />
         {mode === "preview" && (
           <div className="flex gap-3">
             <button

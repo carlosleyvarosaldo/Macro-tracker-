@@ -32,11 +32,10 @@ type TextLabel = {
 
 type Action = Stroke | TextLabel;
 
-const STROKE_COLOR = "#ff3b30"; // bright red — visible on bark, leaves, sky
-const STROKE_WIDTH = 6;
-const ERASE_WIDTH = 28;
+const STROKE_COLOR = "#ff3b30";
+const ERASE_MULTIPLIER = 3; // erase is wider than current stroke for easier touch use
 const TEXT_COLOR = "#ff3b30";
-const TEXT_SIZE = 28;
+const TEXT_SIZE = 36;
 
 export type MarkupCanvasHandle = {
   /** Returns a JPEG data URL combining background + markup. */
@@ -46,12 +45,12 @@ export type MarkupCanvasHandle = {
 type Props = {
   imageDataUrl: string;
   tool: Tool;
-  /** Bumping this number triggers an undo of the most recent action. */
   undoToken: number;
+  strokeWidth: number;
 };
 
 const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas(
-  { imageDataUrl, tool, undoToken },
+  { imageDataUrl, tool, undoToken, strokeWidth },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,7 +86,7 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.lineCap = "round";
+    ctx.lineCap = "square"; // flat-tipped marker style
     ctx.lineJoin = "round";
 
     for (const action of historyRef.current) {
@@ -144,7 +143,7 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
     ctx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.width;
-    ctx.lineCap = "round";
+    ctx.lineCap = "square";
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
@@ -226,7 +225,7 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
       kind: "stroke",
       points: [point],
       color: STROKE_COLOR,
-      width: tool === "erase" ? ERASE_WIDTH : STROKE_WIDTH,
+      width: tool === "erase" ? strokeWidth * ERASE_MULTIPLIER : strokeWidth,
       erase: tool === "erase",
     };
     currentStrokeRef.current = stroke;
