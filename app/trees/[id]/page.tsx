@@ -13,6 +13,7 @@ export default function EditTreePage() {
   const updateTree = useAppStore((s) => s.updateTree);
 
   const [tree, setTree] = useState<Tree | null>(null);
+  const [label, setLabel] = useState<string>("");
   const [scopeItems, setScopeItems] = useState<number[]>([]);
   const [price, setPrice] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
@@ -23,6 +24,7 @@ export default function EditTreePage() {
     getTreeById(params.id).then((t) => {
       if (!t) return;
       setTree(t);
+      setLabel(t.label ?? "");
       setScopeItems(t.scopeItems ?? []);
       setPrice(String(t.price ?? 0));
       setNotes(t.notes ?? "");
@@ -35,6 +37,7 @@ export default function EditTreePage() {
     try {
       const parsedPrice = parseFloat(price);
       await updateTree(tree.id, {
+        label: label.trim() || undefined,
         scopeItems,
         price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
         notes,
@@ -65,6 +68,19 @@ export default function EditTreePage() {
       </div>
 
       <div className="px-4 py-4 space-y-5 flex-1">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Label
+          </label>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-3 text-base"
+            placeholder='e.g. "Oak by driveway"'
+          />
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">
             Price ($)

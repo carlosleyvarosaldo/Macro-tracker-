@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/lib/store";
 import { getScopeLabel } from "@/lib/scope";
-import { buildKml, downloadKml, hasValidLocation } from "@/lib/kml";
+import { buildKml, downloadKml, downloadBlob, hasValidLocation } from "@/lib/kml";
 import { ensureAllTreeImagesUploaded } from "@/lib/upload";
+import { buildEstimatePdf } from "@/lib/pdf";
 
 function formatLocation(lat: number, lng: number): string {
   if (lat === 0 && lng === 0) return "No location";
@@ -20,10 +21,12 @@ function formatDateForFilename(ts: number): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+type ExportKind = "kml" | "pdf" | null;
+
 export default function TreesPage() {
   const { activeEstimateId, activeTrees, loadTreesForActiveEstimate } = useAppStore();
   const [toast, setToast] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<ExportKind>(null);
 
   useEffect(() => {
     loadTreesForActiveEstimate();
@@ -40,31 +43,27 @@ export default function TreesPage() {
     [activeTrees]
   );
 
-  const handleExport = async () => {
-    if (!activeEstimateId || exportable.length === 0 || exporting) return;
+  const total = useMemo(
+    () => activeTrees.reduce((sum, t) => sum + (t.price ?? 0), 0),
+    [activeTrees]
+  );
 
-    setExporting(true);
+  const handleExportKml = async () => {
+    if (!activeEstimateId || exportable.length === 0 || exporting) return;
+    setExporting("kml");
     try {
-      // 1. Upload any photos that haven't been uploaded yet
       const imageUrls = await ensureAllTreeImagesUploaded(
         exportable,
-        (done, total) => {
-          setToast(`Uploading photos ${done}/${total}...`);
-        }
+        (done, t) => setToast(`Uploading photos ${done}/${t}...`)
       );
-
-      // 2. Re-fetch trees to pick up newly-cached imageUrls (optional but tidy)
       await loadTreesForActiveEstimate();
-
-      // 3. Build KML using hosted URLs
       const kml = buildKml(
         exportable,
         imageUrls,
         `Estimate ${activeEstimateId.slice(0, 8)}`
       );
       const date = formatDateForFilename(Date.now());
-      const filename = `estimate-${activeEstimateId.slice(0, 6)}-${date}.kml`;
-      downloadKml(kml, filename);
+      downloadKml(kml, `estimate-${activeEstimateId.slice(0, 6)}-${date}.kml`);
 
       const skipped = activeTrees.length - exportable.length;
       setToast(
@@ -76,26 +75,65 @@ export default function TreesPage() {
       const msg = err instanceof Error ? err.message : "Export failed";
       setToast(`Export failed: ${msg}`);
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
-  const canExport = !!activeEstimateId && exportable.length > 0 && !exporting;
+  const handleExportPdf = async () => {
+    if (!activeEstimateId || activeTrees.length === 0 || exporting) return;
+    setExporting("pdf");
+    setToast("Generating PDF...");
+    try {
+      const blob = await buildEstimatePdf(activeTrees);
+      const date = formatDateForFilename(Date.now());
+      const filename = `estimate-${activeEstimateId.slice(0, 6)}-${date}.pdf`;
+      downloadBlob(blob, filename);
+      setToast(`PDF exported (${activeTrees.length} trees)`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "PDF export failed";
+      setToast(`Export failed: ${msg}`);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const canExportKml =
+    !!activeEstimateId && exportable.length > 0 && !exporting;
+  const canExportPdf =
+    !!activeEstimateId && activeTrees.length > 0 && !exporting;
 
   return (
     <div className="px-4 py-6 pb-20">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-semibold">Trees</h1>
-        {activeTrees.length > 0 && (
-          <button
-            onClick={handleExport}
-            disabled={!canExport}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-medium active:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500"
-          >
-            {exporting ? "Exporting..." : "Export KML"}
-          </button>
-        )}
       </div>
+
+      {activeTrees.length > 0 && (
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <p className="text-sm text-gray-600">
+            Total:{" "}
+            <span className="font-semibold text-gray-900">
+              ${total.toFixed(2)}
+            </span>
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportPdf}
+              disabled={!canExportPdf}
+              className="rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-medium active:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500"
+            >
+              {exporting === "pdf" ? "..." : "PDF"}
+            </button>
+            <button
+              onClick={handleExportKml}
+              disabled={!canExportKml}
+              className="rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-medium active:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500"
+            >
+              {exporting === "kml" ? "..." : "KML"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {!activeEstimateId && (
         <p className="text-gray-500 text-sm">
@@ -125,12 +163,22 @@ export default function TreesPage() {
                     className="h-16 w-16 rounded-md object-cover bg-gray-100 flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
+                    {tree.label?.trim() && (
+                      <p className="text-sm font-semibold text-gray-900">
+                        {tree.label}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500">
                       {new Date(tree.createdAt).toLocaleString()}
                     </p>
                     <p className="text-xs text-gray-400 font-mono mb-1">
                       {locationText}
                     </p>
+                    {tree.price > 0 && (
+                      <p className="text-sm font-semibold text-gray-800 mb-1">
+                        ${tree.price.toFixed(2)}
+                      </p>
+                    )}
                     {scope.length === 0 ? (
                       <p className="text-xs text-gray-400 italic">
                         No scope selected

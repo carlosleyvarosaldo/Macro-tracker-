@@ -45,7 +45,7 @@ function buildPlacemark(
   index: number,
   imageUrl: string | null
 ): string {
-  const name = escapeXml(`Tree ${index + 1}`);
+  const name = escapeXml(tree.label?.trim() || `Tree ${index + 1}`);
   const description = buildDescriptionHtml(tree, imageUrl);
   const coords = `${tree.lng},${tree.lat},0`;
 

@@ -3,6 +3,7 @@ export type Tree = {
   estimateId: string;
   image: string;
   imageUrl?: string;
+  label?: string;
   price: number;
   scopeItems: number[];
   notes: string;
