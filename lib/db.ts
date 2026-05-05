@@ -23,8 +23,13 @@ class ArboristDB extends Dexie {
       trees: "id, estimateId, createdAt",
     });
 
-    // v4: adds optional writeUp field on estimate (no index needed)
     this.version(4).stores({
+      estimates: "id, createdAt, status",
+      trees: "id, estimateId, createdAt",
+    });
+
+    // v5: add name + address to estimate (no index needed for either)
+    this.version(5).stores({
       estimates: "id, createdAt, status",
       trees: "id, estimateId, createdAt",
     });
@@ -54,6 +59,13 @@ export async function getEstimateById(id: string): Promise<Estimate | undefined>
   return db.estimates.get(id);
 }
 
+export async function updateEstimate(
+  id: string,
+  changes: Partial<Estimate>
+): Promise<void> {
+  await db.estimates.update(id, changes);
+}
+
 // --- Trees ---
 
 export async function addTree(tree: Tree): Promise<void> {
@@ -75,9 +87,16 @@ export async function updateTree(
   await db.trees.update(id, changes);
 }
 
-export async function updateEstimate(
-  id: string,
-  changes: Partial<Estimate>
-): Promise<void> {
-  await db.estimates.update(id, changes);
+// --- Deletes ---
+
+export async function deleteTree(id: string): Promise<void> {
+  await db.trees.delete(id);
+}
+
+/** Cascade-deletes the estimate and ALL its trees in a single transaction. */
+export async function deleteEstimateCascade(id: string): Promise<void> {
+  await db.transaction("rw", db.estimates, db.trees, async () => {
+    await db.trees.where("estimateId").equals(id).delete();
+    await db.estimates.delete(id);
+  });
 }

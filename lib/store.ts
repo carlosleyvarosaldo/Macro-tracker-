@@ -8,6 +8,8 @@ import {
   getTreesForEstimate,
   updateTree as dbUpdateTree,
   updateEstimate as dbUpdateEstimate,
+  deleteTree as dbDeleteTree,
+  deleteEstimateCascade as dbDeleteEstimate,
 } from "./db";
 
 type StoreState = {
@@ -23,6 +25,9 @@ type StoreState = {
   loadTreesForActiveEstimate: () => Promise<void>;
   updateTree: (id: string, changes: Partial<Tree>) => Promise<void>;
   updateEstimate: (id: string, changes: Partial<Estimate>) => Promise<void>;
+
+  deleteTree: (id: string) => Promise<void>;
+  deleteEstimate: (id: string) => Promise<void>;
 };
 
 export const useAppStore = create<StoreState>()(
@@ -82,6 +87,25 @@ export const useAppStore = create<StoreState>()(
             e.id === id ? { ...e, ...changes } : e
           ),
         }));
+      },
+
+      deleteTree: async (id) => {
+        await dbDeleteTree(id);
+        set((state) => ({
+          activeTrees: state.activeTrees.filter((t) => t.id !== id),
+        }));
+      },
+
+      deleteEstimate: async (id) => {
+        await dbDeleteEstimate(id);
+        set((state) => {
+          const cleared = state.activeEstimateId === id;
+          return {
+            estimates: state.estimates.filter((e) => e.id !== id),
+            activeEstimateId: cleared ? null : state.activeEstimateId,
+            activeTrees: cleared ? [] : state.activeTrees,
+          };
+        });
       },
     }),
     {

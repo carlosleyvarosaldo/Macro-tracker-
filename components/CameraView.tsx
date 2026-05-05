@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { captureFrameAsJpeg, processImageFile } from "@/lib/image";
 import { getCurrentLocation } from "@/lib/location";
+import { reverseGeocode } from "@/lib/geocoding";
 import { ScopeSelector } from "@/components/ScopeSelector";
 import { Tree } from "@/types";
 import MarkupCanvas, { MarkupCanvasHandle } from "@/components/MarkupCanvas";
@@ -53,7 +54,7 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
   const [lenses, setLenses] = useState<LensOption[]>([]);
   const [activeLensId, setActiveLensId] = useState<string | null>(null);
 
-  const { activeEstimateId, createEstimate, addTreeToEstimate, loadEstimates } =
+  const { activeEstimateId, createEstimate, addTreeToEstimate, loadEstimates, updateEstimate } =
     useAppStore();
 
   useEffect(() => {
@@ -274,18 +275,23 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
     setMode("details");
   };
 
-  const handleSaveTree = async () => {
+const handleSaveTree = async () => {
     if (!capturedImage || saveStage !== "idle") return;
     setSaveStage("locating");
     const locResult = await getCurrentLocation();
-    const coords = locResult.ok ? locResult.coords : { lat: 0, lng: 0 };
+    const coords = locResult.ok
+      ? locResult.coords
+      : { lat: 0, lng: 0, accuracy: 0 };
     setSaveStage("saving");
 
     try {
       let estimateId = activeEstimateId;
+      let isFirstTreeOfNewEstimate = false;
+
       if (!estimateId) {
         const created = await createEstimate();
         estimateId = created.id;
+        isFirstTreeOfNewEstimate = true;
       }
 
       const tree: Tree = {
@@ -304,6 +310,20 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
 
       if (!locResult.ok) {
         setToast("Location unavailable – saved without location");
+      } else if (locResult.coords.accuracy > 25) {
+        setToast(`Saved (low accuracy: ±${Math.round(locResult.coords.accuracy)}m)`);
+      }
+
+      // For first tree of a fresh estimate, geocode in the background
+      // and set the estimate's name + address. Failures are silent.
+      if (isFirstTreeOfNewEstimate && locResult.ok) {
+        const idForGeocode = estimateId;
+        reverseGeocode(coords.lat, coords.lng)
+          .then((address) => {
+            if (!address) return;
+            updateEstimate(idForGeocode, { address, name: address });
+          })
+          .catch(() => {});
       }
 
       setCapturedImage(null);

@@ -3,16 +3,26 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
+import { Estimate } from "@/types";
 
 type Props = {
-  /** Called when a draft is selected — parent should swipe to Trees view. */
   onSelectDraft?: () => void;
 };
 
+function estimateDisplayName(estimate: Estimate): string {
+  if (estimate.name?.trim()) return estimate.name;
+  return `Estimate · ${new Date(estimate.createdAt).toLocaleDateString()}`;
+}
+
 export default function DraftsView({ onSelectDraft }: Props) {
   const router = useRouter();
-  const { estimates, loadEstimates, setActiveEstimate, activeEstimateId } =
-    useAppStore();
+  const {
+    estimates,
+    loadEstimates,
+    setActiveEstimate,
+    activeEstimateId,
+    deleteEstimate,
+  } = useAppStore();
 
   useEffect(() => {
     loadEstimates();
@@ -20,10 +30,18 @@ export default function DraftsView({ onSelectDraft }: Props) {
 
   const handleSelect = async (id: string) => {
     setActiveEstimate(id);
-    // Force the trees to load before swiping over
     await useAppStore.getState().loadTreesForActiveEstimate();
     if (onSelectDraft) onSelectDraft();
     else router.push("/");
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    const ok = window.confirm(
+      `Delete "${name}"?\n\nThis will remove the estimate and all its trees. This cannot be undone.`
+    );
+    if (!ok) return;
+    await deleteEstimate(id);
   };
 
   return (
@@ -38,29 +56,52 @@ export default function DraftsView({ onSelectDraft }: Props) {
           <ul className="space-y-2">
             {estimates.map((estimate) => {
               const isActive = estimate.id === activeEstimateId;
+              const displayName = estimateDisplayName(estimate);
               return (
-                <li key={estimate.id}>
+                <li
+                  key={estimate.id}
+                  className={`relative rounded-lg border ${
+                    isActive
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
                   <button
                     onClick={() => handleSelect(estimate.id)}
-                    className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                      isActive
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-gray-200 bg-white"
-                    }`}
+                    className="w-full text-left p-3 pr-12"
                   >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-medium font-mono">
-                          {estimate.id.slice(0, 8)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(estimate.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <span className="text-xs text-gray-400 uppercase">
-                        {estimate.status}
-                      </span>
-                    </div>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {displayName}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {new Date(estimate.createdAt).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-wide">
+                      {estimate.status}
+                    </p>
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(e, estimate.id, displayName)}
+                    aria-label="Delete estimate"
+                    className="absolute top-1/2 right-2 -translate-y-1/2 w-9 h-9 rounded-full text-gray-400 active:bg-gray-100 active:text-red-600 flex items-center justify-center"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
                   </button>
                 </li>
               );
