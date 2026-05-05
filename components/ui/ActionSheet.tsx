@@ -121,27 +121,12 @@ export default function ActionSheet({
               }}
             >
               {title && (
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#374151",
-                    margin: 0,
-                    lineHeight: 1.3,
-                  }}
-                >
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0, lineHeight: 1.3 }}>
                   {title}
                 </p>
               )}
               {description && (
-                <p
-                  style={{
-                    fontSize: 13,
-                    color: "#6b7280",
-                    margin: "6px 0 0 0",
-                    lineHeight: 1.5,
-                  }}
-                >
+                <p style={{ fontSize: 13, color: "#6b7280", margin: "6px 0 0 0", lineHeight: 1.5 }}>
                   {description}
                 </p>
               )}
@@ -178,14 +163,7 @@ export default function ActionSheet({
               ))}
             </div>
           ) : (
-            <p
-              style={{
-                padding: "24px 16px",
-                textAlign: "center",
-                fontSize: 14,
-                color: "#6b7280",
-              }}
-            >
+            <p style={{ padding: "24px 16px", textAlign: "center", fontSize: 14, color: "#6b7280" }}>
               No actions available
             </p>
           )}
@@ -215,6 +193,5 @@ export default function ActionSheet({
     </div>
   );
 
-  // Render via portal to escape any transformed ancestor
   return createPortal(sheet, document.body);
 }

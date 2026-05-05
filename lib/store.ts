@@ -26,11 +26,13 @@ type StoreState = {
 
   setActiveEstimate: (id: string | null) => void;
   createEstimate: () => Promise<Estimate>;
+  createBlankEstimate: (name?: string) => Promise<Estimate>;
   loadEstimates: () => Promise<void>;
 
   addTreeToEstimate: (tree: Tree) => Promise<void>;
   loadTreesForActiveEstimate: () => Promise<void>;
   updateTree: (id: string, changes: Partial<Tree>) => Promise<void>;
+  moveTreeToEstimate: (treeId: string, newEstimateId: string) => Promise<void>;
   updateEstimate: (id: string, changes: Partial<Estimate>) => Promise<void>;
 
   deleteTree: (id: string) => Promise<void>;
@@ -90,6 +92,20 @@ export const useAppStore = create<StoreState>()(
         return estimate;
       },
 
+      createBlankEstimate: async (name) => {
+        const user = get().currentUser;
+        if (!user) throw new Error("Must be signed in to create an estimate");
+        const estimate = await dbCreateEstimate(user.id);
+        if (name?.trim()) {
+          await dbUpdateEstimate(estimate.id, { name: name.trim() });
+          estimate.name = name.trim();
+        }
+        set((state) => ({
+          estimates: [estimate, ...state.estimates],
+        }));
+        return estimate;
+      },
+
       loadEstimates: async () => {
         const user = get().currentUser;
         if (!user) {
@@ -124,6 +140,14 @@ export const useAppStore = create<StoreState>()(
         }));
       },
 
+      moveTreeToEstimate: async (treeId, newEstimateId) => {
+        await dbUpdateTree(treeId, { estimateId: newEstimateId });
+        // Remove from active list since it now belongs to a different estimate
+        set((state) => ({
+          activeTrees: state.activeTrees.filter((t) => t.id !== treeId),
+        }));
+      },
+
       updateEstimate: async (id, changes) => {
         await dbUpdateEstimate(id, changes);
         set((state) => ({
@@ -155,7 +179,6 @@ export const useAppStore = create<StoreState>()(
     {
       name: "arborist-store",
       storage: createJSONStorage(() => localStorage),
-      // Only persist the active estimate id; user comes from authoritative auth check
       partialize: (state) => ({ activeEstimateId: state.activeEstimateId }),
     }
   )

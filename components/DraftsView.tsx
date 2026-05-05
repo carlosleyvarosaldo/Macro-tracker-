@@ -7,6 +7,7 @@ import { Estimate } from "@/types";
 import ListGroup from "@/components/ui/ListGroup";
 import ListRow from "@/components/ui/ListRow";
 import ActionSheet from "@/components/ui/ActionSheet";
+import RenameEstimateSheet from "@/components/RenameEstimateSheet";
 
 type Props = {
   onSelectDraft?: () => void;
@@ -25,11 +26,15 @@ export default function DraftsView({ onSelectDraft }: Props) {
     setActiveEstimate,
     activeEstimateId,
     deleteEstimate,
+    createBlankEstimate,
+    updateEstimate,
     currentUser,
     signOut,
   } = useAppStore();
 
   const [pendingDelete, setPendingDelete] = useState<Estimate | null>(null);
+  const [pendingActions, setPendingActions] = useState<Estimate | null>(null);
+  const [renaming, setRenaming] = useState<Estimate | null>(null);
   const [signOutSheet, setSignOutSheet] = useState(false);
 
   useEffect(() => {
@@ -48,6 +53,11 @@ export default function DraftsView({ onSelectDraft }: Props) {
     const id = pendingDelete.id;
     setPendingDelete(null);
     await deleteEstimate(id);
+  };
+
+  const handleNewEstimate = async () => {
+    const created = await createBlankEstimate();
+    setRenaming(created);
   };
 
   return (
@@ -78,13 +88,35 @@ export default function DraftsView({ onSelectDraft }: Props) {
           </ListGroup>
         )}
 
+        {/* New estimate — the big green pill */}
+        <button
+          type="button"
+          onClick={handleNewEstimate}
+          className="w-full mb-6 rounded-3xl bg-emerald-600 active:bg-emerald-700 text-white font-semibold text-[17px] py-5 flex items-center justify-center gap-2 shadow-sm"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New estimate
+        </button>
+
         {/* Estimates section */}
         {estimates.length === 0 ? (
           <ListGroup>
             <div className="px-4 py-8 text-center">
               <p className="text-[15px] text-gray-500 mb-1">No estimates yet</p>
               <p className="text-[13px] text-gray-400">
-                Swipe to Camera to start one
+                Tap the green button or swipe to Camera to start one
               </p>
             </div>
           </ListGroup>
@@ -99,7 +131,12 @@ export default function DraftsView({ onSelectDraft }: Props) {
               const displayName = estimateDisplayName(estimate);
               const dateText = new Date(estimate.createdAt).toLocaleString(
                 undefined,
-                { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }
+                {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                }
               );
               return (
                 <div key={estimate.id} className="relative">
@@ -118,26 +155,20 @@ export default function DraftsView({ onSelectDraft }: Props) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setPendingDelete(estimate);
+                          setPendingActions(estimate);
                         }}
-                        aria-label="Delete estimate"
-                        className="w-8 h-8 rounded-full text-gray-400 active:text-red-600 active:bg-gray-100 flex items-center justify-center"
+                        aria-label="More actions"
+                        className="w-8 h-8 rounded-full text-gray-400 active:text-gray-600 active:bg-gray-100 flex items-center justify-center"
                       >
                         <svg
-                          width="16"
-                          height="16"
+                          width="18"
+                          height="18"
                           viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                          fill="currentColor"
                         >
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          <circle cx="5" cy="12" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <circle cx="19" cy="12" r="2" />
                         </svg>
                       </button>
                     }
@@ -148,6 +179,36 @@ export default function DraftsView({ onSelectDraft }: Props) {
           </ListGroup>
         )}
       </div>
+
+      {/* Per-estimate action sheet (rename / delete) */}
+      <ActionSheet
+        open={pendingActions !== null}
+        onClose={() => setPendingActions(null)}
+        title={pendingActions ? estimateDisplayName(pendingActions) : ""}
+        actions={
+          pendingActions
+            ? [
+                {
+                  label: "Rename",
+                  onClick: () => {
+                    const target = pendingActions;
+                    setPendingActions(null);
+                    setRenaming(target);
+                  },
+                },
+                {
+                  label: "Delete",
+                  destructive: true,
+                  onClick: () => {
+                    const target = pendingActions;
+                    setPendingActions(null);
+                    setPendingDelete(target);
+                  },
+                },
+              ]
+            : []
+        }
+      />
 
       {/* Delete confirm sheet */}
       <ActionSheet
@@ -184,6 +245,19 @@ export default function DraftsView({ onSelectDraft }: Props) {
             },
           },
         ]}
+      />
+
+      {/* Rename sheet */}
+      <RenameEstimateSheet
+        open={renaming !== null}
+        initialName={renaming?.name ?? ""}
+        initialAddress={renaming?.address}
+        onClose={() => setRenaming(null)}
+        onSave={async (newName) => {
+          if (!renaming) return;
+          await updateEstimate(renaming.id, { name: newName });
+          setRenaming(null);
+        }}
       />
     </div>
   );

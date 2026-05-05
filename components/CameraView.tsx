@@ -13,23 +13,19 @@ type Mode = "live" | "preview" | "markup" | "details";
 type SaveStage = "idle" | "locating" | "saving";
 type MarkupTool = "draw" | "erase" | "text";
 
-type LensOption = {
-  deviceId: string;
-  label: string;
-};
 
 type Props = {
   isActive: boolean;
   onSwipeLockChange?: (locked: boolean) => void;
 };
 
-function classifyRearCamera(label: string): string | null {
-  const l = label.toLowerCase();
-  if (l.includes("front") || l.includes("user") || l.includes("face")) return null;
-  if (l.includes("ultra") || (l.includes("wide") && !l.includes("zoom"))) return "0.5x";
-  if (l.includes("tele") || l.includes("zoom") || /\b[3-9]x\b/.test(l)) return "3x";
-  return "1x";
-}
+type ZoomLens = { label: string; zoom: number };
+
+const ZOOM_LENSES: ZoomLens[] = [
+  { label: "0.5x", zoom: 0.5 },
+  { label: "1x", zoom: 1 },
+  { label: "3x", zoom: 3 },
+];
 
 export default function CameraView({ isActive, onSwipeLockChange }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -45,8 +41,11 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
   const [saveStage, setSaveStage] = useState<SaveStage>("idle");
   const [toast, setToast] = useState<string | null>(null);
 
-  const [lenses, setLenses] = useState<LensOption[]>([]);
-  const [activeLensId, setActiveLensId] = useState<string | null>(null);
+  const [zoomCapability, setZoomCapability] = useState<{
+    min: number;
+    max: number;
+  } | null>(null);
+  const [activeZoom, setActiveZoom] = useState<number>(1);
 
 const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
   const [strokeWidth, setStrokeWidth] = useState<number>(12);
@@ -71,82 +70,67 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
     onSwipeLockChange?.(mode === "markup" || mode === "details");
   }, [mode, onSwipeLockChange]);
 
-  const enumerateLenses = useCallback(async () => {
+  
+
+  const startCamera = useCallback(async () => {
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((d) => d.kind === "videoinput");
-      const seen = new Set<string>();
-      const result: LensOption[] = [];
-      for (const d of videoInputs) {
-        const label = classifyRearCamera(d.label || "");
-        if (!label) continue;
-        if (seen.has(label)) continue;
-        seen.add(label);
-        result.push({ deviceId: d.deviceId, label });
+      setError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 3840 },
+          height: { ideal: 2160 },
+        },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await new Promise<void>((resolve) => {
+          const v = videoRef.current!;
+          if (v.readyState >= 2) {
+            resolve();
+            return;
+          }
+          const onReady = () => {
+            v.removeEventListener("loadedmetadata", onReady);
+            resolve();
+          };
+          v.addEventListener("loadedmetadata", onReady);
+        });
+        await videoRef.current.play().catch(() => {});
       }
-      const order: Record<string, number> = { "0.5x": 0, "1x": 1, "3x": 2 };
-      result.sort((a, b) => (order[a.label] ?? 99) - (order[b.label] ?? 99));
-      setLenses(result);
-    } catch {
-      setLenses([]);
+
+      // Detect zoom capabilities — iOS Safari supports this on 11 Pro+
+      const track = stream.getVideoTracks()[0];
+      // Use the standard MediaTrackCapabilities API; some browsers expose `zoom`
+      type ZoomCap = { min?: number; max?: number; step?: number };
+      const caps =
+        (track?.getCapabilities?.() as MediaTrackCapabilities & {
+          zoom?: ZoomCap;
+        }) ?? {};
+      const zoomCap = caps.zoom;
+      if (
+        zoomCap &&
+        typeof zoomCap.min === "number" &&
+        typeof zoomCap.max === "number"
+      ) {
+        setZoomCapability({ min: zoomCap.min, max: zoomCap.max });
+      } else {
+        setZoomCapability(null);
+      }
+      setActiveZoom(1);
+    } catch (err) {
+      const name = (err as Error).name;
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        setError("Camera permission denied.");
+      } else if (name === "NotFoundError") {
+        setError("No camera found on this device.");
+      } else {
+        setError("Could not start camera.");
+      }
     }
   }, []);
-
-  const startCamera = useCallback(
-    async (deviceId?: string) => {
-      try {
-        setError(null);
-        const constraints: MediaStreamConstraints = {
-          video: deviceId
-            ? {
-                deviceId: { exact: deviceId },
-                width: { ideal: 3840 },
-                height: { ideal: 2160 },
-              }
-            : {
-                facingMode: "environment",
-                width: { ideal: 3840 },
-                height: { ideal: 2160 },
-              },
-          audio: false,
-        };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await new Promise<void>((resolve) => {
-            const v = videoRef.current!;
-            if (v.readyState >= 2) {
-              resolve();
-              return;
-            }
-            const onReady = () => {
-              v.removeEventListener("loadedmetadata", onReady);
-              resolve();
-            };
-            v.addEventListener("loadedmetadata", onReady);
-          });
-          await videoRef.current.play().catch(() => {});
-        }
-        if (lenses.length === 0) {
-          await enumerateLenses();
-        }
-        const track = stream.getVideoTracks()[0];
-        const settings = track?.getSettings();
-        if (settings?.deviceId) setActiveLensId(settings.deviceId);
-      } catch (err) {
-        const name = (err as Error).name;
-        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-          setError("Camera permission denied.");
-        } else if (name === "NotFoundError") {
-          setError("No camera found on this device.");
-        } else {
-          setError("Could not start camera.");
-        }
-      }
-    },
-    [lenses.length, enumerateLenses]
-  );
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -156,7 +140,7 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
 
   useEffect(() => {
     if (isActive && mode === "live") {
-      startCamera(activeLensId ?? undefined);
+      startCamera();
     } else {
       stopCamera();
     }
@@ -164,11 +148,24 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, mode]);
 
-  const handleSwitchLens = async (deviceId: string) => {
-    if (deviceId === activeLensId) return;
-    stopCamera();
-    setActiveLensId(deviceId);
-    await startCamera(deviceId);
+  const applyZoom = async (zoom: number) => {
+    const stream = streamRef.current;
+    const track = stream?.getVideoTracks()[0];
+    if (!track || !zoomCapability) return;
+    // Clamp to capabilities
+    const clamped = Math.max(
+      zoomCapability.min,
+      Math.min(zoomCapability.max, zoom)
+    );
+    try {
+      await track.applyConstraints({
+        // The DOM types don't include `zoom` yet on all targets; cast.
+        advanced: [{ zoom: clamped } as MediaTrackConstraintSet & { zoom: number }],
+      });
+      setActiveZoom(clamped);
+    } catch {
+      // Some devices may not allow constraint changes; fail silently
+    }
   };
 
   const waitForVideoReady = (
@@ -327,12 +324,25 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
         setToast(`Saved (low accuracy: ±${Math.round(locResult.coords.accuracy)}m)`);
       }
 
-      if (isFirstTreeOfNewEstimate && locResult.ok) {
+      // Geocode whenever the estimate doesn't already have an address —
+      // works for fresh estimates AND for blank estimates the user pre-created
+      const targetEstimate = useAppStore
+        .getState()
+        .estimates.find((e) => e.id === estimateId);
+      const needsAddress = !targetEstimate?.address;
+
+      if (needsAddress && locResult.ok) {
         const idForGeocode = estimateId;
+        const hasManualName = !!targetEstimate?.name?.trim();
         reverseGeocode(coords.lat, coords.lng)
           .then((address) => {
             if (!address) return;
-            updateEstimate(idForGeocode, { address, name: address });
+            // Always store the address; only override `name` if the user
+            // hasn't already given the estimate a manual label.
+            const changes = hasManualName
+              ? { address }
+              : { address, name: address };
+            updateEstimate(idForGeocode, changes);
           })
           .catch(() => {});
       }
@@ -603,21 +613,28 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
             }}
           />
         )}
-        {mode === "live" && lenses.length >= 2 && (
+        {mode === "live" && zoomCapability && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1.5 z-10">
-            {lenses.map((lens) => (
-              <button
-                key={lens.deviceId}
-                onClick={() => handleSwitchLens(lens.deviceId)}
-                className={`rounded-full text-xs font-semibold transition-colors ${
-                  lens.deviceId === activeLensId
-                    ? "bg-white text-black w-10 h-10"
-                    : "bg-transparent text-white w-9 h-9 active:bg-white/20"
-                }`}
-              >
-                {lens.label}
-              </button>
-            ))}
+            {ZOOM_LENSES.filter(
+              (lens) =>
+                lens.zoom >= zoomCapability.min &&
+                lens.zoom <= zoomCapability.max
+            ).map((lens) => {
+              const isActive = Math.abs(activeZoom - lens.zoom) < 0.05;
+              return (
+                <button
+                  key={lens.label}
+                  onClick={() => applyZoom(lens.zoom)}
+                  className={`rounded-full text-xs font-semibold transition-colors ${
+                    isActive
+                      ? "bg-white text-black w-10 h-10"
+                      : "bg-transparent text-white w-9 h-9 active:bg-white/20"
+                  }`}
+                >
+                  {lens.label}
+                </button>
+              );
+            })}
           </div>
         )}
         {/* Photo counter — visible during live mode if photos already taken */}

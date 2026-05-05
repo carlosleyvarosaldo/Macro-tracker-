@@ -10,6 +10,7 @@ import { buildEstimatePdf } from "@/lib/pdf";
 import { resolveEstimateWriteUp } from "@/lib/writeup";
 import { Tree } from "@/types";
 import ActionSheet from "@/components/ui/ActionSheet";
+import EstimatePicker from "@/components/EstimatePicker";
 import Toast from "@/components/ui/Toast";
 
 function formatLocation(lat: number, lng: number): string {
@@ -34,10 +35,13 @@ export default function TreesView() {
     estimates,
     loadTreesForActiveEstimate,
     deleteTree,
+    moveTreeToEstimate,
   } = useAppStore();
   const [toast, setToast] = useState<string | null>(null);
   const [exporting, setExporting] = useState<ExportKind>(null);
+  const [pendingActions, setPendingActions] = useState<Tree | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Tree | null>(null);
+  const [movingTree, setMovingTree] = useState<Tree | null>(null);
 
   useEffect(() => {
     loadTreesForActiveEstimate();
@@ -64,7 +68,11 @@ export default function TreesView() {
 
   const buildPdfBlob = async (): Promise<Blob> => {
     const writeUp = resolveEstimateWriteUp(activeEstimate, activeTrees);
-    return buildEstimatePdf(activeTrees, writeUp);
+    return buildEstimatePdf(activeTrees, writeUp, {
+      estimateName: activeEstimate?.name,
+      address: activeEstimate?.address,
+      createdAt: activeEstimate?.createdAt,
+    });
   };
 
   const buildKmlBlob = async (): Promise<Blob> => {
@@ -76,7 +84,7 @@ export default function TreesView() {
     const kml = buildKml(
       exportable,
       imageUrls,
-      `Estimate ${activeEstimateId?.slice(0, 8) ?? ""}`
+      activeEstimate?.name || `Estimate ${activeEstimateId?.slice(0, 8) ?? ""}`
     );
     return new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
   };
@@ -113,7 +121,7 @@ export default function TreesView() {
     try {
       const blob = await buildPdfBlob();
       downloadBlob(blob, baseFilename("pdf"));
-      setToast(`PDF exported`);
+      setToast("PDF exported");
     } catch (err) {
       setToast(`Export failed: ${err instanceof Error ? err.message : ""}`);
     } finally {
@@ -177,6 +185,15 @@ export default function TreesView() {
     await deleteTree(id);
   };
 
+  const handleMoveTree = async (newEstimateId: string) => {
+    if (!movingTree) return;
+    const treeToMove = movingTree;
+    setMovingTree(null);
+    await moveTreeToEstimate(treeToMove.id, newEstimateId);
+    const target = estimates.find((e) => e.id === newEstimateId);
+    setToast(`Moved to ${target?.name?.trim() || "new estimate"}`);
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-[var(--ios-bg)] ios-scroll">
       <div className="px-3 py-6 pb-24">
@@ -184,18 +201,21 @@ export default function TreesView() {
           <h1 className="text-[28px] font-bold tracking-tight text-gray-900">
             Trees
           </h1>
+          {activeEstimate && (
+            <p className="text-[15px] text-gray-500 mt-0.5 truncate">
+              {activeEstimate.name?.trim() || "Untitled estimate"}
+            </p>
+          )}
           {activeTrees.length > 0 && (
             <p className="text-[15px] text-gray-500 mt-0.5">
               {activeTrees.length} {activeTrees.length === 1 ? "tree" : "trees"} ·
               <span className="text-gray-900 font-semibold">
-                {" "}
-                ${total.toFixed(2)}
+                {" "}${total.toFixed(2)}
               </span>
             </p>
           )}
         </div>
 
-        {/* Action bar — Share is primary, PDF and KML are secondary */}
         {activeTrees.length > 0 && (
           <div className="px-1 mb-4 flex gap-2">
             <button
@@ -244,7 +264,7 @@ export default function TreesView() {
           <div className="bg-white rounded-xl border border-gray-200/70 p-6 text-center">
             <p className="text-[15px] text-gray-500">No active estimate</p>
             <p className="text-[13px] text-gray-400 mt-1">
-              Swipe to Camera to start one
+              Swipe to Drafts to pick or create one
             </p>
           </div>
         )}
@@ -332,26 +352,20 @@ export default function TreesView() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setPendingDelete(tree);
+                      setPendingActions(tree);
                     }}
-                    aria-label="Delete tree"
-                    className="absolute top-1/2 right-2 -translate-y-1/2 w-9 h-9 rounded-full text-gray-400 active:bg-gray-100 active:text-red-600 flex items-center justify-center"
+                    aria-label="More actions"
+                    className="absolute top-1/2 right-2 -translate-y-1/2 w-9 h-9 rounded-full text-gray-400 active:bg-gray-100 active:text-gray-600 flex items-center justify-center"
                   >
                     <svg
                       width="18"
                       height="18"
                       viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      fill="currentColor"
                     >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                      <circle cx="5" cy="12" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="19" cy="12" r="2" />
                     </svg>
                   </button>
                 </div>
@@ -363,6 +377,37 @@ export default function TreesView() {
         {toast && <Toast message={toast} />}
       </div>
 
+      {/* Per-tree action sheet */}
+      <ActionSheet
+        open={pendingActions !== null}
+        onClose={() => setPendingActions(null)}
+        title={pendingActions?.label?.trim() || "Tree actions"}
+        actions={
+          pendingActions
+            ? [
+                {
+                  label: "Move to another estimate",
+                  onClick: () => {
+                    const target = pendingActions;
+                    setPendingActions(null);
+                    setMovingTree(target);
+                  },
+                },
+                {
+                  label: "Delete",
+                  destructive: true,
+                  onClick: () => {
+                    const target = pendingActions;
+                    setPendingActions(null);
+                    setPendingDelete(target);
+                  },
+                },
+              ]
+            : []
+        }
+      />
+
+      {/* Delete confirm sheet */}
       <ActionSheet
         open={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
@@ -379,6 +424,15 @@ export default function TreesView() {
             onClick: confirmDelete,
           },
         ]}
+      />
+
+      {/* Move-to-estimate picker */}
+      <EstimatePicker
+        open={movingTree !== null}
+        onClose={() => setMovingTree(null)}
+        excludeIds={activeEstimateId ? [activeEstimateId] : []}
+        onPick={handleMoveTree}
+        title="Move tree to..."
       />
     </div>
   );
