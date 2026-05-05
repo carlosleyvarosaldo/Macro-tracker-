@@ -2,13 +2,13 @@ import { jsPDF } from "jspdf";
 import { Tree } from "@/types";
 import { getScopeLabel } from "./scope";
 
-const PAGE_WIDTH = 595.28;   // A4 width in pt
-const PAGE_HEIGHT = 841.89;  // A4 height in pt
+const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;
 const MARGIN = 40;
 const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN;
 const IMAGE_MAX_HEIGHT = 260;
+const THUMB_SIZE = 80;
 
-/** Load a base64 data URL into an Image to read its natural dimensions. */
 function loadImageDimensions(dataUrl: string): Promise<{ w: number; h: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -18,7 +18,6 @@ function loadImageDimensions(dataUrl: string): Promise<{ w: number; h: number }>
   });
 }
 
-/** Sum all tree prices, treating missing values as 0. */
 function totalPrice(trees: Tree[]): number {
   return trees.reduce((sum, t) => sum + (t.price ?? 0), 0);
 }
@@ -27,7 +26,6 @@ function formatMoney(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-/** Reserve vertical space; add a new page if it won't fit. */
 function ensureSpace(doc: jsPDF, cursorY: number, needed: number): number {
   if (cursorY + needed > PAGE_HEIGHT - MARGIN) {
     doc.addPage();
@@ -36,29 +34,22 @@ function ensureSpace(doc: jsPDF, cursorY: number, needed: number): number {
   return cursorY;
 }
 
-/** Render the header block with title and total. */
 function drawHeader(doc: jsPDF, total: number): number {
   let y = MARGIN;
-
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.text("Tree Estimate", MARGIN, y);
   y += 28;
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.text(`Total: ${formatMoney(total)}`, MARGIN, y);
   y += 8;
-
-  // Underline below header
   doc.setDrawColor(180);
   doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
   y += 20;
-
   return y;
 }
 
-/** Render a single tree block. Returns the new cursor Y position. */
 async function drawTree(
   doc: jsPDF,
   tree: Tree,
@@ -66,13 +57,16 @@ async function drawTree(
   startY: number
 ): Promise<number> {
   let y = startY;
+  const images = tree.images?.length ? tree.images : tree.image ? [tree.image] : [];
+  const primary = images[0];
+  const additional = images.slice(1);
 
-  // Compute image dimensions ahead of time so we can plan page breaks
+  // Compute primary image dimensions
   let imgWidth = 0;
   let imgHeight = 0;
-  if (tree.image && tree.image.startsWith("data:")) {
+  if (primary && primary.startsWith("data:")) {
     try {
-      const { w, h } = await loadImageDimensions(tree.image);
+      const { w, h } = await loadImageDimensions(primary);
       const scale = Math.min(CONTENT_WIDTH / w, IMAGE_MAX_HEIGHT / h);
       imgWidth = w * scale;
       imgHeight = h * scale;
@@ -82,47 +76,72 @@ async function drawTree(
     }
   }
 
-  // Estimate total block height: label + image + price + scope + notes + padding
   const scopeCount = (tree.scopeItems ?? []).length;
   const noteLines = tree.notes?.trim()
     ? doc.splitTextToSize(tree.notes, CONTENT_WIDTH).length
     : 0;
+  const additionalRows = Math.ceil(additional.length / 6);
   const estimatedHeight =
-    20 + // label
+    20 +
     (imgHeight ? imgHeight + 12 : 0) +
-    18 + // price
-    (scopeCount > 0 ? 18 + scopeCount * 14 : 18) + // scope heading + items, or "none"
+    (additional.length > 0 ? additionalRows * (THUMB_SIZE + 8) : 0) +
+    18 +
+    (scopeCount > 0 ? 18 + scopeCount * 14 : 18) +
     (noteLines > 0 ? 18 + noteLines * 14 : 0) +
-    20; // bottom padding
+    20;
 
   y = ensureSpace(doc, y, estimatedHeight);
 
-  // Tree label
+  const treeLabel = tree.label?.trim() || `Tree ${index + 1}`;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  const treeLabel = tree.label?.trim() || `Tree ${index + 1}`;
   doc.text(treeLabel, MARGIN, y);
   y += 18;
 
-  // Image
-  if (imgWidth > 0 && imgHeight > 0) {
+  if (imgWidth > 0 && imgHeight > 0 && primary) {
     try {
-      doc.addImage(tree.image, "JPEG", MARGIN, y, imgWidth, imgHeight);
+      doc.addImage(primary, "JPEG", MARGIN, y, imgWidth, imgHeight);
       y += imgHeight + 12;
     } catch {
-      // Skip image silently if jsPDF rejects it
+      // skip
     }
   }
 
-  // Price
-  doc.setFont("helvetica", "bold");
+  // Additional thumbnails — laid out in a row, wrap if needed
+  if (additional.length > 0) {
+    let xCursor = MARGIN;
+    for (const thumb of additional) {
+      if (xCursor + THUMB_SIZE > PAGE_WIDTH - MARGIN) {
+        xCursor = MARGIN;
+        y += THUMB_SIZE + 6;
+        y = ensureSpace(doc, y, THUMB_SIZE + 12);
+      }
+      try {
+        doc.addImage(thumb, "JPEG", xCursor, y, THUMB_SIZE, THUMB_SIZE);
+      } catch {
+        // skip silently
+      }
+      xCursor += THUMB_SIZE + 6;
+    }
+    y += THUMB_SIZE + 12;
+  }
+
+doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("Price: ", MARGIN, y);
   doc.setFont("helvetica", "normal");
   doc.text(formatMoney(tree.price ?? 0), MARGIN + 38, y);
   y += 18;
 
-  // Scope of work
+  // Measurements (DBH / Height) — only if at least one is set
+  if (tree.dbh != null || tree.height != null) {
+    const parts: string[] = [];
+    if (tree.dbh != null) parts.push(`DBH: ${tree.dbh}"`);
+    if (tree.height != null) parts.push(`Height: ${tree.height}'`);
+    doc.setFont("helvetica", "normal");
+    doc.text(parts.join("    "), MARGIN, y);
+    y += 16;
+  }
   doc.setFont("helvetica", "bold");
   doc.text("Scope of Work:", MARGIN, y);
   y += 14;
@@ -141,7 +160,6 @@ async function drawTree(
   }
   y += 4;
 
-  // Notes
   if (tree.notes?.trim()) {
     doc.setFont("helvetica", "bold");
     doc.text("Notes:", MARGIN, y);
@@ -152,28 +170,21 @@ async function drawTree(
     y += wrapped.length * 14;
   }
 
-  // Block separator
   y += 12;
   doc.setDrawColor(220);
   doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
   y += 16;
-
   return y;
 }
 
-/** Render the trailing additional-notes section. */
 function drawWriteUpSection(doc: jsPDF, writeUp: string): void {
   if (!writeUp.trim()) return;
-
-  // Always start on a fresh page so the write-up reads cleanly
   doc.addPage();
   let y = MARGIN;
-
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("Scope Write-Up", MARGIN, y);
   y += 24;
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   const lines = doc.splitTextToSize(writeUp, CONTENT_WIDTH);
@@ -184,20 +195,15 @@ function drawWriteUpSection(doc: jsPDF, writeUp: string): void {
   }
 }
 
-/** Build a complete PDF document for the given trees. */
 export async function buildEstimatePdf(
   trees: Tree[],
   writeUp = ""
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
-
   let y = drawHeader(doc, totalPrice(trees));
-
   for (let i = 0; i < trees.length; i++) {
     y = await drawTree(doc, trees[i], i, y);
   }
-
   drawWriteUpSection(doc, writeUp);
-
   return doc.output("blob");
 }

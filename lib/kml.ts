@@ -26,6 +26,14 @@ function buildDescriptionHtml(tree: Tree, imageUrl: string | null): string {
 
   const priceText = `$${(tree.price ?? 0).toFixed(2)}`;
 
+  const measurementParts: string[] = [];
+  if (tree.dbh != null) measurementParts.push(`DBH: ${tree.dbh}"`);
+  if (tree.height != null) measurementParts.push(`Height: ${tree.height}'`);
+  const measurementBlock =
+    measurementParts.length > 0
+      ? `<p><b>Measurements:</b> ${escapeXml(measurementParts.join("    "))}</p>`
+      : "";
+
   const imageBlock = imageUrl
     ? `<p><img src="${escapeXml(imageUrl)}" style="max-width:600px;width:100%;" /></p>`
     : "";
@@ -33,6 +41,7 @@ function buildDescriptionHtml(tree: Tree, imageUrl: string | null): string {
   return [
     imageBlock,
     `<p><b>Price:</b> ${escapeXml(priceText)}</p>`,
+    measurementBlock,
     scopeBlock,
     notesBlock,
   ]

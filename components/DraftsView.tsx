@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { Estimate } from "@/types";
@@ -22,7 +22,10 @@ export default function DraftsView({ onSelectDraft }: Props) {
     setActiveEstimate,
     activeEstimateId,
     deleteEstimate,
+    currentUser,
+    signOut,
   } = useAppStore();
+  const [signOutConfirm, setSignOutConfirm] = useState(false);
 
   useEffect(() => {
     loadEstimates();
@@ -38,16 +41,51 @@ export default function DraftsView({ onSelectDraft }: Props) {
   const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
     const ok = window.confirm(
-      `Delete "${name}"?\n\nThis will remove the estimate and all its trees. This cannot be undone.`
+      `Delete "${name}"?\n\nThis removes the estimate and all its trees. This cannot be undone.`
     );
     if (!ok) return;
     await deleteEstimate(id);
   };
 
+  const handleSignOut = () => {
+    if (signOutConfirm) {
+      signOut();
+    } else {
+      setSignOutConfirm(true);
+      setTimeout(() => setSignOutConfirm(false), 3000);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-gray-50">
       <div className="px-4 py-6 pb-20">
+        {/* Account header */}
+        {currentUser && (
+          <div className="mb-6 rounded-xl bg-white border border-gray-200 p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+              {currentUser.email.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500">Signed in as</p>
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {currentUser.email}
+              </p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                signOutConfirm
+                  ? "bg-red-600 text-white"
+                  : "text-gray-600 active:bg-gray-100"
+              }`}
+            >
+              {signOutConfirm ? "Tap to confirm" : "Sign out"}
+            </button>
+          </div>
+        )}
+
         <h1 className="text-xl font-semibold mb-4">Drafts</h1>
+
         {estimates.length === 0 ? (
           <p className="text-gray-500">
             No estimates yet. Swipe to Camera to start one.
@@ -85,7 +123,6 @@ export default function DraftsView({ onSelectDraft }: Props) {
                     aria-label="Delete estimate"
                     className="absolute top-1/2 right-2 -translate-y-1/2 w-9 h-9 rounded-full text-gray-400 active:bg-gray-100 active:text-red-600 flex items-center justify-center"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <svg
                       width="18"
                       height="18"

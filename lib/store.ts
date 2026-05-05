@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Estimate, Tree } from "@/types";
+import { Estimate, Tree, User } from "@/types";
 import {
   createEstimate as dbCreateEstimate,
-  getAllEstimates,
+  getEstimatesForUser,
   addTree as dbAddTree,
   getTreesForEstimate,
   updateTree as dbUpdateTree,
@@ -11,11 +11,18 @@ import {
   deleteTree as dbDeleteTree,
   deleteEstimateCascade as dbDeleteEstimate,
 } from "./db";
+import { loadCurrentUser, signOut as authSignOut } from "./auth";
 
 type StoreState = {
+  currentUser: User | null;
+  authChecked: boolean;
   activeEstimateId: string | null;
   estimates: Estimate[];
   activeTrees: Tree[];
+
+  bootstrapAuth: () => Promise<void>;
+  setCurrentUser: (user: User | null) => void;
+  signOut: () => void;
 
   setActiveEstimate: (id: string | null) => void;
   createEstimate: () => Promise<Estimate>;
@@ -33,16 +40,48 @@ type StoreState = {
 export const useAppStore = create<StoreState>()(
   persist(
     (set, get) => ({
+      currentUser: null,
+      authChecked: false,
       activeEstimateId: null,
       estimates: [],
       activeTrees: [],
+
+      bootstrapAuth: async () => {
+        const user = await loadCurrentUser();
+        set({ currentUser: user, authChecked: true });
+        if (user) {
+          const estimates = await getEstimatesForUser(user.id);
+          set({ estimates });
+        }
+      },
+
+      setCurrentUser: (user) => {
+        set({
+          currentUser: user,
+          activeEstimateId: null,
+          activeTrees: [],
+          estimates: [],
+        });
+      },
+
+      signOut: () => {
+        authSignOut();
+        set({
+          currentUser: null,
+          activeEstimateId: null,
+          activeTrees: [],
+          estimates: [],
+        });
+      },
 
       setActiveEstimate: (id) => {
         set({ activeEstimateId: id, activeTrees: [] });
       },
 
       createEstimate: async () => {
-        const estimate = await dbCreateEstimate();
+        const user = get().currentUser;
+        if (!user) throw new Error("Must be signed in to create an estimate");
+        const estimate = await dbCreateEstimate(user.id);
         set((state) => ({
           estimates: [estimate, ...state.estimates],
           activeEstimateId: estimate.id,
@@ -52,7 +91,12 @@ export const useAppStore = create<StoreState>()(
       },
 
       loadEstimates: async () => {
-        const estimates = await getAllEstimates();
+        const user = get().currentUser;
+        if (!user) {
+          set({ estimates: [] });
+          return;
+        }
+        const estimates = await getEstimatesForUser(user.id);
         set({ estimates });
       },
 
@@ -111,6 +155,7 @@ export const useAppStore = create<StoreState>()(
     {
       name: "arborist-store",
       storage: createJSONStorage(() => localStorage),
+      // Only persist the active estimate id; user comes from authoritative auth check
       partialize: (state) => ({ activeEstimateId: state.activeEstimateId }),
     }
   )

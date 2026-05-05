@@ -1,6 +1,5 @@
 /**
- * Draws a video frame to a canvas, scales it to maxWidth (preserving aspect),
- * and returns a compressed JPEG as a base64 data URL.
+ * Capture a frame from a live <video> as compressed JPEG (camera capture path).
  */
 export function captureFrameAsJpeg(
   video: HTMLVideoElement,
@@ -43,8 +42,7 @@ export function captureFrameAsJpeg(
 }
 
 /**
- * Take a File (gallery upload) and return a downscaled JPEG data URL,
- * matching the camera capture pipeline so storage stays consistent.
+ * Take a File (gallery upload) and return a downscaled JPEG data URL.
  */
 export function processImageFile(
   file: File,
