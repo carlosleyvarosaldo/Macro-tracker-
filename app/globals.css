@@ -2,10 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { height: 100%; }
+:root {
+  /* iOS system colors */
+  --ios-bg: #f2f2f7;
+  --ios-surface: #ffffff;
+  --ios-separator: #c6c6c8;
+  --ios-label: #000000;
+  --ios-secondary-label: #3c3c43;
+  --ios-tertiary-label: #8e8e93;
+  --ios-tint: #007aff;
+  --ios-emerald: #10b981;
+  --ios-destructive: #ff3b30;
+}
+
+html,
 body {
-  background: #f9fafb;
-  color: #111827;
+  height: 100%;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--ios-bg);
+  color: var(--ios-label);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
   overscroll-behavior-y: none;
+}
+
+/* iOS-style scroll momentum on overflow containers */
+.ios-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbars in horizontal carousels but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Generic spinner used in loading states */
+@keyframes ios-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ios-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  animation: ios-spin 0.8s linear infinite;
+}
+.ios-spinner.light {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
 }

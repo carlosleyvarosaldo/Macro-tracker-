@@ -8,6 +8,9 @@ import { buildKml, downloadKml, downloadBlob, hasValidLocation } from "@/lib/kml
 import { ensureAllTreeImagesUploaded } from "@/lib/upload";
 import { buildEstimatePdf } from "@/lib/pdf";
 import { resolveEstimateWriteUp } from "@/lib/writeup";
+import { Tree } from "@/types";
+import ActionSheet from "@/components/ui/ActionSheet";
+import Toast from "@/components/ui/Toast";
 
 function formatLocation(lat: number, lng: number): string {
   if (lat === 0 && lng === 0) return "No location";
@@ -34,6 +37,7 @@ export default function TreesView() {
   } = useAppStore();
   const [toast, setToast] = useState<string | null>(null);
   const [exporting, setExporting] = useState<ExportKind>(null);
+  const [pendingDelete, setPendingDelete] = useState<Tree | null>(null);
 
   useEffect(() => {
     loadTreesForActiveEstimate();
@@ -41,7 +45,7 @@ export default function TreesView() {
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
+    const t = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -53,7 +57,6 @@ export default function TreesView() {
     () => activeTrees.reduce((sum, t) => sum + (t.price ?? 0), 0),
     [activeTrees]
   );
-
   const activeEstimate = useMemo(
     () => estimates.find((e) => e.id === activeEstimateId),
     [estimates, activeEstimateId]
@@ -110,7 +113,7 @@ export default function TreesView() {
     try {
       const blob = await buildPdfBlob();
       downloadBlob(blob, baseFilename("pdf"));
-      setToast(`PDF exported (${activeTrees.length} trees)`);
+      setToast(`PDF exported`);
     } catch (err) {
       setToast(`Export failed: ${err instanceof Error ? err.message : ""}`);
     } finally {
@@ -127,8 +130,6 @@ export default function TreesView() {
       const files: File[] = [
         new File([pdfBlob], baseFilename("pdf"), { type: "application/pdf" }),
       ];
-
-      // Add KML only if there's at least one tree with GPS
       if (exportable.length > 0) {
         const kmlBlob = await buildKmlBlob();
         files.push(
@@ -137,26 +138,21 @@ export default function TreesView() {
           })
         );
       }
-
       const shareData: ShareData = {
         title: activeEstimate?.name || "Tree Estimate",
         text: `Tree estimate · ${activeTrees.length} trees · Total $${total.toFixed(2)}`,
         files,
       };
-
       const canShareFiles =
         typeof navigator.share === "function" &&
         typeof navigator.canShare === "function" &&
         navigator.canShare(shareData);
-
       if (canShareFiles) {
         await navigator.share(shareData);
         setToast("Shared");
       } else {
-        // Fallback: download both files
         downloadBlob(pdfBlob, baseFilename("pdf"));
         if (files.length > 1) {
-          // Download KML separately a moment later
           await new Promise((r) => setTimeout(r, 400));
           const kmlFile = files[1];
           downloadBlob(kmlFile, kmlFile.name);
@@ -164,7 +160,6 @@ export default function TreesView() {
         setToast("Downloaded — share not available on this device");
       }
     } catch (err) {
-      // AbortError fires when user cancels the share sheet — ignore silently
       if (err instanceof Error && err.name === "AbortError") {
         setToast(null);
       } else {
@@ -175,33 +170,45 @@ export default function TreesView() {
     }
   };
 
-  return (
-    <div className="h-full overflow-y-auto bg-gray-50">
-      <div className="px-4 py-6 pb-20">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-xl font-semibold">Trees</h1>
-        </div>
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    await deleteTree(id);
+  };
 
-        {activeTrees.length > 0 && (
-          <div className="flex items-center justify-between mb-4 gap-2">
-            <p className="text-sm text-gray-600">
-              Total:{" "}
-              <span className="font-semibold text-gray-900">
+  return (
+    <div className="h-full overflow-y-auto bg-[var(--ios-bg)] ios-scroll">
+      <div className="px-3 py-6 pb-24">
+        <div className="px-1 mb-4">
+          <h1 className="text-[28px] font-bold tracking-tight text-gray-900">
+            Trees
+          </h1>
+          {activeTrees.length > 0 && (
+            <p className="text-[15px] text-gray-500 mt-0.5">
+              {activeTrees.length} {activeTrees.length === 1 ? "tree" : "trees"} ·
+              <span className="text-gray-900 font-semibold">
+                {" "}
                 ${total.toFixed(2)}
               </span>
             </p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleShare}
-                disabled={
-                  !activeEstimateId || activeTrees.length === 0 || !!exporting
-                }
-                className="rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-medium active:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500 flex items-center gap-1"
-                aria-label="Share estimate"
-              >
+          )}
+        </div>
+
+        {/* Action bar — Share is primary, PDF and KML are secondary */}
+        {activeTrees.length > 0 && (
+          <div className="px-1 mb-4 flex gap-2">
+            <button
+              onClick={handleShare}
+              disabled={!activeEstimateId || activeTrees.length === 0 || !!exporting}
+              className="flex-1 rounded-2xl bg-emerald-600 py-3 text-white text-[15px] font-semibold active:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {exporting === "share" ? (
+                <span className="ios-spinner light" />
+              ) : (
                 <svg
-                  width="14"
-                  height="14"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -213,46 +220,49 @@ export default function TreesView() {
                   <polyline points="16 6 12 2 8 6" />
                   <line x1="12" y1="2" x2="12" y2="15" />
                 </svg>
-                {exporting === "share" ? "..." : "Share"}
-              </button>
-              <button
-                onClick={handleExportPdf}
-                disabled={
-                  !activeEstimateId || activeTrees.length === 0 || !!exporting
-                }
-                className="rounded-lg bg-white border border-gray-300 px-3 py-2 text-gray-700 text-sm font-medium active:bg-gray-100 disabled:opacity-50"
-              >
-                {exporting === "pdf" ? "..." : "PDF"}
-              </button>
-              <button
-                onClick={handleExportKml}
-                disabled={
-                  !activeEstimateId || exportable.length === 0 || !!exporting
-                }
-                className="rounded-lg bg-white border border-gray-300 px-3 py-2 text-gray-700 text-sm font-medium active:bg-gray-100 disabled:opacity-50"
-              >
-                {exporting === "kml" ? "..." : "KML"}
-              </button>
-            </div>
+              )}
+              <span>Share</span>
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={!activeEstimateId || activeTrees.length === 0 || !!exporting}
+              className="rounded-2xl bg-white border border-gray-200 px-4 py-3 text-gray-800 text-[15px] font-semibold active:bg-gray-50 disabled:opacity-50"
+            >
+              {exporting === "pdf" ? <span className="ios-spinner" /> : "PDF"}
+            </button>
+            <button
+              onClick={handleExportKml}
+              disabled={!activeEstimateId || exportable.length === 0 || !!exporting}
+              className="rounded-2xl bg-white border border-gray-200 px-4 py-3 text-gray-800 text-[15px] font-semibold active:bg-gray-50 disabled:opacity-50"
+            >
+              {exporting === "kml" ? <span className="ios-spinner" /> : "KML"}
+            </button>
           </div>
         )}
 
         {!activeEstimateId && (
-          <p className="text-gray-500 text-sm">
-            No active estimate. Tap Camera to start one.
-          </p>
+          <div className="bg-white rounded-xl border border-gray-200/70 p-6 text-center">
+            <p className="text-[15px] text-gray-500">No active estimate</p>
+            <p className="text-[13px] text-gray-400 mt-1">
+              Swipe to Camera to start one
+            </p>
+          </div>
         )}
 
         {activeEstimateId && activeTrees.length === 0 && (
-          <p className="text-gray-500">No trees yet</p>
+          <div className="bg-white rounded-xl border border-gray-200/70 p-6 text-center">
+            <p className="text-[15px] text-gray-500">No trees yet</p>
+            <p className="text-[13px] text-gray-400 mt-1">
+              Swipe to Camera to capture one
+            </p>
+          </div>
         )}
 
         {activeTrees.length > 0 && (
-          <ul className="space-y-3">
+          <div className="bg-white rounded-xl overflow-hidden border border-gray-200/70 divide-y divide-gray-200/70">
             {activeTrees.map((tree) => {
               const scope = tree.scopeItems ?? [];
               const locationText = formatLocation(tree.lat ?? 0, tree.lng ?? 0);
-              const treeName = tree.label?.trim() || "this tree";
               const primaryImage = tree.images?.[0] ?? tree.image ?? "";
               const photoCount = tree.images?.length ?? (tree.image ? 1 : 0);
               const measurementParts: string[] = [];
@@ -260,76 +270,69 @@ export default function TreesView() {
               if (tree.height != null) measurementParts.push(`H ${tree.height}'`);
 
               return (
-                <li
-                  key={tree.id}
-                  className="relative rounded-lg bg-white border border-gray-200"
-                >
+                <div key={tree.id} className="relative">
                   <Link
                     href={`/trees/${tree.id}`}
-                    className="flex gap-3 p-3 pr-12 active:bg-gray-50 rounded-lg"
+                    className="flex gap-3 p-3 pr-12 active:bg-gray-50"
                   >
                     <div className="relative h-16 w-16 flex-shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={primaryImage}
                         alt="Tree"
-                        className="h-16 w-16 rounded-md object-cover bg-gray-100"
+                        className="h-16 w-16 rounded-lg object-cover bg-gray-100"
                       />
                       {photoCount > 1 && (
-                        <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
                           {photoCount}
                         </span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      {tree.label?.trim() && (
-                        <p className="text-sm font-semibold text-gray-900">
-                          {tree.label}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {new Date(tree.createdAt).toLocaleString()}
+                      <p className="text-[15px] font-semibold text-gray-900 truncate">
+                        {tree.label?.trim() ||
+                          `Tree ${activeTrees.indexOf(tree) + 1}`}
                       </p>
-                      <p className="text-xs text-gray-400 font-mono mb-1">
+                      <p className="text-[13px] text-gray-500 truncate">
                         {locationText}
                       </p>
-                      {measurementParts.length > 0 && (
-                        <p className="text-xs text-gray-600 mb-1">
-                          {measurementParts.join(" · ")}
+                      {(measurementParts.length > 0 || tree.price > 0) && (
+                        <p className="text-[13px] text-gray-700 mt-0.5">
+                          {tree.price > 0 && (
+                            <span className="font-semibold">
+                              ${tree.price.toFixed(2)}
+                            </span>
+                          )}
+                          {tree.price > 0 && measurementParts.length > 0 && (
+                            <span className="text-gray-400 mx-1">·</span>
+                          )}
+                          {measurementParts.length > 0 && measurementParts.join(" · ")}
                         </p>
                       )}
-                      {tree.price > 0 && (
-                        <p className="text-sm font-semibold text-gray-800 mb-1">
-                          ${tree.price.toFixed(2)}
-                        </p>
-                      )}
-                      {scope.length === 0 ? (
-                        <p className="text-xs text-gray-400 italic">
-                          No scope selected
-                        </p>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {scope.map((id) => (
+                      {scope.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {scope.slice(0, 3).map((id) => (
                             <span
                               key={id}
-                              className="inline-block rounded bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 border border-emerald-200"
+                              className="inline-block rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-medium px-1.5 py-0.5"
                             >
                               {getScopeLabel(id)}
                             </span>
                           ))}
+                          {scope.length > 3 && (
+                            <span className="text-[11px] text-gray-400 self-center">
+                              +{scope.length - 3} more
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
                   </Link>
                   <button
-                    onClick={async (e) => {
+                    onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      const ok = window.confirm(
-                        `Delete ${treeName}? This cannot be undone.`
-                      );
-                      if (!ok) return;
-                      await deleteTree(tree.id);
+                      setPendingDelete(tree);
                     }}
                     aria-label="Delete tree"
                     className="absolute top-1/2 right-2 -translate-y-1/2 w-9 h-9 rounded-full text-gray-400 active:bg-gray-100 active:text-red-600 flex items-center justify-center"
@@ -351,18 +354,32 @@ export default function TreesView() {
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
                   </button>
-                </li>
+                </div>
               );
             })}
-          </ul>
-        )}
-
-        {toast && (
-          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 max-w-[90%] rounded-lg bg-gray-900 px-4 py-2 text-sm text-white shadow-lg z-20 text-center">
-            {toast}
           </div>
         )}
+
+        {toast && <Toast message={toast} />}
       </div>
+
+      <ActionSheet
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        title="Delete tree?"
+        description={
+          pendingDelete?.label?.trim()
+            ? `"${pendingDelete.label}" will be removed. This cannot be undone.`
+            : "This tree will be removed. This cannot be undone."
+        }
+        actions={[
+          {
+            label: "Delete",
+            destructive: true,
+            onClick: confirmDelete,
+          },
+        ]}
+      />
     </div>
   );
 }
