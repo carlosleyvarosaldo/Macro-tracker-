@@ -110,6 +110,13 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
           zoom?: ZoomCap;
         }) ?? {};
       const zoomCap = caps.zoom;
+      // Diagnostic — visible in setError so we can read it on the phone
+      const diag = JSON.stringify({
+        hasGetCaps: typeof track?.getCapabilities === "function",
+        capsKeys: Object.keys(caps),
+        zoomCap,
+      });
+      console.log("Camera capabilities:", diag);
       if (
         zoomCap &&
         typeof zoomCap.min === "number" &&
@@ -117,6 +124,9 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
       ) {
         setZoomCapability({ min: zoomCap.min, max: zoomCap.max });
       } else {
+        // Show diagnostic on screen so you can read it on the phone
+        setError(`No zoom capability detected: ${diag}`);
+        setTimeout(() => setError(null), 8000);
         setZoomCapability(null);
       }
       setActiveZoom(1);
