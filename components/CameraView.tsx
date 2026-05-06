@@ -19,13 +19,7 @@ type Props = {
   onSwipeLockChange?: (locked: boolean) => void;
 };
 
-type ZoomLens = { label: string; zoom: number };
 
-const ZOOM_LENSES: ZoomLens[] = [
-  { label: "0.5x", zoom: 0.5 },
-  { label: "1x", zoom: 1 },
-  { label: "3x", zoom: 3 },
-];
 
 export default function CameraView({ isActive, onSwipeLockChange }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -44,6 +38,7 @@ export default function CameraView({ isActive, onSwipeLockChange }: Props) {
   const [zoomCapability, setZoomCapability] = useState<{
     min: number;
     max: number;
+    step: number;
   } | null>(null);
   const [activeZoom, setActiveZoom] = useState<number>(1);
 
@@ -110,24 +105,33 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
           zoom?: ZoomCap;
         }) ?? {};
       const zoomCap = caps.zoom;
-      // Diagnostic — visible in setError so we can read it on the phone
-      const diag = JSON.stringify({
-        hasGetCaps: typeof track?.getCapabilities === "function",
-        capsKeys: Object.keys(caps),
-        zoomCap,
-      });
-      console.log("Camera capabilities:", diag);
       if (
         zoomCap &&
         typeof zoomCap.min === "number" &&
-        typeof zoomCap.max === "number"
+        typeof zoomCap.max === "number" &&
+        zoomCap.max > zoomCap.min
       ) {
-        setZoomCapability({ min: zoomCap.min, max: zoomCap.max });
+        setZoomCapability({
+          min: zoomCap.min,
+          max: zoomCap.max,
+          step: zoomCap.step ?? 0.1,
+        });
+        setActiveZoom(Math.max(1, zoomCap.min));
+        // Apply the starting zoom
+        try {
+          await track.applyConstraints({
+            advanced: [
+              { zoom: Math.max(1, zoomCap.min) } as MediaTrackConstraintSet & {
+                zoom: number;
+              },
+            ],
+          });
+        } catch {
+          // ignore
+        }
       } else {
-        // Show diagnostic on screen so you can read it on the phone
-        setError(`No zoom capability detected: ${diag}`);
-        setTimeout(() => setError(null), 8000);
         setZoomCapability(null);
+        setActiveZoom(1);
       }
       setActiveZoom(1);
     } catch (err) {
@@ -624,27 +628,38 @@ const [markupTool, setMarkupTool] = useState<MarkupTool>("draw");
           />
         )}
         {mode === "live" && zoomCapability && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1.5 z-10">
-            {ZOOM_LENSES.filter(
-              (lens) =>
-                lens.zoom >= zoomCapability.min &&
-                lens.zoom <= zoomCapability.max
-            ).map((lens) => {
-              const isActive = Math.abs(activeZoom - lens.zoom) < 0.05;
-              return (
-                <button
-                  key={lens.label}
-                  onClick={() => applyZoom(lens.zoom)}
-                  className={`rounded-full text-xs font-semibold transition-colors ${
-                    isActive
-                      ? "bg-white text-black w-10 h-10"
-                      : "bg-transparent text-white w-9 h-9 active:bg-white/20"
-                  }`}
-                >
-                  {lens.label}
-                </button>
-              );
-            })}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-1.5 py-1.5 z-10">
+            <button
+              onClick={() => {
+                const next = Math.max(
+                  zoomCapability.min,
+                  activeZoom - Math.max(zoomCapability.step, 0.5)
+                );
+                applyZoom(next);
+              }}
+              disabled={activeZoom <= zoomCapability.min + 0.001}
+              className="w-10 h-10 rounded-full bg-white/10 text-white text-xl font-light active:bg-white/20 disabled:opacity-30 flex items-center justify-center"
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <div className="px-3 min-w-[56px] text-center text-white text-sm font-semibold tabular-nums">
+              {activeZoom.toFixed(1)}×
+            </div>
+            <button
+              onClick={() => {
+                const next = Math.min(
+                  zoomCapability.max,
+                  activeZoom + Math.max(zoomCapability.step, 0.5)
+                );
+                applyZoom(next);
+              }}
+              disabled={activeZoom >= zoomCapability.max - 0.001}
+              className="w-10 h-10 rounded-full bg-white/10 text-white text-xl font-light active:bg-white/20 disabled:opacity-30 flex items-center justify-center"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
           </div>
         )}
         {/* Photo counter — visible during live mode if photos already taken */}
