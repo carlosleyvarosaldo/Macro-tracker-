@@ -21,27 +21,31 @@ type Stroke = {
   erase: boolean;
 };
 
+/** Text labels are interactive overlay objects, NOT baked into the canvas until export. */
 type TextLabel = {
-  kind: "text";
+  id: string;
+  text: string;
+  /** Position in CANVAS coordinates (the label's center). */
   x: number;
   y: number;
-  text: string;
+  /** Font size in canvas pixels at scale 1. */
+  baseSize: number;
+  scale: number;
+  /** Rotation in radians. */
+  rotation: number;
   color: string;
-  size: number;
 };
 
-export type MarkupAction = Stroke | TextLabel;
+export type MarkupAction = Stroke;
 
 const STROKE_COLOR = "#ff3b30";
 const ERASE_MULTIPLIER = 3;
 const TEXT_COLOR = "#ff3b30";
-const TEXT_SIZE = 36;
+const TEXT_BASE_SIZE = 48;
 
 export type MarkupCanvasHandle = {
   exportJpeg: (quality?: number) => string;
-  /** Read the current action history (used when switching photos). */
   getHistory: () => MarkupAction[];
-  /** Replace the current history (used when switching photos). */
   setHistory: (actions: MarkupAction[]) => void;
 };
 
@@ -50,11 +54,29 @@ type Props = {
   tool: Tool;
   undoToken: number;
   strokeWidth: number;
-  /** Bumped when parent wants to swap to a different image. */
   imageSwapToken?: number;
-  /** History to load when imageSwapToken changes. */
   initialHistory?: MarkupAction[];
 };
+
+type GestureState =
+  | { mode: "none" }
+  | {
+      mode: "drag";
+      labelId: string;
+      // offset from pointer to label center, in canvas coords
+      offsetX: number;
+      offsetY: number;
+      pointerId: number;
+      moved: boolean;
+    }
+  | {
+      mode: "pinch";
+      labelId: string;
+      startDist: number;
+      startAngle: number;
+      startScale: number;
+      startRotation: number;
+    };
 
 const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas(
   { imageDataUrl, tool, undoToken, strokeWidth, imageSwapToken, initialHistory },
@@ -64,9 +86,19 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
   const imageCanvasRef = useRef<HTMLCanvasElement>(null);
   const markupCanvasRef = useRef<HTMLCanvasElement>(null);
   const sizeRef = useRef<{ w: number; h: number } | null>(null);
-  const historyRef = useRef<MarkupAction[]>(initialHistory ?? []);
+  const historyRef = useRef<Stroke[]>((initialHistory as Stroke[]) ?? []);
   const currentStrokeRef = useRef<Stroke | null>(null);
+
+  // Text labels live in React state since they render as overlay DOM
+  const [labels, setLabels] = useState<TextLabel[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [imageReady, setImageReady] = useState(false);
+
+  // Track active pointers for multi-touch gestures
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const gestureRef = useRef<GestureState>({ mode: "none" });
+
+  // ---- Canvas rendering (image + strokes only; text is overlay) ----
 
   const renderImage = useCallback((img: HTMLImageElement) => {
     const canvas = imageCanvasRef.current;
@@ -87,37 +119,24 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
     ctx.lineJoin = "round";
 
     for (const action of historyRef.current) {
-      if (action.kind === "stroke") {
-        ctx.globalCompositeOperation = action.erase
-          ? "destination-out"
-          : "source-over";
-        ctx.strokeStyle = action.color;
-        ctx.lineWidth = action.width;
-        const pts = action.points;
-        if (pts.length === 0) continue;
-        if (pts.length === 1) {
-          ctx.beginPath();
-          ctx.arc(pts[0].x, pts[0].y, action.width / 2, 0, Math.PI * 2);
-          ctx.fillStyle = action.color;
-          ctx.fill();
-          continue;
-        }
+      ctx.globalCompositeOperation = action.erase
+        ? "destination-out"
+        : "source-over";
+      ctx.strokeStyle = action.color;
+      ctx.lineWidth = action.width;
+      const pts = action.points;
+      if (pts.length === 0) continue;
+      if (pts.length === 1) {
         ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) {
-          ctx.lineTo(pts[i].x, pts[i].y);
-        }
-        ctx.stroke();
-      } else if (action.kind === "text") {
-        ctx.globalCompositeOperation = "source-over";
+        ctx.arc(pts[0].x, pts[0].y, action.width / 2, 0, Math.PI * 2);
         ctx.fillStyle = action.color;
-        ctx.font = `bold ${action.size}px sans-serif`;
-        ctx.textBaseline = "top";
-        ctx.strokeStyle = "rgba(0,0,0,0.7)";
-        ctx.lineWidth = 4;
-        ctx.strokeText(action.text, action.x, action.y);
-        ctx.fillText(action.text, action.x, action.y);
+        ctx.fill();
+        continue;
       }
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
     }
     ctx.globalCompositeOperation = "source-over";
   }, []);
@@ -130,7 +149,9 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
     if (!ctx) return;
     const a = stroke.points[stroke.points.length - 2];
     const b = stroke.points[stroke.points.length - 1];
-    ctx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
+    ctx.globalCompositeOperation = stroke.erase
+      ? "destination-out"
+      : "source-over";
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.width;
     ctx.lineCap = "square";
@@ -142,7 +163,7 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
     ctx.globalCompositeOperation = "source-over";
   }, []);
 
-  // Load image — runs whenever imageDataUrl changes (i.e. swap to new photo)
+  // Load image
   useEffect(() => {
     setImageReady(false);
     const img = new Image();
@@ -163,57 +184,97 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
     img.src = imageDataUrl;
   }, [imageDataUrl, renderImage, renderMarkup]);
 
-  // When parent signals a swap, load new history and re-render
+  // Handle image swap (multi-photo) — reset strokes + text
   useEffect(() => {
     if (imageSwapToken === undefined) return;
-    historyRef.current = initialHistory ?? [];
+    historyRef.current = (initialHistory as Stroke[]) ?? [];
+    setLabels([]);
+    setSelectedId(null);
     renderMarkup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageSwapToken]);
 
+  // Undo — pops the most recent action (stroke OR text, whichever is newer)
   useEffect(() => {
     if (undoToken === 0) return;
-    if (historyRef.current.length === 0) return;
-    historyRef.current.pop();
-    renderMarkup();
+    // Prefer undoing the most recently added thing. We track this simply:
+    // if there are labels and the last action was a label, remove it; else pop a stroke.
+    // For simplicity: remove last label if any were added after last stroke.
+    // We keep a combined approach: try labels first if selected, else newest label, else stroke.
+    setLabels((prev) => {
+      if (prev.length > 0) {
+        const next = prev.slice(0, -1);
+        return next;
+      }
+      // No labels — undo a stroke
+      if (historyRef.current.length > 0) {
+        historyRef.current.pop();
+        renderMarkup();
+      }
+      return prev;
+    });
   }, [undoToken, renderMarkup]);
 
-  const eventToCanvasCoords = (
-    e: React.PointerEvent<HTMLCanvasElement>
-  ): StrokePoint => {
-    const canvas = markupCanvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const sx = canvas.width / rect.width;
-    const sy = canvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * sx,
-      y: (e.clientY - rect.top) * sy,
-    };
-  };
+  // ---- Coordinate helpers ----
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  /** Get the on-screen rect of the canvas content (accounting for object-fit: contain). */
+  const getCanvasLayout = useCallback(() => {
+    const canvas = markupCanvasRef.current;
+    const container = containerRef.current;
+    const size = sizeRef.current;
+    if (!canvas || !container || !size) return null;
+    const cRect = container.getBoundingClientRect();
+    // object-fit: contain — compute displayed image rect inside container
+    const scale = Math.min(cRect.width / size.w, cRect.height / size.h);
+    const dispW = size.w * scale;
+    const dispH = size.h * scale;
+    const offsetX = cRect.left + (cRect.width - dispW) / 2;
+    const offsetY = cRect.top + (cRect.height - dispH) / 2;
+    return { scale, offsetX, offsetY, dispW, dispH };
+  }, []);
+
+  const screenToCanvas = useCallback(
+    (clientX: number, clientY: number): StrokePoint | null => {
+      const layout = getCanvasLayout();
+      if (!layout) return null;
+      return {
+        x: (clientX - layout.offsetX) / layout.scale,
+        y: (clientY - layout.offsetY) / layout.scale,
+      };
+    },
+    [getCanvasLayout]
+  );
+
+  // ---- Stroke drawing (draw/erase tools) ----
+
+  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Only handle strokes when in draw/erase mode
+    if (tool === "text") {
+      const pt = screenToCanvas(e.clientX, e.clientY);
+      if (!pt) return;
+      const input = window.prompt("Add a label:");
+      if (!input || !input.trim()) return;
+      const label: TextLabel = {
+        id: crypto.randomUUID(),
+        text: input.trim(),
+        x: pt.x,
+        y: pt.y,
+        baseSize: TEXT_BASE_SIZE,
+        scale: 1,
+        rotation: 0,
+        color: TEXT_COLOR,
+      };
+      setLabels((prev) => [...prev, label]);
+      setSelectedId(label.id);
+      return;
+    }
+
     e.preventDefault();
     const canvas = markupCanvasRef.current;
     if (!canvas) return;
     canvas.setPointerCapture(e.pointerId);
-    const point = eventToCanvasCoords(e);
-
-    if (tool === "text") {
-      const input = window.prompt("Add a label:");
-      if (!input || !input.trim()) return;
-      const label: TextLabel = {
-        kind: "text",
-        x: point.x,
-        y: point.y,
-        text: input.trim(),
-        color: TEXT_COLOR,
-        size: TEXT_SIZE,
-      };
-      historyRef.current.push(label);
-      renderMarkup();
-      return;
-    }
-
+    const point = screenToCanvas(e.clientX, e.clientY);
+    if (!point) return;
     const stroke: Stroke = {
       kind: "stroke",
       points: [point],
@@ -222,23 +283,162 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
       erase: tool === "erase",
     };
     currentStrokeRef.current = stroke;
+    // Deselect any text when drawing
+    setSelectedId(null);
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!currentStrokeRef.current) return;
     e.preventDefault();
-    const point = eventToCanvasCoords(e);
+    const point = screenToCanvas(e.clientX, e.clientY);
+    if (!point) return;
     currentStrokeRef.current.points.push(point);
     renderActiveStroke();
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handleCanvasPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!currentStrokeRef.current) return;
-    const canvas = markupCanvasRef.current;
-    canvas?.releasePointerCapture(e.pointerId);
+    markupCanvasRef.current?.releasePointerCapture(e.pointerId);
     historyRef.current.push(currentStrokeRef.current);
     currentStrokeRef.current = null;
   };
+
+  // ---- Text label gestures (drag / pinch-rotate) ----
+
+  const distAngle = (
+    p1: { x: number; y: number },
+    p2: { x: number; y: number }
+  ) => {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    return {
+      dist: Math.hypot(dx, dy),
+      angle: Math.atan2(dy, dx),
+    };
+  };
+
+  const handleLabelPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    label: TextLabel
+  ) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    setSelectedId(label.id);
+
+    const activePointers = Array.from(pointersRef.current.entries());
+
+    if (activePointers.length === 1) {
+      // Begin drag
+      const canvasPt = screenToCanvas(e.clientX, e.clientY);
+      if (!canvasPt) return;
+      gestureRef.current = {
+        mode: "drag",
+        labelId: label.id,
+        offsetX: label.x - canvasPt.x,
+        offsetY: label.y - canvasPt.y,
+        pointerId: e.pointerId,
+        moved: false,
+      };
+    } else if (activePointers.length === 2) {
+      // Begin pinch — use the two active pointers
+      const [, p1] = activePointers[0];
+      const [, p2] = activePointers[1];
+      const { dist, angle } = distAngle(p1, p2);
+      gestureRef.current = {
+        mode: "pinch",
+        labelId: label.id,
+        startDist: dist || 1,
+        startAngle: angle,
+        startScale: label.scale,
+        startRotation: label.rotation,
+      };
+    }
+  };
+
+  const handleLabelPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersRef.current.has(e.pointerId)) return;
+    e.stopPropagation();
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const gesture = gestureRef.current;
+
+    if (gesture.mode === "drag" && gesture.pointerId === e.pointerId) {
+      const canvasPt = screenToCanvas(e.clientX, e.clientY);
+      if (!canvasPt) return;
+      const newX = canvasPt.x + gesture.offsetX;
+      const newY = canvasPt.y + gesture.offsetY;
+      gestureRef.current = { ...gesture, moved: true };
+      setLabels((prev) =>
+        prev.map((l) =>
+          l.id === gesture.labelId ? { ...l, x: newX, y: newY } : l
+        )
+      );
+    } else if (gesture.mode === "pinch") {
+      const pts = Array.from(pointersRef.current.values());
+      if (pts.length < 2) return;
+      const { dist, angle } = distAngle(pts[0], pts[1]);
+      const scaleFactor = dist / gesture.startDist;
+      const newScale = Math.max(0.3, Math.min(6, gesture.startScale * scaleFactor));
+      const deltaAngle = angle - gesture.startAngle;
+      const newRotation = gesture.startRotation + deltaAngle;
+      setLabels((prev) =>
+        prev.map((l) =>
+          l.id === gesture.labelId
+            ? { ...l, scale: newScale, rotation: newRotation }
+            : l
+        )
+      );
+    }
+  };
+
+  const handleLabelPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    pointersRef.current.delete(e.pointerId);
+    const remaining = pointersRef.current.size;
+    if (remaining === 0) {
+      gestureRef.current = { mode: "none" };
+    } else if (remaining === 1) {
+      // Dropped from pinch to single finger — switch to drag with the remaining finger
+      const [pid, pos] = Array.from(pointersRef.current.entries())[0];
+      const gesture = gestureRef.current;
+      if (gesture.mode === "pinch") {
+        const label = labels.find((l) => l.id === gesture.labelId);
+        const canvasPt = screenToCanvas(pos.x, pos.y);
+        if (label && canvasPt) {
+          gestureRef.current = {
+            mode: "drag",
+            labelId: label.id,
+            offsetX: label.x - canvasPt.x,
+            offsetY: label.y - canvasPt.y,
+            pointerId: pid,
+            moved: true,
+          };
+        }
+      }
+    }
+  };
+
+  const deleteLabel = (id: string) => {
+    setLabels((prev) => prev.filter((l) => l.id !== id));
+    setSelectedId(null);
+  };
+
+  const editLabel = (id: string) => {
+    const label = labels.find((l) => l.id === id);
+    if (!label) return;
+    const input = window.prompt("Edit label:", label.text);
+    if (input === null) return;
+    const trimmed = input.trim();
+    if (!trimmed) {
+      deleteLabel(id);
+      return;
+    }
+    setLabels((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, text: trimmed } : l))
+    );
+  };
+
+  // ---- Export: paint image + strokes + text into one JPEG ----
 
   useImperativeHandle(
     ref,
@@ -255,16 +455,38 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
         if (!ctx) return imageDataUrl;
         ctx.drawImage(imageCanvas, 0, 0);
         ctx.drawImage(markupCanvas, 0, 0);
+
+        // Paint each text label at its transform
+        for (const label of labels) {
+          ctx.save();
+          ctx.translate(label.x, label.y);
+          ctx.rotate(label.rotation);
+          const fontSize = label.baseSize * label.scale;
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.lineJoin = "round";
+          ctx.strokeStyle = "rgba(0,0,0,0.7)";
+          ctx.lineWidth = Math.max(2, fontSize * 0.12);
+          ctx.strokeText(label.text, 0, 0);
+          ctx.fillStyle = label.color;
+          ctx.fillText(label.text, 0, 0);
+          ctx.restore();
+        }
         return out.toDataURL("image/jpeg", quality);
       },
       getHistory: () => [...historyRef.current],
       setHistory: (actions) => {
-        historyRef.current = [...actions];
+        historyRef.current = [...(actions as Stroke[])];
         renderMarkup();
       },
     }),
-    [imageDataUrl, renderMarkup]
+    [imageDataUrl, labels, renderMarkup]
   );
+
+  // ---- Render ----
+
+  const layout = imageReady ? getCanvasLayout() : null;
 
   return (
     <div
@@ -274,18 +496,14 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
       <canvas
         ref={imageCanvasRef}
         className="absolute pointer-events-none"
-        style={{
-          maxWidth: "100%",
-          maxHeight: "100%",
-          objectFit: "contain",
-        }}
+        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
       />
       <canvas
         ref={markupCanvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerCancel={handleCanvasPointerUp}
         className="absolute touch-none"
         style={{
           maxWidth: "100%",
@@ -295,6 +513,133 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
           opacity: imageReady ? 1 : 0,
         }}
       />
+
+      {/* Text label overlays */}
+      {layout &&
+        labels.map((label) => {
+          const screenX = layout.offsetX + label.x * layout.scale;
+          const screenY = layout.offsetY + label.y * layout.scale;
+          const fontSizePx = label.baseSize * label.scale * layout.scale;
+          const isSelected = label.id === selectedId;
+          // position relative to container
+          const containerRect = containerRef.current?.getBoundingClientRect();
+          const relX = containerRect ? screenX - containerRect.left : screenX;
+          const relY = containerRect ? screenY - containerRect.top : screenY;
+          return (
+            <div
+              key={label.id}
+              onPointerDown={(e) => handleLabelPointerDown(e, label)}
+              onPointerMove={handleLabelPointerMove}
+              onPointerUp={handleLabelPointerUp}
+              onPointerCancel={handleLabelPointerUp}
+              style={{
+                position: "absolute",
+                left: relX,
+                top: relY,
+                transform: `translate(-50%, -50%) rotate(${label.rotation}rad)`,
+                touchAction: "none",
+                cursor: "move",
+                userSelect: "none",
+                WebkitUserSelect: "none",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  padding: isSelected ? "4px 8px" : "0",
+                  border: isSelected
+                    ? "1px dashed rgba(255,255,255,0.8)"
+                    : "none",
+                  borderRadius: 6,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: fontSizePx,
+                    fontWeight: 700,
+                    color: label.color,
+                    fontFamily: "sans-serif",
+                    textShadow:
+                      "0 0 3px rgba(0,0,0,0.8), 0 0 3px rgba(0,0,0,0.8)",
+                    lineHeight: 1,
+                  }}
+                >
+                  {label.text}
+                </span>
+
+                {isSelected && (
+                  <>
+                    {/* Delete button — top-left */}
+                    <button
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteLabel(label.id);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: -10,
+                        left: -10,
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        background: "#ef4444",
+                        color: "white",
+                        border: "2px solid white",
+                        fontSize: 12,
+                        lineHeight: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                      aria-label="Delete label"
+                    >
+                      ✕
+                    </button>
+                    {/* Edit button — top-right */}
+                    <button
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        editLabel(label.id);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: -10,
+                        right: -10,
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        background: "#3b82f6",
+                        color: "white",
+                        border: "2px solid white",
+                        fontSize: 11,
+                        lineHeight: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                      aria-label="Edit label"
+                    >
+                      ✎
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
     </div>
   );
 });
