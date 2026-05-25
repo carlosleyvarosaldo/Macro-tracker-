@@ -12,6 +12,7 @@ import { Tree } from "@/types";
 import ActionSheet from "@/components/ui/ActionSheet";
 import EstimatePicker from "@/components/EstimatePicker";
 import Toast from "@/components/ui/Toast";
+import PhotoViewer from "@/components/PhotoViewer";
 
 function formatLocation(lat: number, lng: number): string {
   if (lat === 0 && lng === 0) return "No location";
@@ -42,6 +43,10 @@ export default function TreesView() {
   const [pendingActions, setPendingActions] = useState<Tree | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Tree | null>(null);
   const [movingTree, setMovingTree] = useState<Tree | null>(null);
+  const [viewingPhotos, setViewingPhotos] = useState<{
+    images: string[];
+    index: number;
+  } | null>(null);
 
   useEffect(() => {
     loadTreesForActiveEstimate();
@@ -295,19 +300,35 @@ export default function TreesView() {
                     href={`/trees/${tree.id}`}
                     className="flex gap-3 p-3 pr-12 active:bg-gray-50"
                   >
-                    <div className="relative h-16 w-16 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const imgs = tree.images?.length
+                          ? tree.images
+                          : tree.image
+                          ? [tree.image]
+                          : [];
+                        if (imgs.length > 0) {
+                          setViewingPhotos({ images: imgs, index: 0 });
+                        }
+                      }}
+                      className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden"
+                      aria-label="View photos"
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={primaryImage}
                         alt="Tree"
-                        className="h-16 w-16 rounded-lg object-cover bg-gray-100"
+                        className="h-16 w-16 object-cover bg-gray-100"
                       />
                       {photoCount > 1 && (
                         <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
                           {photoCount}
                         </span>
                       )}
-                    </div>
+                    </button>
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-semibold text-gray-900 truncate">
                         {tree.label?.trim() ||
@@ -375,6 +396,12 @@ export default function TreesView() {
         )}
 
         {toast && <Toast message={toast} />}
+        <PhotoViewer
+        open={viewingPhotos !== null}
+        images={viewingPhotos?.images ?? []}
+        initialIndex={viewingPhotos?.index ?? 0}
+        onClose={() => setViewingPhotos(null)}
+      />
       </div>
 
       {/* Per-tree action sheet */}
