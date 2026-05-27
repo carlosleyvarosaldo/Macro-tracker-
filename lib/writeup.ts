@@ -23,6 +23,7 @@ const SCOPE_VERB_PHRASES: Record<number, string> = {
   15: "leave wood at curbside",
   16: "cut and drop wood on site",
   19: "install support cable",
+  20: "top tree",
 };
 
 /** Scope items that apply to the whole job, not individual trees. */
