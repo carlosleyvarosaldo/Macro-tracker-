@@ -32,7 +32,7 @@ function ScopeSelectorImpl({ selected, onChange }: Props) {
             key={opt.id}
             type="button"
             onClick={() => toggle(opt.id)}
-            className={`min-h-14 rounded-lg border px-2 py-2 text-xs font-medium leading-tight text-center transition-colors ${
+            className={`min-h-14 rounded-lg border px-2 py-2 text-xs font-medium leading-tight text-center transition-colors tap-press ${
               active
                 ? "border-emerald-600 bg-emerald-600 text-white"
                 : "border-gray-300 bg-white text-gray-800 active:bg-gray-100"

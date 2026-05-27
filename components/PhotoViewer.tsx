@@ -75,6 +75,7 @@ export default function PhotoViewer({
       role="dialog"
       aria-modal="true"
       aria-label="Photo viewer"
+      className="anim-fade-in"
       style={{
         position: "fixed",
         top: 0,
@@ -149,9 +150,11 @@ export default function PhotoViewer({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          key={index}
           src={current}
           alt={`Photo ${index + 1}`}
           onClick={(e) => e.stopPropagation()}
+          className="anim-zoom-in"
           style={{
             maxWidth: "100%",
             maxHeight: "100%",

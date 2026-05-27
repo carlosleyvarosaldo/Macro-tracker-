@@ -64,3 +64,35 @@ body {
   border-color: rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
 }
+/* Smooth tap feedback */
+.tap-press {
+  transition: transform 120ms ease-out, opacity 120ms ease-out, background-color 120ms ease-out;
+}
+.tap-press:active {
+  transform: scale(0.97);
+}
+
+/* Photo viewer fade */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes zoom-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-fade-in {
+  animation: fade-in 180ms ease-out;
+}
+.anim-zoom-in {
+  animation: zoom-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Action sheet slide-up */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.anim-slide-up {
+  animation: slide-up 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}

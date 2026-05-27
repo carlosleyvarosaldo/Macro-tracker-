@@ -41,7 +41,7 @@ export type MarkupAction = Stroke;
 const STROKE_COLOR = "#ff3b30";
 const ERASE_MULTIPLIER = 3;
 const TEXT_COLOR = "#ff3b30";
-const TEXT_BASE_SIZE = 48;
+const TEXT_BASE_SIZE = 120;
 
 export type MarkupCanvasHandle = {
   exportJpeg: (quality?: number) => string;
@@ -248,8 +248,13 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
   // ---- Stroke drawing (draw/erase tools) ----
 
   const handleCanvasPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    // Only handle strokes when in draw/erase mode
+    // If a label is already selected and the user taps anywhere, deselect first
+    // (rather than immediately creating another label)
     if (tool === "text") {
+      if (selectedId !== null) {
+        setSelectedId(null);
+        return;
+      }
       const pt = screenToCanvas(e.clientX, e.clientY);
       if (!pt) return;
       const input = window.prompt("Add a label:");
@@ -528,7 +533,12 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
           return (
             <div
               key={label.id}
-              onPointerDown={(e) => handleLabelPointerDown(e, label)}
+              onPointerDown={(e) => {
+                // Critical: prevent the canvas underneath from also receiving this
+                e.stopPropagation();
+                e.preventDefault();
+                handleLabelPointerDown(e, label);
+              }}
               onPointerMove={handleLabelPointerMove}
               onPointerUp={handleLabelPointerUp}
               onPointerCancel={handleLabelPointerUp}
@@ -541,6 +551,9 @@ const MarkupCanvas = forwardRef<MarkupCanvasHandle, Props>(function MarkupCanvas
                 cursor: "move",
                 userSelect: "none",
                 WebkitUserSelect: "none",
+                // Padding gives bigger touch target around small labels
+                padding: 8,
+                zIndex: 10,
               }}
             >
               <div
