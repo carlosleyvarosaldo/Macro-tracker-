@@ -6,15 +6,15 @@ import TreesView from "./TreesView";
 import DraftsView from "./DraftsView";
 import WriteUpView from "./WriteUpView";
 
-// Page indices: 0 = Trees, 1 = Camera (default), 2 = Drafts
 const PAGE_TREES = 0;
 const PAGE_CAMERA = 1;
 const PAGE_WRITEUP = 2;
 const PAGE_DRAFTS = 3;
 const PAGE_COUNT = 4;
 
-const SWIPE_THRESHOLD = 0.2; // 20% of viewport triggers a page change
-const VELOCITY_THRESHOLD = 0.5; // px/ms — fast flick triggers regardless of distance
+const SWIPE_THRESHOLD = 0.25; // ratio of viewport width
+const VELOCITY_THRESHOLD = 0.4; // px/ms
+
 function pageLabel(index: number): string {
   switch (index) {
     case PAGE_TREES:
@@ -29,131 +29,169 @@ function pageLabel(index: number): string {
       return "";
   }
 }
+
 export default function SwipeShell() {
   const [activePage, setActivePage] = useState<number>(PAGE_CAMERA);
-  const [dragOffset, setDragOffset] = useState<number>(0);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [swipeLocked, setSwipeLocked] = useState<boolean>(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const touchStartX = useRef<number>(0);
-  const touchStartY = useRef<number>(0);
-  const touchStartTime = useRef<number>(0);
-  const lastTouchX = useRef<number>(0);
-  // null = direction undetermined yet, "h" = horizontal swipe, "v" = vertical scroll
-  const dragAxis = useRef<"h" | "v" | null>(null);
+  // Refs avoid React re-renders during the swipe gesture itself
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const draggingRef = useRef<boolean>(false);
+  const dragStartXRef = useRef<number>(0);
+  const dragStartYRef = useRef<number>(0);
+  const dragStartTimeRef = useRef<number>(0);
+  const axisLockRef = useRef<"unknown" | "horizontal" | "vertical">("unknown");
+  const containerWidthRef = useRef<number>(0);
+
+  // Apply transform directly via ref — bypasses React re-render
+  const applyTransform = useCallback(
+    (page: number, dragOffsetPx: number, animated: boolean) => {
+      const inner = innerRef.current;
+      if (!inner) return;
+      const containerW = containerWidthRef.current || inner.clientWidth / PAGE_COUNT;
+      const basePx = -page * containerW;
+      inner.style.transition = animated
+        ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+        : "none";
+      inner.style.transform = `translate3d(${basePx + dragOffsetPx}px, 0, 0)`;
+    },
+    []
+  );
+
+  // Snap to current page whenever activePage changes
+  useEffect(() => {
+    applyTransform(activePage, 0, true);
+  }, [activePage, applyTransform]);
+
+  // Initialize the transform on mount and on resize
+  useEffect(() => {
+    const measure = () => {
+      const c = containerRef.current;
+      if (!c) return;
+      containerWidthRef.current = c.clientWidth;
+      applyTransform(activePage, 0, false);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const goTo = useCallback((page: number) => {
-    setActivePage(Math.max(0, Math.min(PAGE_COUNT - 1, page)));
-    setDragOffset(0);
+    const clamped = Math.max(0, Math.min(PAGE_COUNT - 1, page));
+    setActivePage(clamped);
   }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (swipeLocked) return;
     const t = e.touches[0];
-    touchStartX.current = t.clientX;
-    touchStartY.current = t.clientY;
-    touchStartTime.current = Date.now();
-    lastTouchX.current = t.clientX;
-    dragAxis.current = null;
-    setIsDragging(true);
+    draggingRef.current = true;
+    dragStartXRef.current = t.clientX;
+    dragStartYRef.current = t.clientY;
+    dragStartTimeRef.current = Date.now();
+    axisLockRef.current = "unknown";
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!draggingRef.current || swipeLocked) return;
     const t = e.touches[0];
-    const deltaX = t.clientX - touchStartX.current;
-    const deltaY = t.clientY - touchStartY.current;
+    const deltaX = t.clientX - dragStartXRef.current;
+    const deltaY = t.clientY - dragStartYRef.current;
 
-    // Lock axis on first meaningful movement
-    if (dragAxis.current === null) {
-      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
-        dragAxis.current =
-          Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+    // Axis lock: decide once whether this is a horizontal or vertical drag
+    if (axisLockRef.current === "unknown") {
+      const ax = Math.abs(deltaX);
+      const ay = Math.abs(deltaY);
+      if (ax < 8 && ay < 8) return; // not yet enough movement
+      if (ay > ax) {
+        axisLockRef.current = "vertical";
+        return;
       }
+      axisLockRef.current = "horizontal";
     }
 
-    if (dragAxis.current !== "h") return;
+    if (axisLockRef.current !== "horizontal") return;
 
-    lastTouchX.current = t.clientX;
-
-    // Edge resistance — drag past page 0 or page 2 feels heavier
+    // Edge resistance
     let effectiveDelta = deltaX;
     if (
-      (activePage === PAGE_TREES && deltaX > 0) ||
-      (activePage === PAGE_DRAFTS && deltaX < 0)
+      (activePage === 0 && deltaX > 0) ||
+      (activePage === PAGE_COUNT - 1 && deltaX < 0)
     ) {
       effectiveDelta = deltaX * 0.3;
     }
 
-    setDragOffset(effectiveDelta);
+    // Direct DOM update, no React state change
+    applyTransform(activePage, effectiveDelta, false);
   };
 
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    if (dragAxis.current !== "h" || !containerRef.current) {
-      setDragOffset(0);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+
+    if (axisLockRef.current !== "horizontal") {
+      // Not a swipe; just snap back (no-op since we never moved)
       return;
     }
 
-    const width = containerRef.current.clientWidth;
-    const elapsed = Math.max(1, Date.now() - touchStartTime.current);
-    const velocity = Math.abs(dragOffset) / elapsed;
-    const ratio = Math.abs(dragOffset) / width;
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - dragStartXRef.current;
+    const elapsed = Date.now() - dragStartTimeRef.current;
+    const velocity = elapsed > 0 ? Math.abs(deltaX) / elapsed : 0;
+    const ratio =
+      Math.abs(deltaX) / (containerWidthRef.current / PAGE_COUNT || 1);
 
     let nextPage = activePage;
     if (ratio > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-      if (dragOffset < 0 && activePage < PAGE_COUNT - 1) nextPage = activePage + 1;
-      else if (dragOffset > 0 && activePage > 0) nextPage = activePage - 1;
+      if (deltaX < 0 && activePage < PAGE_COUNT - 1) nextPage = activePage + 1;
+      else if (deltaX > 0 && activePage > 0) nextPage = activePage - 1;
     }
 
-    goTo(nextPage);
-  };
-
-  // Compute the transform: each page is 100% wide; full container is 300%
-  // Active page index becomes the negative percentage shift.
-  // Drag offset is added live in pixels.
-  const baseShiftPercent = -activePage * (100 / PAGE_COUNT); // -0%, -25%, -50%, -75%
-  const dragShiftPx = isDragging ? dragOffset : 0;
-
-  const transformStyle: React.CSSProperties = {
-    width: `${PAGE_COUNT * 100}%`,
-    transform: `translateX(calc(${baseShiftPercent}% + ${dragShiftPx}px))`,
-    transition: isDragging ? "none" : "transform 250ms ease-out",
-    display: "flex",
-    height: "100%",
+    if (nextPage === activePage) {
+      // Snap back to current
+      applyTransform(activePage, 0, true);
+    } else {
+      setActivePage(nextPage); // useEffect will snap to it
+    }
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black">
-      {/* Pages container */}
+    <div
+      ref={containerRef}
+      className="h-screen w-screen overflow-hidden bg-black"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       <div
-        ref={containerRef}
-        className="h-full overflow-hidden touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        ref={innerRef}
+        style={{
+          width: `${PAGE_COUNT * 100}%`,
+          height: "100%",
+          display: "flex",
+          willChange: "transform",
+        }}
       >
-        <div style={transformStyle}>
-          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
-            <TreesView />
-          </div>
-          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
-            <CameraView
-              isActive={activePage === PAGE_CAMERA && !isDragging}
-              onSwipeLockChange={setSwipeLocked}
-            />
-          </div>
-          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
-            <WriteUpView />
-          </div>
-          <div style={{ width: `${100 / PAGE_COUNT}%` }} className="h-full">
-            <DraftsView onSelectDraft={() => goTo(PAGE_TREES)} />
-          </div>
-        </div>
+        <PageSlot active={activePage === PAGE_TREES}>
+          <TreesView />
+        </PageSlot>
+        <PageSlot active={activePage === PAGE_CAMERA}>
+          <CameraView
+            isActive={activePage === PAGE_CAMERA}
+            onSwipeLockChange={setSwipeLocked}
+          />
+        </PageSlot>
+        <PageSlot active={activePage === PAGE_WRITEUP}>
+          <WriteUpView />
+        </PageSlot>
+        <PageSlot active={activePage === PAGE_DRAFTS}>
+          <DraftsView onSelectDraft={() => goTo(PAGE_TREES)} />
+        </PageSlot>
       </div>
 
-      {/* Top-edge fallback nav buttons */}
+      {/* Page nav hints (only for non-edge pages) */}
       <div className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex justify-between px-2 pt-2">
         {activePage > 0 ? (
           <button
@@ -188,6 +226,33 @@ export default function SwipeShell() {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Wraps each page with GPU-layer hints and CSS containment. */
+function PageSlot({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        width: `${100 / PAGE_COUNT}%`,
+        height: "100%",
+        // Tell the browser this is an isolated stacking context.
+        // 'paint' keeps repaints confined to the slot; 'layout' isolates layout work.
+        // 'size' is omitted because children rely on the parent size.
+        contain: "paint layout",
+        // Hint that this slot's contents won't visually affect siblings
+        transform: "translateZ(0)",
+      }}
+      aria-hidden={!active}
+    >
+      {children}
     </div>
   );
 }
